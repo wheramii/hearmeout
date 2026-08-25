@@ -8,7 +8,7 @@ import { SearchIcon } from './CatalogScreen';
 
 function HistoryItem({ rating }: { rating: RatingRecord }) {
   const { albums, liveAlbums, spotifyCovers, language, openRateFor } = useApp();
-  const a = albums.find((x) => x.id === rating.albumId) || liveAlbums[rating.albumId];
+  const a = liveAlbums[rating.albumId] || albums.find((x) => x.id === rating.albumId);
   if (!a) return null;
   const cover = spotifyCovers[a.id] || a.cover;
   return (

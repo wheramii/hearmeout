@@ -3,6 +3,7 @@ export type Album = {
   spotifyId?: string;
   title: string;
   artist: string;
+  artistId?: string | null;
   year: number;
   genre: string;
   genreBucket: string;
@@ -24,9 +25,12 @@ export type AlbumReview = {
 
 export type RecapPeriod = 'day' | 'month' | 'season';
 
+export type RecapArtistRef = { id: string | null; name: string; cover: string | null };
+export type RecapTrackRef = { title: string; artist: string; albumId: string | null; cover: string | null };
+
 export type RecapData = {
-  topArtists: string[];
-  topSongs: string[];
+  topArtists: RecapArtistRef[];
+  topSongs: RecapTrackRef[];
   topGenres: string[];
   minutes: number;
   uniqueArtists: number;
@@ -74,10 +78,23 @@ export type ArtistRelease = {
   'first-release-date'?: string;
 };
 
+// Spotify doesn't expose real "monthly listeners" via the public API — only
+// follower count and a 0-100 popularity score. Shown as-is, not relabeled.
+export type SpotifyArtistAlbum = { id: string; title: string; cover: string | null; releaseDate: string | null; year: number | null };
+
 export type ArtistState = {
   id: string;
   name: string;
-  albums: ArtistRelease[] | null;
+  source: 'musicbrainz' | 'spotify';
   loading: boolean;
   error: string | null;
+  // musicbrainz-sourced (from the catalog's "open library" search)
+  albums: ArtistRelease[] | null;
+  // spotify-sourced
+  photo?: string | null;
+  genres?: string[];
+  followers?: number | null;
+  popularity?: number | null;
+  releasedAlbums?: SpotifyArtistAlbum[];
+  upcomingAlbums?: SpotifyArtistAlbum[];
 };

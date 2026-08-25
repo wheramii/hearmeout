@@ -6,7 +6,7 @@ import { CoverArt } from './ui/CoverArt';
 const GENRES = ['Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 
 function GenreRow({ genre, rowClass }: { genre: string; rowClass: string }) {
-  const { t, spotifyGenreArtists } = useApp();
+  const { t, spotifyGenreArtists, openSpotifyArtist } = useApp();
   const artists = spotifyGenreArtists[genre];
 
   return (
@@ -19,10 +19,10 @@ function GenreRow({ genre, rowClass }: { genre: string; rowClass: string }) {
       ) : artists.length ? (
         <div className={rowClass}>
           {artists.map((ar) => (
-            <a className="cover" key={ar.id} href={`https://open.spotify.com/artist/${ar.id}`} target="_blank" rel="noreferrer">
+            <div className="cover" key={ar.id} onClick={() => openSpotifyArtist(ar.id)} style={{ cursor: 'pointer' }}>
               <CoverArt url={ar.photo ?? undefined} fallbackLetter={ar.name[0] || '?'} className="art artist-art" />
               <div className="meta"><div className="t">{ar.name}</div></div>
-            </a>
+            </div>
           ))}
         </div>
       ) : (

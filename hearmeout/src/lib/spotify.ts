@@ -73,7 +73,7 @@ export type SpotifyRecentlyPlayedItem = {
     id: string;
     name: string;
     duration_ms: number;
-    album: { name: string; release_date?: string };
+    album: { id: string; name: string; release_date?: string; images: { url: string }[] };
     artists: { id: string; name: string }[];
   };
 };

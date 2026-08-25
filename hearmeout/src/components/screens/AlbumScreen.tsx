@@ -10,8 +10,16 @@ import { TrackPreview } from '../TrackPreview';
 import { AlbumReviews } from '../AlbumReviews';
 
 export function AlbumScreen({ device }: { device: Device }) {
-  const { state, t, language, albums, liveAlbums, albumRatings, spotifyCovers, reviewsVersion, showScreen, openRateFor } = useApp();
-  const a = albums.find((x) => x.id === state.currentAlbumId) || liveAlbums[state.currentAlbumId] || albums[0];
+  const { state, t, language, albums, liveAlbums, albumRatings, spotifyCovers, reviewsVersion, showScreen, openRateFor, openSpotifyArtist, ensureLiveAlbum } = useApp();
+  const staticMatch = albums.find((x) => x.id === state.currentAlbumId);
+  const enriched = liveAlbums[state.currentAlbumId];
+  const a = enriched || staticMatch || albums[0];
+
+  useEffect(() => {
+    if (state.activeScreen === 'album' && !enriched) ensureLiveAlbum(state.currentAlbumId, staticMatch?.spotifyId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.activeScreen, state.currentAlbumId, enriched]);
+
   const [wishlisted, setWishlisted] = useState(false);
   useEffect(() => setWishlisted(false), [a.id]);
 
@@ -21,6 +29,12 @@ export function AlbumScreen({ device }: { device: Device }) {
   const heroArt = (
     <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="art-lg" />
   );
+
+  const artistLabel = a.artistId ? (
+    <span style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--line)' }} onClick={() => openSpotifyArtist(a.artistId!)}>
+      {a.artist}
+    </span>
+  ) : a.artist;
 
   const tracklist = a.tracklist.length ? (
     a.tracklist.map((tr, i) => (
@@ -77,7 +91,7 @@ export function AlbumScreen({ device }: { device: Device }) {
         <div className="album-hero">
           {heroArt}
           <h1>{a.title}</h1>
-          <div className="sub">{a.artist}{a.year ? ` · ${a.year}` : ''}</div>
+          <div className="sub">{artistLabel}{a.year ? ` · ${a.year}` : ''}</div>
           <div className="tags">{a.genre && <span className="chip">{a.genre}</span>}</div>
         </div>
         {ratingBlock}
@@ -104,7 +118,7 @@ export function AlbumScreen({ device }: { device: Device }) {
         <div className="info-col">
           <div className="eyebrow">{t('album.eyebrow')}</div>
           <h1>{a.title}</h1>
-          <div className="sub">{a.artist}{a.year ? ` · ${a.year}` : ''}</div>
+          <div className="sub">{artistLabel}{a.year ? ` · ${a.year}` : ''}</div>
           <div className="tags" style={{ display: 'flex', gap: 8, marginBottom: 20 }}>{a.genre && <span className="chip">{a.genre}</span>}</div>
           <div style={{ justifyContent: 'flex-start', maxWidth: 340 }}>{ratingBlock}</div>
           {previewBlock}

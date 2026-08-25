@@ -8,7 +8,7 @@ import { StarPicker } from '../ui/StarPicker';
 
 export function RateScreen({ device }: { device: Device }) {
   const { state, t, albums, liveAlbums, myRatings, spotifyCovers, showScreen, setRatingValue, publishRating, showToast } = useApp();
-  const a = albums.find((x) => x.id === state.currentAlbumId) || liveAlbums[state.currentAlbumId] || albums[0];
+  const a = liveAlbums[state.currentAlbumId] || albums.find((x) => x.id === state.currentAlbumId) || albums[0];
   const cover = spotifyCovers[a.id] || a.cover;
   const [text, setText] = useState(state.ratingDraftText);
 

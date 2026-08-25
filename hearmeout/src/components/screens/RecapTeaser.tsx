@@ -23,7 +23,7 @@ export function RecapTeaser() {
       <div className="rt-label">{t('recapTeaser.title')}</div>
       {r && r.topArtists[0] ? (
         <>
-          <h3>{r.topArtists[0]} {t('recapTeaser.topToday')}</h3>
+          <h3>{r.topArtists[0].name} {t('recapTeaser.topToday')}</h3>
           <p>{r.minutes} {t('awards.minutesShort')} · «{vibe}»</p>
         </>
       ) : (

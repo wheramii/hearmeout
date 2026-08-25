@@ -5,11 +5,12 @@ import { useApp } from '@/lib/AppContext';
 import type { Device, PublicProfile, RecapPeriod } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { pluralForKey, toLocale, type TranslationKey } from '@/lib/i18n';
+import { CoverArt } from '../ui/CoverArt';
 
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', month: 'recap.month', season: 'recap.season' };
 
 export function RecapScreen(_props: { device: Device }) {
-  const { state, t, language, me, ensureRecap, recapCache, closeRecap, setRecapPeriod } = useApp();
+  const { state, t, language, me, ensureRecap, recapCache, closeRecap, setRecapPeriod, openAlbum, openSpotifyArtist } = useApp();
   const targetId = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
   const isMe = state.recapViewUserId === 'me';
   const [profile, setProfile] = useState<PublicProfile | null>(null);
@@ -35,6 +36,9 @@ export function RecapScreen(_props: { device: Device }) {
   const vibe = r
     ? `${r.trackCount} ${pluralForKey(language, r.trackCount, 'recap.trackOne', 'recap.trackFew', 'recap.trackMany')}${r.topGenres[0] ? t('recap.vibeGenre', { genre: r.topGenres[0] }) : ''}`
     : '';
+
+  const artistRowClick = (id: string | null) => { if (id) openSpotifyArtist(id); };
+  const trackRowClick = (albumId: string | null) => { if (albumId) openAlbum(albumId); };
 
   return (
     <>
@@ -66,13 +70,31 @@ export function RecapScreen(_props: { device: Device }) {
           <div className="recap-section">
             <div className="recap-section-label">{t('recap.topArtists')}</div>
             {r.topArtists.length ? r.topArtists.map((a, i) => (
-              <div className="recap-rank-row" key={a}><span className="rr-num">{i + 1}</span><span className="rr-name">{a}</span></div>
+              <div
+                className="recap-rank-row"
+                key={`${a.id ?? a.name}-${i}`}
+                style={a.id ? { cursor: 'pointer' } : undefined}
+                onClick={() => artistRowClick(a.id)}
+              >
+                <span className="rr-num">{i + 1}</span>
+                <CoverArt url={a.cover ?? undefined} fallbackLetter={a.name[0] || '?'} className="cover-thumb-sm" />
+                <span className="rr-name">{a.name}</span>
+              </div>
             )) : <div className="empty-state">{t('recap.noData')}</div>}
           </div>
           <div className="recap-section">
             <div className="recap-section-label">{t('recap.topSongs')}</div>
             {r.topSongs.length ? r.topSongs.map((s, i) => (
-              <div className="recap-rank-row" key={s}><span className="rr-num">{i + 1}</span><span className="rr-name">{s}</span></div>
+              <div
+                className="recap-rank-row"
+                key={`${s.albumId ?? s.title}-${i}`}
+                style={s.albumId ? { cursor: 'pointer' } : undefined}
+                onClick={() => trackRowClick(s.albumId)}
+              >
+                <span className="rr-num">{i + 1}</span>
+                <CoverArt url={s.cover ?? undefined} fallbackLetter={s.artist[0] || '?'} className="cover-thumb-sm" />
+                <span className="rr-name">{s.title} <span style={{ opacity: 0.6 }}>— {s.artist}</span></span>
+              </div>
             )) : <div className="empty-state">{t('recap.noData')}</div>}
           </div>
           <div className="recap-section">

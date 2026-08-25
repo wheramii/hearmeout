@@ -47,7 +47,7 @@ export function Top4Grid({ ids }: { ids: string[] }) {
   return (
     <div className="top4-grid">
       {ids.map((id, i) => {
-        const a = albums.find((x) => x.id === id) || liveAlbums[id];
+        const a = liveAlbums[id] || albums.find((x) => x.id === id);
         if (!a) return null;
         const cover = spotifyCovers[a.id] || a.cover;
         return (

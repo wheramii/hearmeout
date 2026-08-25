@@ -7,7 +7,7 @@ import { translate, type Language, type TranslationKey } from './i18n';
 import type {
   Album, AlbumRatingInfo, ArtistState, Device, Me, RatingRecord, RecapData, RecapPeriod, ScreenName,
 } from './types';
-import type { CatalogAlbum, CatalogArtist } from './spotifyCatalog';
+import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
 
 const GENRE_BUCKETS = ['Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 
@@ -21,11 +21,30 @@ function catalogAlbumToAlbum(c: CatalogAlbum): Album {
     spotifyId: c.id,
     title: c.title,
     artist: c.artist,
+    artistId: c.artistId,
     year: c.year ?? 0,
     genre: '',
     genreBucket: '',
     cover: c.cover ?? undefined,
     tracklist: [],
+  };
+}
+
+// Full detail (real tracklist + primary artist id) for an on-demand album —
+// one recap track, a friend's top-4 pick, an artist's discography entry —
+// that isn't already sitting in the local catalog or a loaded home section.
+function albumDetailToAlbum(d: AlbumDetail, overrideId?: string): Album {
+  return {
+    id: overrideId ?? d.id,
+    spotifyId: d.id,
+    title: d.title,
+    artist: d.artist,
+    artistId: d.artistId,
+    year: d.year ?? 0,
+    genre: '',
+    genreBucket: '',
+    cover: d.cover ?? undefined,
+    tracklist: d.tracklist.map((t) => t.title),
   };
 }
 
@@ -95,6 +114,8 @@ type AppContextValue = {
   syncSpotify: () => Promise<void>;
   onSpotifyConnected: () => Promise<void>;
   openArtist: (mbid: string, name: string) => Promise<void>;
+  openSpotifyArtist: (id: string) => Promise<void>;
+  ensureLiveAlbum: (id: string, spotifyId?: string) => void;
   showToast: (msg: string) => void;
 };
 
@@ -133,6 +154,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [myRatings, setMyRatings] = useState<RatingRecord[]>([]);
   const [recapCache, setRecapCache] = useState<Record<string, RecapData>>({});
   const [reviewsVersion, setReviewsVersion] = useState(0);
+  const [fetchedAlbums, setFetchedAlbums] = useState<Record<string, Album>>({});
+  const requestedAlbumIds = useRef<Set<string>>(new Set());
   const requestedRecapKeys = useRef<Set<string>>(new Set());
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRegionFetched = useRef<string | null | undefined>(undefined);
@@ -377,10 +400,63 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshMe();
   }, [refreshMe]);
 
+  // `id` is what the rest of the app looks the album up by (a catalog slug
+  // like "ok-computer", or a raw Spotify id for anything sourced live).
+  // `spotifyId` is what to actually fetch — for catalog albums that's a
+  // different value than `id`; for everything else they're the same.
+  const ensureLiveAlbum = useCallback((id: string, spotifyId?: string) => {
+    if (!id || requestedAlbumIds.current.has(id)) return;
+    requestedAlbumIds.current.add(id);
+    fetch(`/api/spotify/album/${spotifyId || id}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((detail: AlbumDetail | null) => {
+        if (detail) setFetchedAlbums((s) => ({ ...s, [id]: albumDetailToAlbum(detail, id) }));
+        else requestedAlbumIds.current.delete(id);
+      })
+      .catch(() => requestedAlbumIds.current.delete(id));
+  }, []);
+
+  const openSpotifyArtist = useCallback(async (id: string) => {
+    setState((s) => ({
+      ...s,
+      currentArtist: { id, name: s.currentArtist?.id === id ? s.currentArtist.name : '', source: 'spotify', albums: null, loading: true, error: null },
+      activeScreen: 'artist',
+    }));
+    try {
+      const res = await fetch(`/api/spotify/artist/${id}`);
+      if (!res.ok) throw new Error(String(res.status));
+      const data = await res.json();
+      setState((s) => ({
+        ...s,
+        currentArtist: s.currentArtist && s.currentArtist.id === id
+          ? {
+            ...s.currentArtist,
+            name: data.name,
+            photo: data.photo,
+            genres: data.genres,
+            followers: data.followers,
+            popularity: data.popularity,
+            releasedAlbums: data.releasedAlbums,
+            upcomingAlbums: data.upcomingAlbums,
+            loading: false,
+          }
+          : s.currentArtist,
+      }));
+    } catch (err) {
+      const message = t('artist.loadError', { error: err instanceof Error ? err.message : String(err) });
+      setState((s) => ({
+        ...s,
+        currentArtist: s.currentArtist && s.currentArtist.id === id
+          ? { ...s.currentArtist, loading: false, error: message }
+          : s.currentArtist,
+      }));
+    }
+  }, [t]);
+
   const openArtist = useCallback(async (mbid: string, name: string) => {
     setState((s) => ({
       ...s,
-      currentArtist: { id: mbid, name, albums: null, loading: true, error: null },
+      currentArtist: { id: mbid, name, source: 'musicbrainz', albums: null, loading: true, error: null },
       activeScreen: 'artist',
     }));
     try {
@@ -417,8 +493,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     for (const list of Object.values(spotifyObscure)) {
       if (Array.isArray(list)) for (const a of list) map[a.id] = catalogAlbumToAlbum(a);
     }
+    for (const [id, a] of Object.entries(fetchedAlbums)) map[id] = a;
     return map;
-  }, [spotifyNew, spotifyNewRegional, spotifyObscure]);
+  }, [spotifyNew, spotifyNewRegional, spotifyObscure, fetchedAlbums]);
 
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums,
@@ -427,13 +504,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap, register,
     updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
-    addFriend, syncSpotify, onSpotifyConnected, openArtist, showToast,
+    addFriend, syncSpotify, onSpotifyConnected, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, spotifyNew, spotifyNewRegional, spotifyObscure,
     spotifyGenreArtists, myRatings, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap, register,
     updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
-    addFriend, syncSpotify, onSpotifyConnected, openArtist, showToast]);
+    addFriend, syncSpotify, onSpotifyConnected, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
