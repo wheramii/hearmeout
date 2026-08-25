@@ -1,0 +1,391 @@
+'use client';
+
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ALBUMS } from './data';
+import { supabase } from './supabaseClient';
+import type {
+  Album, AlbumRatingInfo, ArtistState, Device, Me, RatingRecord, RecapData, RecapPeriod, ScreenName,
+} from './types';
+import type { CatalogAlbum, CatalogArtist } from './spotifyCatalog';
+
+const GENRE_BUCKETS = ['Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
+
+// Home-screen sections built from live Spotify search results aren't part
+// of the curated ALBUMS catalog, but they should still open like any other
+// album (rate them, read/write reviews — ratings.album_id has no FK, so a
+// Spotify search result id works there exactly like a curated one).
+function catalogAlbumToAlbum(c: CatalogAlbum): Album {
+  return {
+    id: c.id,
+    spotifyId: c.id,
+    title: c.title,
+    artist: c.artist,
+    year: c.year ?? 0,
+    genre: '',
+    genreBucket: '',
+    cover: c.cover ?? undefined,
+    tracklist: [],
+  };
+}
+
+type SortBy = 'year' | 'genre' | 'artist';
+type RateOrigin = 'album' | 'history';
+type AuthStatus = 'loading' | 'anonymous' | 'ready';
+
+type AppState = {
+  authStatus: AuthStatus;
+  view: Device;
+  activeScreen: ScreenName;
+  currentAlbumId: string;
+  viewingUserId: string;
+  recapPeriod: RecapPeriod;
+  recapViewUserId: string;
+  recapOrigin: ScreenName;
+  searchQuery: string;
+  activeGenre: string;
+  sortBy: SortBy;
+  ratingValue: number;
+  ratingDraftText: string;
+  historyQuery: string;
+  rateOrigin: RateOrigin;
+  currentArtist: ArtistState | null;
+  toast: string | null;
+};
+
+type AppContextValue = {
+  state: AppState;
+  albums: Album[];
+  me: Me | null;
+  albumRatings: Record<string, AlbumRatingInfo>;
+  spotifyCovers: Record<string, string>;
+  liveAlbums: Record<string, Album>;
+  spotifyNew: CatalogAlbum[] | 'error' | null;
+  spotifyObscure: Record<string, CatalogAlbum[] | 'error'>;
+  spotifyGenreArtists: Record<string, CatalogArtist[] | 'error'>;
+  myRatings: RatingRecord[];
+  recapCache: Record<string, RecapData>;
+  reviewsVersion: number;
+  showScreen: (name: ScreenName) => void;
+  openAlbum: (id: string) => void;
+  openRateFor: (id: string, origin: RateOrigin) => void;
+  viewFriend: (id: string) => void;
+  openRecap: (userId: string) => void;
+  closeRecap: () => void;
+  setSearchQuery: (q: string) => void;
+  setActiveGenre: (g: string) => void;
+  setSortBy: (s: SortBy) => void;
+  setHistoryQuery: (q: string) => void;
+  setRecapPeriod: (p: RecapPeriod) => void;
+  setRatingValue: (v: number) => void;
+  setRatingDraftText: (t: string) => void;
+  publishRating: (albumId: string, stars: number, review: string) => Promise<void>;
+  ensureRecap: (userId: string, period: RecapPeriod) => void;
+  register: (name: string) => Promise<void>;
+  updateProfileName: (name: string) => Promise<void>;
+  updateProfileHandle: (handle: string) => Promise<void>;
+  updateAvatar: (dataUrl: string) => Promise<void>;
+  addFriend: (handle: string) => Promise<void>;
+  syncSpotify: () => Promise<void>;
+  onSpotifyConnected: () => Promise<void>;
+  openArtist: (mbid: string, name: string) => Promise<void>;
+  showToast: (msg: string) => void;
+};
+
+const AppContext = createContext<AppContextValue | null>(null);
+
+const initialState: AppState = {
+  authStatus: 'loading',
+  view: 'mobile',
+  activeScreen: 'catalog',
+  currentAlbumId: ALBUMS[0]?.id ?? '',
+  viewingUserId: '',
+  recapPeriod: 'day',
+  recapViewUserId: 'me',
+  recapOrigin: 'catalog',
+  searchQuery: '',
+  activeGenre: 'Всё',
+  sortBy: 'year',
+  ratingValue: 0,
+  ratingDraftText: '',
+  historyQuery: '',
+  rateOrigin: 'album',
+  currentArtist: null,
+  toast: null,
+};
+
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<AppState>(initialState);
+  const [me, setMe] = useState<Me | null>(null);
+  const [albumRatings, setAlbumRatings] = useState<Record<string, AlbumRatingInfo>>({});
+  const [spotifyCovers, setSpotifyCovers] = useState<Record<string, string>>({});
+  const [spotifyNew, setSpotifyNew] = useState<CatalogAlbum[] | 'error' | null>(null);
+  const [spotifyObscure, setSpotifyObscure] = useState<Record<string, CatalogAlbum[] | 'error'>>({});
+  const [spotifyGenreArtists, setSpotifyGenreArtists] = useState<Record<string, CatalogArtist[] | 'error'>>({});
+  const [myRatings, setMyRatings] = useState<RatingRecord[]>([]);
+  const [recapCache, setRecapCache] = useState<Record<string, RecapData>>({});
+  const [reviewsVersion, setReviewsVersion] = useState(0);
+  const requestedRecapKeys = useRef<Set<string>>(new Set());
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const patch = useCallback((p: Partial<AppState>) => setState((s) => ({ ...s, ...p })), []);
+
+  const showToast = useCallback((msg: string) => {
+    patch({ toast: msg });
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => patch({ toast: null }), 1700);
+  }, [patch]);
+
+  const refreshMe = useCallback(async () => {
+    const res = await fetch('/api/me');
+    if (res.status === 401) {
+      setMe(null);
+      patch({ authStatus: 'anonymous' });
+      return;
+    }
+    if (!res.ok) return;
+    const data: Me = await res.json();
+    setMe(data);
+    patch({ authStatus: 'ready' });
+  }, [patch]);
+
+  const refreshAlbumRatings = useCallback(async () => {
+    const { data } = await supabase.from('album_ratings').select('album_id, avg_stars, ratings_count');
+    const map: Record<string, AlbumRatingInfo> = {};
+    for (const row of data || []) {
+      map[row.album_id as string] = { avg: Number(row.avg_stars), count: Number(row.ratings_count) };
+    }
+    setAlbumRatings(map);
+  }, []);
+
+  const refreshMyRatings = useCallback(async () => {
+    const res = await fetch('/api/ratings/mine');
+    if (!res.ok) return;
+    setMyRatings(await res.json());
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const update = () => patch({ view: mq.matches ? 'mobile' : 'desktop' });
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, [patch]);
+
+  useEffect(() => { refreshMe(); }, [refreshMe]);
+  useEffect(() => { refreshAlbumRatings(); }, [refreshAlbumRatings]);
+  useEffect(() => {
+    fetch('/api/spotify/covers')
+      .then((res) => (res.ok ? res.json() : {}))
+      .then(setSpotifyCovers)
+      .catch(() => {});
+  }, []);
+
+  // Fetched once here (not per-component) since both the mobile and desktop
+  // shells are always mounted — fetching in each consumer would double every
+  // request and reliably trip Spotify's search rate limit.
+  useEffect(() => {
+    fetch('/api/spotify/new')
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then(setSpotifyNew)
+      .catch(() => setSpotifyNew('error'));
+
+    fetch('/api/spotify/obscure?genre=Electronic')
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => setSpotifyObscure((s) => ({ ...s, Electronic: data })))
+      .catch(() => setSpotifyObscure((s) => ({ ...s, Electronic: 'error' })));
+
+    GENRE_BUCKETS.forEach((genre) => {
+      fetch(`/api/spotify/genre-artists?genre=${encodeURIComponent(genre)}`)
+        .then((res) => (res.ok ? res.json() : Promise.reject()))
+        .then((data) => setSpotifyGenreArtists((s) => ({ ...s, [genre]: data })))
+        .catch(() => setSpotifyGenreArtists((s) => ({ ...s, [genre]: 'error' })));
+    });
+  }, []);
+  useEffect(() => { if (state.authStatus === 'ready') refreshMyRatings(); }, [state.authStatus, refreshMyRatings]);
+
+  const register = useCallback(async (name: string) => {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Ошибка регистрации' }));
+      throw new Error(err.error || 'Ошибка регистрации');
+    }
+    await refreshMe();
+  }, [refreshMe]);
+
+  const showScreen = useCallback((name: ScreenName) => patch({ activeScreen: name }), [patch]);
+  const openAlbum = useCallback((id: string) => patch({ currentAlbumId: id, activeScreen: 'album' }), [patch]);
+
+  const openRateFor = useCallback((id: string, origin: RateOrigin) => {
+    setState((s) => {
+      const existing = myRatings.find((r) => r.albumId === id);
+      return {
+        ...s,
+        currentAlbumId: id,
+        rateOrigin: origin,
+        ratingValue: existing ? existing.stars : 0,
+        ratingDraftText: existing ? existing.review || '' : '',
+        activeScreen: 'rate',
+      };
+    });
+  }, [myRatings]);
+
+  const viewFriend = useCallback((id: string) => patch({ viewingUserId: id, activeScreen: 'friend' }), [patch]);
+  const openRecap = useCallback((userId: string) => {
+    setState((s) => ({ ...s, recapViewUserId: userId, recapOrigin: s.activeScreen, activeScreen: 'recap' }));
+  }, []);
+  const closeRecap = useCallback(() => {
+    setState((s) => ({ ...s, activeScreen: s.recapOrigin || 'catalog' }));
+  }, []);
+
+  const setSearchQuery = useCallback((q: string) => patch({ searchQuery: q }), [patch]);
+  const setActiveGenre = useCallback((g: string) => patch({ activeGenre: g }), [patch]);
+  const setSortBy = useCallback((sVal: SortBy) => patch({ sortBy: sVal }), [patch]);
+  const setHistoryQuery = useCallback((q: string) => patch({ historyQuery: q }), [patch]);
+  const setRecapPeriod = useCallback((p: RecapPeriod) => patch({ recapPeriod: p }), [patch]);
+  const setRatingValue = useCallback((v: number) => patch({ ratingValue: v }), [patch]);
+  const setRatingDraftText = useCallback((t: string) => patch({ ratingDraftText: t }), [patch]);
+
+  const ensureRecap = useCallback((userId: string, period: RecapPeriod) => {
+    const targetId = userId === 'me' ? me?.id : userId;
+    if (!targetId) return;
+    const key = `${targetId}:${period}`;
+    if (requestedRecapKeys.current.has(key)) return;
+    requestedRecapKeys.current.add(key);
+    fetch(`/api/recap?period=${period}&userId=${targetId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: RecapData | null) => {
+        if (data) setRecapCache((s) => ({ ...s, [key]: data }));
+        else requestedRecapKeys.current.delete(key);
+      })
+      .catch(() => requestedRecapKeys.current.delete(key));
+  }, [me]);
+
+  const publishRating = useCallback(async (albumId: string, stars: number, review: string) => {
+    const isEditing = myRatings.some((r) => r.albumId === albumId);
+    const res = await fetch('/api/ratings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ albumId, stars, review }),
+    });
+    if (!res.ok) {
+      showToast('Не удалось сохранить оценку');
+      return;
+    }
+    await Promise.all([refreshMyRatings(), refreshAlbumRatings(), refreshMe()]);
+    setReviewsVersion((v) => v + 1);
+    setState((s) => ({
+      ...s,
+      ratingValue: 0,
+      ratingDraftText: '',
+      activeScreen: s.rateOrigin === 'history' ? 'history' : 'album',
+    }));
+    showToast(isEditing ? 'Оценка обновлена' : 'Опубликовано');
+  }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast]);
+
+  const updateProfileName = useCallback(async (name: string) => {
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    await refreshMe();
+  }, [refreshMe]);
+
+  const updateProfileHandle = useCallback(async (handle: string) => {
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
+    await refreshMe();
+  }, [refreshMe]);
+
+  const updateAvatar = useCallback(async (dataUrl: string) => {
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatarUrl: dataUrl }) });
+    await refreshMe();
+  }, [refreshMe]);
+
+  const addFriend = useCallback(async (handle: string) => {
+    const res = await fetch('/api/friends', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: null }));
+      showToast(err.error === 'not_found' ? 'Пользователь с таким @handle не найден' : 'Не удалось добавить друга');
+      return;
+    }
+    await refreshMe();
+    showToast('Добавлено в друзья');
+  }, [refreshMe, showToast]);
+
+  const syncSpotify = useCallback(async () => {
+    const res = await fetch('/api/sync', { method: 'POST' });
+    if (!res.ok) {
+      showToast('Не удалось синхронизировать Spotify');
+      return;
+    }
+    const { imported } = await res.json();
+    showToast(imported > 0 ? `Синхронизировано: ${imported} треков` : 'Новых треков нет');
+    requestedRecapKeys.current.clear();
+    setRecapCache({});
+  }, [showToast]);
+
+  const onSpotifyConnected = useCallback(async () => {
+    requestedRecapKeys.current.clear();
+    setRecapCache({});
+    await refreshMe();
+  }, [refreshMe]);
+
+  const openArtist = useCallback(async (mbid: string, name: string) => {
+    setState((s) => ({
+      ...s,
+      currentArtist: { id: mbid, name, albums: null, loading: true, error: null },
+      activeScreen: 'artist',
+    }));
+    try {
+      const { fetchArtistReleaseGroups } = await import('./musicbrainz');
+      const releaseGroups = await fetchArtistReleaseGroups(mbid);
+      setState((s) => ({
+        ...s,
+        currentArtist: s.currentArtist && s.currentArtist.id === mbid
+          ? { ...s.currentArtist, albums: releaseGroups, loading: false }
+          : s.currentArtist,
+      }));
+    } catch (err) {
+      const isFileProtocol = typeof location !== 'undefined' && location.protocol === 'file:';
+      const message = isFileProtocol
+        ? 'Браузер блокирует запросы к внешним сайтам при открытии файла напрямую (file://). Загрузите файл на хостинг, чтобы это заработало.'
+        : `Не удалось загрузить альбомы (${err instanceof Error ? err.message : String(err)})`;
+      setState((s) => ({
+        ...s,
+        currentArtist: s.currentArtist && s.currentArtist.id === mbid
+          ? { ...s.currentArtist, loading: false, error: message }
+          : s.currentArtist,
+      }));
+    }
+  }, []);
+
+  const liveAlbums = useMemo(() => {
+    const map: Record<string, Album> = {};
+    if (Array.isArray(spotifyNew)) {
+      for (const a of spotifyNew) map[a.id] = catalogAlbumToAlbum(a);
+    }
+    for (const list of Object.values(spotifyObscure)) {
+      if (Array.isArray(list)) for (const a of list) map[a.id] = catalogAlbumToAlbum(a);
+    }
+    return map;
+  }, [spotifyNew, spotifyObscure]);
+
+  const value = useMemo<AppContextValue>(() => ({
+    state, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, spotifyNew, spotifyObscure, spotifyGenreArtists, myRatings, recapCache, reviewsVersion,
+    showScreen, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
+    setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod,
+    setRatingValue, setRatingDraftText, publishRating, ensureRecap, register,
+    updateProfileName, updateProfileHandle, updateAvatar, addFriend, syncSpotify, onSpotifyConnected, openArtist, showToast,
+  }), [state, me, albumRatings, spotifyCovers, liveAlbums, spotifyNew, spotifyObscure, spotifyGenreArtists, myRatings, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
+    viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
+    setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap, register,
+    updateProfileName, updateProfileHandle, updateAvatar, addFriend, syncSpotify, onSpotifyConnected, openArtist, showToast]);
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+
+export function useApp() {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useApp must be used within AppProvider');
+  return ctx;
+}

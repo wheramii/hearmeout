@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HearMeOut — прототип</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1F1D1C; --surface:#2A2725; --surface-2:#332F2C; --line:#433E3A;
+    --lime:#FC7B03; --coral:#C75E00; --text:#E6DEDA; --muted:#948C86;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:#121110; font-family:'Inter',sans-serif; color:var(--text);
+    display:flex; flex-direction:column; align-items:center; min-height:100vh;
+    padding:20px 12px 40px; gap:18px;
+  }
+  .view-switch{ display:flex; gap:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px; }
+  .vs-btn{ font-family:'IBM Plex Mono',monospace; font-size:12px; padding:8px 16px; border-radius:999px; border:none; background:transparent; color:var(--muted); cursor:pointer; }
+  .vs-btn.active{ background:var(--lime); color:#1F1D1C; font-weight:600; }
+  .toast{ position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-12px); background:var(--lime); color:#1F1D1C; font-weight:600; font-size:13px; padding:10px 18px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease; z-index:999; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.12em; color:var(--lime); text-transform:uppercase; margin-bottom:6px; }
+  h1.page-title{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:26px; letter-spacing:-.01em; margin-bottom:18px; }
+  .search-bar{ display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:20px; }
+  .search-bar svg{ flex-shrink:0; }
+  .search-bar input{ background:none; border:none; outline:none; color:var(--text); font-family:'Inter',sans-serif; font-size:14px; width:100%; }
+  .search-bar input::placeholder{ color:var(--muted); }
+
+  .chips{ display:flex; gap:8px; overflow-x:auto; margin-bottom:22px; padding-bottom:2px; scrollbar-width:none; -ms-overflow-style:none; }
+  .chips::-webkit-scrollbar{ display:none; }
+  .chip{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:7px 13px; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; flex-shrink:0; cursor:pointer; background:none; }
+  .chip.on{ background:var(--lime); color:#1F1D1C; border-color:var(--lime); font-weight:600; }
+
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px; }
+  .section-head h2{ font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600; display:flex; align-items:center; }
+  .section-head span{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); }
+  .unknown-badge{ display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; border:1.4px solid var(--lime); color:var(--lime); font-size:10px; font-weight:700; margin-right:6px; font-family:'IBM Plex Mono',monospace; flex-shrink:0; }
+
+  .cover{ cursor:pointer; }
+  .cover .art{ position:relative; border-radius:12px; display:flex; align-items:flex-end; justify-content:flex-start; padding:8px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(255,255,255,.85); background-size:cover; background-position:center; border:1px solid var(--line); }
+  .cover .meta{ margin-top:7px; }
+  .cover .meta .t{ font-weight:600; line-height:1.25; }
+  .cover .meta .a{ color:var(--muted); margin-top:1px; }
+  .empty-state{ color:var(--muted); font-size:13px; padding:20px 0; text-align:center; }
+  .archive-note{ font-size:12.5px; color:var(--muted); line-height:1.5; margin-bottom:18px; }
+  .archive-card{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .archive-card .art-sm{ width:48px; height:48px; border-radius:8px; flex-shrink:0; background-size:cover; background-position:center; background-color:var(--surface-2); border:1px solid var(--line); }
+  .archive-card .info .t{ font-size:13.5px; font-weight:600; }
+  .archive-card .info .a{ font-size:11.5px; color:var(--muted); }
+  .archive-loading{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--muted); padding:14px 0; text-align:center; }
+  .lib-subhead{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:16px 0 10px; }
+  .dz-preview-wrap{ margin-bottom:16px; }
+  .dz-preview-player{ margin-top:8px; }
+  .dz-preview-label{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); margin-bottom:6px; }
+  .artist-art{ border-radius:50%; }
+  .artist-art .fallback-letter{ font-size:24px; }
+
+  /* history / activity items */
+  .activity-item{ display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); cursor:pointer; }
+  .activity-item .thumb{ width:42px; height:42px; border-radius:8px; background-size:cover; background-position:center; flex-shrink:0; border:1px solid var(--line); }
+  .activity-item .body{ flex:1; font-size:12.5px; min-width:0; }
+  .activity-item .body b{ font-weight:600; }
+  .activity-item .stars-dot{ display:block; margin-top:2px; }
+  .activity-item .when{ font-size:10.5px; color:var(--muted); margin-top:2px; }
+  .cover-fallback{ background:linear-gradient(135deg,var(--surface-2),var(--line)) !important; display:flex; align-items:center; justify-content:center; }
+  .cover-fallback .fallback-letter{ font-family:'Space Grotesk',sans-serif; font-weight:700; color:var(--muted); font-size:28px; }
+
+  /* connect / recap / friends / awards */
+  .connect-row{ display:flex; flex-direction:column; gap:8px; }
+  .connect-btn{ font-family:'Inter',sans-serif; font-weight:600; font-size:13px; padding:13px; border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--text); cursor:pointer; text-align:left; }
+  .connect-btn.on{ border-color:var(--lime); color:var(--lime); background:rgba(252,123,3,.08); }
+
+  /* segmented control (day/month/season etc) */
+  .segmented{ display:flex; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:4px; gap:4px; }
+  .segmented button{ flex:1; font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; padding:9px 4px; border-radius:9px; border:none; background:none; color:var(--muted); cursor:pointer; transition:background .15s ease, color .15s ease; }
+  .segmented button.on{ background:var(--lime); color:#1F1D1C; }
+
+  /* recap teaser card (home screen) */
+  .recap-teaser{ position:relative; border-radius:16px; overflow:hidden; padding:18px; margin-bottom:26px; cursor:pointer; background:linear-gradient(135deg, var(--surface-2), var(--bg)); border:1px solid var(--line); }
+  .recap-teaser::before{ content:''; position:absolute; inset:0; background:linear-gradient(135deg, rgba(252,123,3,.20), transparent 65%); pointer-events:none; }
+  .recap-teaser .rt-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--lime); text-transform:uppercase; letter-spacing:.1em; margin-bottom:8px; position:relative; }
+  .recap-teaser h3{ font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; margin-bottom:6px; position:relative; }
+  .recap-teaser p{ font-size:12px; color:var(--muted); position:relative; }
+  .recap-teaser .rt-arrow{ position:absolute; top:16px; right:18px; color:var(--lime); font-size:18px; }
+
+  /* full-screen recap (Super Fan style takeover) */
+  .recap-full-top{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:26px; }
+  .recap-close{ background:var(--surface); border:1px solid var(--line); color:var(--text); width:34px; height:34px; flex-shrink:0; border-radius:50%; cursor:pointer; font-size:14px; }
+  .recap-full-top .segmented{ flex:1; }
+  .recap-hero{ text-align:center; margin-bottom:28px; }
+  .recap-hero-avatar{ width:64px; height:64px; border-radius:50%; margin:0 auto 12px; background:linear-gradient(135deg,var(--lime),var(--coral)); background-size:cover; background-position:center; }
+  .recap-hero-name{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:17px; }
+  .recap-hero-period{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--lime); letter-spacing:.14em; margin:6px 0 16px; text-transform:uppercase; }
+  .recap-hero-vibe{ font-size:17px; font-style:italic; color:var(--text); line-height:1.4; max-width:300px; margin:0 auto; }
+  .recap-stats-row{ display:flex; justify-content:center; gap:28px; margin-bottom:30px; }
+  .recap-stat{ text-align:center; }
+  .recap-stat .rv{ font-family:'Space Grotesk',sans-serif; font-size:26px; font-weight:700; color:var(--lime); }
+  .recap-stat .rl{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--muted); margin-top:2px; }
+  .recap-section{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; }
+  .recap-section-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:10px; }
+  .recap-rank-row{ display:flex; gap:10px; padding:6px 0; font-size:13.5px; }
+  .recap-rank-row .rr-num{ font-family:'Space Grotesk',sans-serif; font-weight:700; color:var(--lime); width:18px; flex-shrink:0; }
+  .recap-genre-chips{ display:flex; gap:8px; flex-wrap:wrap; }
+  .recap-open-btn{ width:100%; background:linear-gradient(135deg, var(--lime), var(--coral)); border:none; color:#1F1D1C; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; padding:14px; border-radius:14px; cursor:pointer; margin-bottom:22px; }
+
+  .recap-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; }
+  .recap-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .recap-period{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; }
+  .recap-minutes{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); }
+  .recap-vibe{ font-style:italic; font-size:12.5px; color:var(--lime); margin-bottom:14px; line-height:1.4; }
+  .recap-cols{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:12px; }
+  .recap-col-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
+  .recap-item{ font-size:12px; margin-bottom:4px; }
+  .recap-genres{ display:flex; gap:6px; flex-wrap:wrap; }
+
+  .friend-row{ display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .friend-row .info{ flex:1; min-width:0; cursor:pointer; }
+  .friend-row .info .n{ font-size:13px; font-weight:600; }
+  .friend-row .info .h{ font-size:11px; color:var(--muted); }
+  .friend-row button{ font-family:'Inter',sans-serif; font-size:11.5px; font-weight:600; padding:7px 12px; border-radius:999px; border:1px solid var(--line); background:none; color:var(--text); cursor:pointer; flex-shrink:0; }
+  .friend-row button.added{ border-color:var(--lime); color:var(--lime); }
+
+  .award-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); font-size:12px; }
+  .award-label{ color:var(--muted); }
+  .award-name{ font-weight:600; color:var(--lime); flex-shrink:0; }
+
+  .compare-block{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:22px; }
+  .compare-score{ text-align:center; margin-bottom:16px; }
+  .compare-score .v{ font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; color:var(--lime); }
+  .compare-score .l{ font-size:11px; color:var(--muted); font-family:'IBM Plex Mono',monospace; }
+  .compare-row{ display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:11px; }
+  .compare-row .g{ width:64px; flex-shrink:0; color:var(--muted); }
+  .compare-row .bars{ flex:1; display:flex; flex-direction:column; gap:3px; }
+  .compare-row .bars .b{ height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; }
+  .compare-row .bars .b i{ display:block; height:100%; border-radius:3px; }
+  .compare-row .bars .me i{ background:var(--lime); }
+  .compare-row .bars .fr i{ background:var(--muted); }
+  .compare-legend{ display:flex; gap:14px; justify-content:center; margin-top:10px; font-size:10.5px; color:var(--muted); }
+  .compare-legend i{ display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+
+  .list-row{ display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--line); cursor:pointer; }
+  .list-row .art-sm{ width:46px; height:46px; border-radius:8px; flex-shrink:0; background-size:cover; background-position:center; border:1px solid var(--line); }
+  .list-row .info .t{ font-size:13.5px; font-weight:600; }
+  .list-row .info .a{ font-size:11.5px; color:var(--muted); }
+  .list-row .rank{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--lime); width:20px; }
+  .list-row .n{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); width:18px; }
+
+  .btn-primary{ background:var(--lime); color:#1F1D1C; border:none; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; padding:15px; border-radius:14px; cursor:pointer; margin-bottom:10px; transition:filter .15s ease; }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-ghost{ background:transparent; color:var(--text); border:1px solid var(--line); font-family:'Inter',sans-serif; font-weight:600; font-size:13.5px; padding:13px; border-radius:14px; cursor:pointer; margin-bottom:22px; transition:border-color .15s ease, color .15s ease; }
+  .btn-ghost.added{ border-color:var(--lime); color:var(--lime); }
+
+  .review-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .review-card .head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .review-card .user{ display:flex; align-items:center; gap:8px; }
+  .avatar{ width:26px; height:26px; border-radius:50%; background:var(--surface-2); border:1px solid var(--line); background-size:cover; background-position:center; }
+  .review-card .uname{ font-size:12.5px; font-weight:600; }
+  .stars-dot{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--lime); }
+  .review-card p{ font-size:12.5px; color:#CFC7C1; line-height:1.5; }
+
+  .star-rating{ position:relative; display:inline-block; line-height:1; }
+  .star-rating .layer{ letter-spacing:4px; white-space:nowrap; user-select:none; }
+  .star-rating .base{ color:var(--line); }
+  .star-rating .fill{ position:absolute; top:0; left:0; overflow:hidden; color:var(--lime); }
+  .star-rating.avg .layer{ font-size:19px; }
+  .star-rating.interactive{ cursor:pointer; touch-action:none; }
+  .star-rating.interactive .layer{ font-size:40px; }
+
+  .review-box{ width:100%; min-height:110px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px; color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px; margin-bottom:16px; text-align:left; resize:none; outline:none; }
+  .review-box::placeholder{ color:var(--muted); }
+
+  .avatar-lg{ width:64px; height:64px; border-radius:50%; flex-shrink:0; cursor:pointer; position:relative; background:linear-gradient(135deg,var(--lime),var(--coral)); background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; border:2px solid var(--line); }
+  .avatar-lg .hint{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#1F1D1C; font-weight:700; text-align:center; background:rgba(230,222,218,.85); border-radius:50%; width:100%; height:100%; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .15s ease; }
+  .avatar-lg:hover .hint{ opacity:1; }
+  .avatar-lg.has-img .hint{ display:none; }
+  .avatar-sm{ width:40px; height:40px; border-radius:50%; background:var(--surface-2); border:1px solid var(--line); background-size:cover; background-position:center; flex-shrink:0; }
+
+  .name-input{ background:none; border:none; border-bottom:1.5px solid transparent; color:var(--text); font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:700; padding:2px 0; width:100%; outline:none; transition:border-color .15s ease; }
+  .name-input:focus, .name-input:hover{ border-color:var(--line); }
+  .handle-input{ background:none; border:none; border-bottom:1.5px solid transparent; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:12px; padding:2px 0; margin-top:3px; width:100%; outline:none; transition:border-color .15s ease; }
+  .handle-input:focus, .handle-input:hover{ border-color:var(--line); }
+
+  .stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:24px; }
+  .stat-grid .box{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 8px; text-align:center; }
+  .stat-grid .box .v{ font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:700; color:var(--lime); }
+  .stat-grid .box .l{ font-size:9.5px; color:var(--muted); margin-top:2px; font-family:'IBM Plex Mono',monospace; }
+
+  .genre-row{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+  .genre-row .name{ font-size:12px; width:74px; flex-shrink:0; color:var(--muted); }
+  .genre-row .track{ flex:1; height:7px; background:var(--surface-2); border-radius:4px; overflow:hidden; }
+  .genre-row .fill{ height:100%; background:linear-gradient(90deg,var(--lime),var(--coral)); border-radius:4px; }
+
+  .top4-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:24px; }
+  .top4-grid .art{ width:100%; aspect-ratio:1; border-radius:9px; background-size:cover; background-position:center; border:1px solid var(--line); position:relative; }
+  .top4-grid .art .rank{ position:absolute; top:4px; left:5px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--lime); }
+
+  /* ==================== MOBILE SHELL ==================== */
+  .mobile-shell{ display:none; }
+  .mobile-shell.show{ display:flex; }
+  .device{ width:390px; max-width:100%; height:780px; background:var(--bg); border-radius:36px; border:8px solid #000; overflow:hidden; position:relative; display:flex; flex-direction:column; box-shadow:0 30px 60px -20px rgba(0,0,0,.6); }
+  .statusbar{ height:38px; display:flex; align-items:center; justify-content:space-between; padding:0 22px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); flex-shrink:0; }
+  .m-screens{ flex:1; position:relative; overflow:hidden; }
+  .m-screen{ position:absolute; inset:0; overflow-y:auto; padding:4px 20px 24px; opacity:0; visibility:hidden; transform:translateY(8px); transition:opacity .28s ease, transform .28s ease; }
+  .m-screen.active{ opacity:1; visibility:visible; transform:translateY(0); }
+  .m-screen::-webkit-scrollbar{ display:none; }
+  .row-scroll{ display:flex; gap:12px; overflow-x:auto; margin-bottom:26px; padding-bottom:4px; scrollbar-width:none; -ms-overflow-style:none; }
+  .row-scroll::-webkit-scrollbar{ display:none; }
+  .mobile-shell .row-scroll .cover{ width:104px; flex-shrink:0; }
+  .mobile-shell .row-scroll .cover .art{ width:104px; height:104px; }
+  .mobile-shell .cover .meta .t{ font-size:12.5px; }
+  .mobile-shell .cover .meta .a{ font-size:11px; }
+  .grid-cards{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:26px; }
+  .grid-cards .cover{ width:100%; }
+  .grid-cards .cover .art{ width:100%; height:auto; aspect-ratio:1; }
+
+  .tabbar{ display:flex; border-top:1px solid var(--line); background:rgba(31,29,28,.94); backdrop-filter:blur(6px); flex-shrink:0; }
+  .tab{ flex:1; text-align:center; padding:12px 4px 10px; cursor:pointer; color:var(--muted); background:none; border:none; }
+  .tab .ic{ display:flex; justify-content:center; margin-bottom:4px; }
+  .tab .ic svg{ width:20px; height:20px; }
+  .tab .num{ font-size:17px; line-height:1; }
+  .tab .lbl{ font-size:10.5px; font-family:'Inter',sans-serif; font-weight:500; }
+  .tab.active{ color:var(--lime); }
+
+  .back-btn{ display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); margin:14px 0 16px; cursor:pointer; background:none; border:none; }
+  .album-hero{ text-align:center; margin-bottom:18px; }
+  .album-hero .art-lg{ width:180px; height:180px; border-radius:16px; margin:0 auto 16px; background-size:cover; background-position:center; border:1px solid var(--line); box-shadow:0 20px 40px -14px rgba(0,0,0,.7); }
+  .album-hero h1{ font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; }
+  .album-hero .sub{ color:var(--muted); font-size:13px; margin-top:4px; }
+  .album-hero .tags{ display:flex; gap:8px; justify-content:center; margin-top:12px; flex-wrap:wrap; }
+  .avg-rating{ display:flex; align-items:center; justify-content:center; gap:16px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px; margin:18px 0; }
+  .avg-rating .num{ font-family:'Space Grotesk',sans-serif; font-size:34px; font-weight:700; color:var(--lime); }
+  .avg-rating .rd{ font-size:11.5px; color:var(--muted); }
+  .spotify-embed-wrap{ margin-bottom:18px; }
+  .spotify-embed-label{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); margin-bottom:6px; }
+
+  .rate-wrap{ text-align:center; padding-top:6px; }
+  .rate-art{ width:150px; height:150px; border-radius:14px; margin:8px auto 18px; background-size:cover; background-position:center; border:1px solid var(--line); }
+  .rate-star-block{ margin:22px 0 6px; }
+  .vu-label{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); margin:10px 0 26px; }
+
+  .profile-head{ display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+
+  /* ==================== DESKTOP SHELL ==================== */
+  .desktop-shell{ display:none; width:100%; max-width:1180px; height:740px; background:var(--bg); border-radius:16px; border:1px solid var(--line); overflow:hidden; box-shadow:0 30px 60px -24px rgba(0,0,0,.6); }
+  .desktop-shell.show{ display:flex; }
+  .d-sidebar{ width:230px; flex-shrink:0; background:#171514; padding:26px 16px; display:flex; flex-direction:column; gap:30px; border-right:1px solid var(--line); }
+  .d-logo{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19px; letter-spacing:-.01em; padding:0 8px; }
+  .d-logo span{ color:var(--lime); }
+  .d-nav{ display:flex; flex-direction:column; gap:4px; }
+  .d-nav-item{ display:flex; align-items:center; gap:13px; background:none; border:none; color:var(--muted); font-family:'Inter',sans-serif; font-weight:600; font-size:14px; padding:11px 12px; border-radius:9px; cursor:pointer; text-align:left; width:100%; }
+  .d-nav-item svg{ width:19px; height:19px; flex-shrink:0; }
+  .d-nav-item.active{ color:var(--text); background:var(--surface); }
+  .d-nav-item.active svg{ color:var(--lime); }
+  .d-main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+  .d-topbar{ padding:18px 30px; border-bottom:1px solid var(--line); flex-shrink:0; }
+  .d-topbar .search-bar{ margin-bottom:0; max-width:420px; }
+  .d-content{ flex:1; overflow-y:auto; padding:28px 30px 46px; scrollbar-width:none; -ms-overflow-style:none; }
+  .d-content::-webkit-scrollbar{ display:none; }
+  .d-screen{ display:none; }
+  .d-screen.active{ display:block; }
+  .d-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:20px; margin-bottom:34px; }
+  .d-grid .cover .art{ width:100%; height:auto; aspect-ratio:1; }
+
+  .d-album-layout{ display:flex; gap:40px; align-items:flex-start; }
+  .d-album-layout .cover-col{ width:270px; flex-shrink:0; text-align:center; }
+  .d-album-layout .cover-col .art-lg{ width:270px; height:270px; border-radius:16px; background-size:cover; background-position:center; border:1px solid var(--line); box-shadow:0 24px 50px -18px rgba(0,0,0,.6); margin-bottom:20px; }
+  .d-album-layout .info-col{ flex:1; min-width:0; }
+  .d-album-layout h1{ font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700; margin-bottom:6px; }
+  .d-album-layout .sub{ color:var(--muted); font-size:14px; margin-bottom:14px; }
+  .d-two-col{ display:grid; grid-template-columns:1fr 1fr; gap:40px; margin-top:30px; }
+  .d-rate-panel{ max-width:420px; margin:0 auto; text-align:center; padding-top:20px; }
+  .d-profile-layout{ display:flex; gap:48px; }
+  .d-profile-layout .side{ width:230px; flex-shrink:0; }
+  .d-profile-layout .main{ flex:1; }
+</style>
+</head>
+<body>
+
+<div class="view-switch">
+  <button class="vs-btn active" data-view="mobile">📱 Мобильная версия</button>
+  <button class="vs-btn" data-view="desktop">🖥 Версия для компьютера</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- MOBILE SHELL -->
+<div class="mobile-shell show" id="mobile-shell">
+  <div class="device">
+    <div class="statusbar"><span>9:41</span><span>HEARMEOUT</span><span>●●●</span></div>
+    <div class="m-screens">
+      <section class="m-screen active" data-screen="catalog" data-device="mobile"></section>
+      <section class="m-screen" data-screen="album" data-device="mobile"></section>
+      <section class="m-screen" data-screen="rate" data-device="mobile"></section>
+      <section class="m-screen" data-screen="history" data-device="mobile"></section>
+      <section class="m-screen" data-screen="recap" data-device="mobile"></section>
+      <section class="m-screen" data-screen="profile" data-device="mobile"></section>
+      <section class="m-screen" data-screen="artist" data-device="mobile"></section>
+      <section class="m-screen" data-screen="friend" data-device="mobile"></section>
+    </div>
+    <div class="tabbar">
+      <button class="tab active" data-tab="catalog"><span class="ic num">⌂</span><span class="lbl">Главное</span></button>
+      <button class="tab" data-tab="history"><span class="ic num">★</span><span class="lbl">Оценка</span></button>
+      <button class="tab" data-tab="profile"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg></span><span class="lbl">Профиль</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- DESKTOP SHELL -->
+<div class="desktop-shell" id="desktop-shell">
+  <aside class="d-sidebar">
+    <div class="d-logo">Hear<span>Me</span>Out</div>
+    <nav class="d-nav">
+      <button class="d-nav-item active" data-tab="catalog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Главное</button>
+      <button class="d-nav-item" data-tab="history"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.9-6.3 3.9 1.7-7L2 9.2l7.1-.6L12 2z"/></svg>Оценка</button>
+      <button class="d-nav-item" data-tab="profile"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg>Профиль</button>
+    </nav>
+  </aside>
+  <div class="d-main">
+    <div class="d-topbar">
+      <div class="search-bar" data-search-wrap>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Артист, альбом, трек…" data-search-input>
+      </div>
+    </div>
+    <div class="d-content">
+      <section class="d-screen active" data-screen="catalog" data-device="desktop"></section>
+      <section class="d-screen" data-screen="album" data-device="desktop"></section>
+      <section class="d-screen" data-screen="rate" data-device="desktop"></section>
+      <section class="d-screen" data-screen="history" data-device="desktop"></section>
+      <section class="d-screen" data-screen="recap" data-device="desktop"></section>
+      <section class="d-screen" data-screen="profile" data-device="desktop"></section>
+      <section class="d-screen" data-screen="artist" data-device="desktop"></section>
+      <section class="d-screen" data-screen="friend" data-device="desktop"></section>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================== DATA ============================== */
+const ALBUMS = [
+  { id:'ok-computer', spotifyId:'6dVIqQ8qmQ5GBnJ9shOYGE', title:'OK Computer', artist:'Radiohead', year:1997, genre:'Alternative Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b273c8b444df094279e70d0ed856', rating:4.6, ratingsCount:3400, tracklist:[], reviews:[] },
+  { id:'abbey-road', spotifyId:'0ETFjACtuP2ADo6LFhL6HN', title:'Abbey Road', artist:'The Beatles', year:1969, genre:'Pop Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b273dc30583ba717007b00cceb25', rating:4.7, ratingsCount:5200, tracklist:[], reviews:[] },
+  { id:'thriller', spotifyId:'1x6guHfwvOGsIQgRK5v5p1', title:'Thriller', artist:'Michael Jackson', year:1982, genre:'Pop', genreBucket:'Pop', cover:'https://i.scdn.co/image/ab67616d0000b273230da28b7b53e7a2192e1743', rating:4.8, ratingsCount:6100, tracklist:[], reviews:[] },
+  { id:'dark-side', spotifyId:'4LH4d3cOWNNsVw41Gqt2kv', title:'The Dark Side Of The Moon', artist:'Pink Floyd', year:1973, genre:'Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b273db216ca805faf5fe35df4ee6', rating:4.7, ratingsCount:4800, tracklist:[], reviews:[] },
+  { id:'rumours', spotifyId:'1bt6q2SruMsBtcerNVtpZB', title:'Rumours', artist:'Fleetwood Mac', year:1977, genre:'Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b27357df7ce0eac715cf70e519a7', rating:4.6, ratingsCount:3900, tracklist:[], reviews:[] },
+  { id:'dtmf', spotifyId:'5K79FLRUCSysQnVESLcTdb', title:'Debí Tirar Más Fotos', artist:'Bad Bunny', year:2025, genre:'Latin (Reggaeton)', genreBucket:'Latin', cover:'https://i.scdn.co/image/ab67616d0000b273bbd45c8d36e0e045ef640411', rating:4.3, ratingsCount:2800, tracklist:[], reviews:[] },
+  { id:'snowday', spotifyId:'4BaDHBjeR61iUFuZdgCNXF', title:'Snow Day', artist:'Miley', year:2026, genre:'Electronic', genreBucket:'Electronic', unknown:true, listeners:'17k', cover:'https://i.scdn.co/image/ab67616d0000b2733e1c00522a30562d5cde4cc2', rating:4.0, ratingsCount:210, tracklist:[], reviews:[] },
+  { id:'blonde', spotifyId:'3mH6qwIy9crq0I9YQbOuDf', title:'Blonde', artist:'Frank Ocean', year:2016, genre:'R&B', genreBucket:'R&B', cover:'https://upload.wikimedia.org/wikipedia/en/9/9c/Frank_Ocean_-_Blonde.png', rating:4.6, ratingsCount:3210,
+    tracklist:['Nikes','Ivy','Pink + White','Solo','Self Control'],
+    reviews:[{user:'wave_rider',stars:5,text:'Один из тех альбомов, которые меняют то, как ты вообще слушаешь музыку.'}] },
+  { id:'graduation', spotifyId:'3SZr5Pco2oqKFORCP3WNj9', title:'Graduation', artist:'Kanye West', year:2007, genre:'Hip-Hop, Rap', genreBucket:'Hip-Hop', cover:'https://upload.wikimedia.org/wikipedia/en/4/42/Graduation_%28album%29.jpg', rating:4.1, ratingsCount:1870,
+    tracklist:['Good Morning','Champion','Stronger','I Wonder','Homecoming'],
+    reviews:[{user:'deep_cuts',stars:4,text:'Момент, когда Канье впервые звучит как стадион, а не подвал.'}] },
+  { id:'teenage', spotifyId:'06SY6Ke6mXzZHhURLVU57R', title:'Teenage Dream', artist:'Katy Perry', year:2010, genre:'Pop', genreBucket:'Pop', cover:'https://upload.wikimedia.org/wikipedia/en/9/95/Katy_Perry_-_Teenage_Dream.png', rating:3.9, ratingsCount:1490,
+    tracklist:['Teenage Dream','California Gurls','Firework','E.T.','Last Friday Night'],
+    reviews:[{user:'nastya_fm',stars:4,text:'5 синглов №1 не бывают случайностью. Чистый летний сахар.'}] },
+  { id:'spiderverse', spotifyId:'1bwbZJ6khPJyVpOaqgKsoZ', title:'Spider-Man: Across The Spider-Verse (Soundtrack)', artist:'Metro Boomin', year:2023, genre:'Hip-Hop', genreBucket:'Hip-Hop', cover:'https://i.scdn.co/image/ab67616d0000b2736ed9aef791159496b286179f', rating:4.4, ratingsCount:2600, tracklist:[], reviews:[] },
+  { id:'currents', spotifyId:'79dL7FLiJFOO0EoehUHQBv', title:'Currents', artist:'Tame Impala', year:2015, genre:'Electronic, Rock', genreBucket:'Electronic', cover:'https://i.scdn.co/image/ab67616d0000b273c8b444df094279e70d0ed856', rating:4.3, ratingsCount:2140,
+    tracklist:['Let It Happen','Nangs','The Moment',"Yes I'm Changing",'Eventually'],
+    reviews:[{user:'nastya_fm',stars:4,text:'Гитары уступили место синтезаторам, но психоделия никуда не делась. Лучший альбом для дороги ночью.'},
+             {user:'deep_cuts',stars:5,text:'«The Less I Know The Better» — отдельный вид искусства. Слушаю раз в неделю уже 8 лет.'}] },
+  { id:'californication', spotifyId:'25BlKp11lnJt9TKbFoKLSj', title:'Californication', artist:'Red Hot Chili Peppers', year:1999, genre:'Rock/Alternative Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b2737c509c463b08e0148dabc07a', rating:4.4, ratingsCount:3100, tracklist:[], reviews:[] },
+  { id:'luv-rage-2', spotifyId:'2DiIYE1nwRB4JW42HoXBnu', title:'Luv Is Rage 2', artist:'Lil Uzi Vert', year:2017, genre:'Hip-Hop, Rap', genreBucket:'Hip-Hop', cover:'https://i.scdn.co/image/ab67616d0000b27359698a517bdde7d3c8b96ee5', rating:4.0, ratingsCount:1650, tracklist:[], reviews:[] },
+  { id:'flower-boy', spotifyId:'2nkto6YNI4rUYTLqEwWJ3o', title:'Flower Boy', artist:'Tyler, The Creator', year:2017, genre:'Hip-Hop', genreBucket:'Hip-Hop', cover:'https://i.scdn.co/image/ab67616d0000b2738940ac99f49e44f59e6f7fb3', rating:4.5, ratingsCount:2900, tracklist:[], reviews:[] },
+  { id:'purpose', spotifyId:'6Fr2rQkZ383FcMqFyT7yPr', title:'Purpose', artist:'Justin Bieber', year:2015, genre:'Pop/R&B', genreBucket:'Pop', cover:'https://i.scdn.co/image/ab67616d0000b273f46b9d202509a8f7384b90de', rating:4.0, ratingsCount:2400, tracklist:[], reviews:[] },
+  { id:'channel-orange', spotifyId:'392p3shh2jkxUxY2VHvlH8', title:'Channel Orange', artist:'Frank Ocean', year:2012, genre:'Hip-Hop/R&B', genreBucket:'R&B', cover:'https://i.scdn.co/image/ab67616d0000b2737aede4855f6d0d738012e2e5', rating:4.6, ratingsCount:2750, tracklist:[], reviews:[] },
+  { id:'tpab', spotifyId:'7ycBtnsMtyVbbwTfJwRjSP', title:'To Pimp A Butterfly', artist:'Kendrick Lamar', year:2015, genre:'Hip-Hop', genreBucket:'Hip-Hop', cover:'https://i.scdn.co/image/ab67616d0000b273cdb645498cd3d8a2db4d05e1', rating:4.8, ratingsCount:4100, tracklist:[], reviews:[] },
+  { id:'discovery', spotifyId:'2noRn2Aes5aoNVsU6iWThc', title:'Discovery', artist:'Daft Punk', year:2001, genre:'Electronic', genreBucket:'Electronic', cover:'https://i.scdn.co/image/ab67616d0000b2731e81bff9807a9e629fce5ade', rating:4.6, ratingsCount:3300, tracklist:[], reviews:[] },
+  { id:'am', spotifyId:'78bpIziExqiI9qztvNFlQu', title:'AM', artist:'Arctic Monkeys', year:2013, genre:'Rock/Alternative Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b2734ae1c4c5c45aabe565499163', rating:4.5, ratingsCount:3050, tracklist:[], reviews:[] },
+  { id:'wywh', spotifyId:'0bCAjiUamIFqKJsekOYuRw', title:'Wish You Were Here', artist:'Pink Floyd', year:1975, genre:'Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b273828e52cfb7bf22869349799e', rating:4.7, ratingsCount:3600, tracklist:[], reviews:[] },
+  { id:'morning-glory', spotifyId:'2u30gztZTylY4RG7IvfXs8', title:"(What's The Story) Morning Glory?", artist:'Oasis', year:1995, genre:'Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b2732f2eeee9b405f4d00428d84c', rating:4.5, ratingsCount:3400, tracklist:[], reviews:[] },
+  { id:'in-rainbows', spotifyId:'5vkqYmiPBYLaalcmjujWxK', title:'In Rainbows', artist:'Radiohead', year:2007, genre:'Alternative Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b273de3c04b5fc750b68899b20a9', rating:4.6, ratingsCount:3050, tracklist:[], reviews:[] },
+  { id:'college-dropout', spotifyId:'4Uv86qWpGTxf7fU7lG5X6F', title:'The College Dropout', artist:'Kanye West', year:2004, genre:'Hip-Hop/Rap', genreBucket:'Hip-Hop', cover:'https://i.scdn.co/image/ab67616d0000b27325b055377757b3cdd6f26b78', rating:4.6, ratingsCount:3150, tracklist:[], reviews:[] },
+  { id:'queen-is-dead', spotifyId:'5Y0p2XCgRRIjna91aQE8q7', title:'The Queen Is Dead', artist:'The Smiths', year:1986, genre:'Rock/Pop', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b2736236778a208a15eb71079601', rating:4.5, ratingsCount:2100, tracklist:[], reviews:[] },
+  { id:'pet-sounds', spotifyId:'2CNEkSE8TADXRT2AzcEt1b', title:'Pet Sounds', artist:'The Beach Boys', year:1966, genre:'Rock/Pop', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b27350eb0c521d2d3b2f599bff04', rating:4.7, ratingsCount:2900, tracklist:[], reviews:[] },
+  { id:'wheels-turnin', spotifyId:'35KafpmKh0nDLzBLV75MpR', title:"Wheels Are Turnin'", artist:'REO Speedwagon', year:1984, genre:'Rock/Pop', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b273b815265c56ecfa5136a4015d', rating:3.8, ratingsCount:640, tracklist:[], reviews:[] },
+  { id:'journey-greatest', spotifyId:'2vGz4D9OvqR5ocGmYssp8h', title:'Greatest Hits', artist:'Journey', year:1988, genre:'Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b273991357257325b8c6a2253ab1', rating:4.4, ratingsCount:1900, tracklist:[], reviews:[] },
+  { id:'hot-space', spotifyId:'0fZCqpTHYq2k89uG6pPTYE', title:'Hot Space', artist:'Queen', year:1982, genre:'Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b27370f9e1cf71793ee37d5e6730', rating:3.6, ratingsCount:1200, tracklist:[], reviews:[] },
+  { id:'kid-a', spotifyId:'6GjwtEZcfenmOf6l18N7T7', title:'Kid A', artist:'Radiohead', year:2000, genre:'Alternative Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b2736c7112082b63beefffe40151', rating:4.6, ratingsCount:3200, tracklist:[], reviews:[] },
+  { id:'wiley', spotifyId:'2dkAyREVms6eENZxHmQais', title:'Wiley', artist:'Miley', year:2026, genre:'Electronic', genreBucket:'Electronic', unknown:true, listeners:'9k', cover:'https://i.scdn.co/image/ab67616d0000b2738768f6969423a292dd96ffea', rating:3.9, ratingsCount:140, tracklist:[], reviews:[] },
+  { id:'miley-may', spotifyId:'4PJ0iWEt8HDkeHtwiWwayt', title:'Miley May 2026', artist:'Miley', year:2026, genre:'Electronic', genreBucket:'Electronic', unknown:true, listeners:'12k', cover:'https://i.scdn.co/image/ab67616d0000b2738006795984ac5680461cc5fb', rating:4.1, ratingsCount:180, tracklist:[], reviews:[] },
+  { id:'shelby', spotifyId:'3DnAuGUjUKCf3h0tYM2VZM', title:'Shelby', artist:'Miley', year:2025, genre:'Electronic', genreBucket:'Electronic', unknown:true, listeners:'15k', cover:'https://i.scdn.co/image/ab67616d0000b27398fc1550f412ada7d6a52b96', rating:4.2, ratingsCount:195, tracklist:[], reviews:[] },
+  { id:'ear', spotifyId:'51h6ahBtJWl7emcB5yDSuU', title:'The Most Dear and The Future', artist:'ear', year:2025, genre:'Electronic', genreBucket:'Electronic', unknown:true, listeners:'4.2k', cover:'https://i.scdn.co/image/ab67616d0000b273468315210da62a4ffda72430', rating:4.4, ratingsCount:86,
+    tracklist:['Glass Room','Static Bloom','Nocturne 02'],
+    reviews:[{user:'wave_rider',stars:5,text:'Нашла случайно в чарте малоизвестных — теперь в топ-4 месяца.'}] },
+  { id:'feng', spotifyId:'4Nip5JG2bdFpUyV7ghe0Kq', title:'Summer at Camp Lakepine', artist:'Feng', year:2026, genre:'Pop Rap/Electropop', genreBucket:'Pop', cover:'https://i.scdn.co/image/ab67616d0000b2739eaca3f250968dc568c219a9', rating:3.8, ratingsCount:520, tracklist:[], reviews:[] },
+  { id:'halo', spotifyId:'4T7qu6MdxoGjzZPErRWgsO', title:'HALO', artist:'Tiffany Day', year:2026, genre:'Pop/R&B', genreBucket:'Pop', cover:'https://i.scdn.co/image/ab67616d0000b273b5b273ebd1632a05019cd75c', rating:4.2, ratingsCount:410, tracklist:[], reviews:[] },
+  { id:'sokiu-muzika', spotifyId:'5lGxSWh0gAGxU3b0YTfz4b', title:'šokių muzika', artist:'Urboo', year:2025, genre:'Electronic/Hyperpop', genreBucket:'Electronic', cover:'https://i.scdn.co/image/ab67616d0000b2734f4b55f23fac076e4de3f2cd', rating:4.0, ratingsCount:310, tracklist:[], reviews:[] },
+  { id:'kidscry2day', spotifyId:'17VXPSQGscJVeoCKpWqNW6', title:'KIDSCRY2DAY', artist:'ONDA ANDAR', year:2026, genre:'Hyperpop/Digicore', genreBucket:'Electronic', cover:'https://i.scdn.co/image/ab67616d0000b27383e0e28d498b56018c783178', rating:3.9, ratingsCount:260, tracklist:[], reviews:[] },
+  { id:'dookie', spotifyId:'4uG8q3GPuWHQlRbswMIRS6', title:'Dookie', artist:'Green Day', year:1994, genre:'Punk Rock', genreBucket:'Rock', cover:'https://i.scdn.co/image/ab67616d0000b273db89b08034de626ebee6823d', rating:4.6, ratingsCount:3700, tracklist:[], reviews:[] },
+  { id:'dopamine', spotifyId:'0CLqdKIh14TmKqLZCs9dml', title:'DOPAMINE', artist:'Lil Tecca', year:2025, genre:'Hip-Hop/Rap', genreBucket:'Hip-Hop', cover:'https://i.scdn.co/image/ab67616d0000b27386c8cd0e15776fa1e18715ec', rating:4.1, ratingsCount:1300, tracklist:[], reviews:[] },
+];
+
+function albumThumb(a){ return a.cover ? `background-image:url('${a.cover}')` : `background:${a.gradient}`; }
+function spotifyEmbedHTML(a){
+  if(!a.spotifyId) return '';
+  return `<div class="spotify-embed-wrap">
+    <div class="spotify-embed-label">Короткое прослушивание (виджет Spotify)</div>
+    <iframe style="border-radius:12px" src="https://open.spotify.com/embed/album/${a.spotifyId}?utm_source=generator&theme=0" width="100%" height="152" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+  </div>`;
+}
+
+const USERS = {
+  me:{ id:'me', name:'Иван Соколов', handle:'@ivan_hears', avatarImg:null,
+    stats:{ratings:214, avg:4.1, reviews:37},
+    genres:[{g:'Electronic',pct:88},{g:'Hip-Hop',pct:64},{g:'R&B',pct:51},{g:'Rock',pct:33}],
+    top4:['currents','blonde','graduation','teenage'],
+    friends:['nastya_fm','deep_cuts'],
+    connections:{spotify:false, appleMusic:false},
+    ratings:[
+      { albumId:'currents', stars:4.5, text:'Гитары уступили место синтезаторам, но психоделия никуда не делась.', when:'2 дня назад' },
+      { albumId:'blonde', stars:5, text:'Пересобрал для себя весь альбом заново спустя годы.', when:'неделю назад' },
+      { albumId:'graduation', stars:4, text:null, when:'2 недели назад' },
+      { albumId:'ear', stars:4.4, text:null, when:'месяц назад' },
+    ],
+    recap:{
+      day:{ topArtists:['Tame Impala','Frank Ocean','ear'], topSongs:['Let It Happen — Tame Impala','Nikes — Frank Ocean','Glass Room — ear'], topGenres:['Electronic','R&B','Alternative'], minutes:96, uniqueArtists:9, vibe:'нашёл 3 новых трека и ни один не дослушал до конца' },
+      month:{ topArtists:['Frank Ocean','Tame Impala','Kanye West'], topSongs:['Nikes — Frank Ocean','Let It Happen — Tame Impala','Homecoming — Kanye West'], topGenres:['R&B','Electronic','Hip-Hop'], minutes:2140, uniqueArtists:47, vibe:'три недели подряд один и тот же плейлист в наушниках по дороге домой' },
+      season:{ topArtists:['Frank Ocean','Radiohead','Tame Impala'], topSongs:['Nikes — Frank Ocean','Let Down — Radiohead','Eventually — Tame Impala'], topGenres:['R&B','Alternative Rock','Electronic'], minutes:6820, uniqueArtists:112, vibe:'сезон, когда ты наконец дослушал OK Computer целиком' },
+    }
+  },
+  nastya_fm:{ id:'nastya_fm', name:'Настя Фомина', handle:'@nastya_fm', avatarImg:null,
+    stats:{ratings:340, avg:4.4, reviews:58},
+    genres:[{g:'Electronic',pct:70},{g:'Pop',pct:60},{g:'R&B',pct:45},{g:'Rock',pct:20}],
+    top4:['currents','teenage','blonde','snowday'],
+    friends:['me','deep_cuts'],
+    connections:{spotify:true, appleMusic:false},
+    recap:{
+      day:{ topArtists:['Katy Perry','Miley','Tame Impala'], topSongs:['Teenage Dream — Katy Perry','Snow Day — Miley','Currents — Tame Impala'], topGenres:['Pop','Electronic'], minutes:74, uniqueArtists:6, vibe:'включила один и тот же летний плейлист посреди зимы' },
+      month:{ topArtists:['Katy Perry','Tame Impala','Miley'], topSongs:['Teenage Dream — Katy Perry','Let It Happen — Tame Impala','Snow Day — Miley'], topGenres:['Pop','Electronic'], minutes:1980, uniqueArtists:38, vibe:'месяц сплошного солнечного попа, даже когда шёл дождь' },
+      season:{ topArtists:['Katy Perry','Tame Impala','Frank Ocean'], topSongs:['Teenage Dream — Katy Perry','Currents — Tame Impala','Nikes — Frank Ocean'], topGenres:['Pop','Electronic','R&B'], minutes:5400, uniqueArtists:96, vibe:'самый мейнстримный сезон в её жизни, и она этим гордится' },
+    }
+  },
+  deep_cuts:{ id:'deep_cuts', name:'Стас Глубокий', handle:'@deep_cuts', avatarImg:null,
+    stats:{ratings:512, avg:4.2, reviews:120},
+    genres:[{g:'Hip-Hop',pct:80},{g:'Electronic',pct:40},{g:'Rock',pct:55},{g:'R&B',pct:30}],
+    top4:['graduation','currents','blonde','college-dropout'],
+    friends:['me'],
+    connections:{spotify:true, appleMusic:true},
+    recap:{
+      day:{ topArtists:['Kanye West','Radiohead'], topSongs:['Stronger — Kanye West','Idioteque — Radiohead'], topGenres:['Hip-Hop','Alternative Rock'], minutes:112, uniqueArtists:8, vibe:'снова пересобрал плейлист в третий раз за день' },
+      month:{ topArtists:['Kanye West','Tame Impala','Radiohead'], topSongs:['Stronger — Kanye West','Let It Happen — Tame Impala','Idioteque — Radiohead'], topGenres:['Hip-Hop','Electronic'], minutes:2610, uniqueArtists:61, vibe:'самый немейнстримный месяц среди всех друзей' },
+      season:{ topArtists:['Kanye West','Radiohead','Frank Ocean'], topSongs:['Homecoming — Kanye West','Kid A — Radiohead','Pyramids — Frank Ocean'], topGenres:['Hip-Hop','Alternative Rock','R&B'], minutes:7940, uniqueArtists:140, vibe:'сезон глубоких копаний в дискографиях 2000-х' },
+    }
+  },
+  wave_rider:{ id:'wave_rider', name:'Оля Волнова', handle:'@wave_rider', avatarImg:null,
+    stats:{ratings:98, avg:4.5, reviews:22},
+    genres:[{g:'Electronic',pct:90},{g:'R&B',pct:50},{g:'Pop',pct:35},{g:'Hip-Hop',pct:15}],
+    top4:['ear','blonde','currents','snowday'],
+    friends:[],
+    connections:{spotify:true, appleMusic:false},
+    recap:{
+      day:{ topArtists:['ear','Frank Ocean'], topSongs:['Glass Room — ear','Ivy — Frank Ocean'], topGenres:['Electronic','R&B'], minutes:58, uniqueArtists:5, vibe:'нашла артиста с 4 тысячами прослушиваний и уже фанатеет' },
+      month:{ topArtists:['ear','Frank Ocean','Tame Impala'], topSongs:['Glass Room — ear','Ivy — Frank Ocean','Nangs — Tame Impala'], topGenres:['Electronic','R&B'], minutes:1540, uniqueArtists:44, vibe:'месяц охоты за малоизвестными артистами' },
+      season:{ topArtists:['ear','Frank Ocean','Tame Impala'], topSongs:['Glass Room — ear','Pink + White — Frank Ocean','Eventually — Tame Impala'], topGenres:['Electronic','R&B'], minutes:4700, uniqueArtists:88, vibe:'самый нишевый сезон среди всех друзей, безоговорочно' },
+    }
+  }
+};
+const SUGGESTED_FRIENDS = ['wave_rider'];
+
+/* ============================== STATE ============================== */
+const STATE = {
+  activeScreen:'catalog',
+  currentAlbumId:'currents',
+  viewingUserId:'nastya_fm',
+  recapPeriod:'day',
+  recapViewUserId:'me',
+  recapOrigin:'catalog',
+  searchQuery:'',
+  activeGenre:'Всё',
+  sortBy:'year',
+  ratingValue:0,
+  ratingDraftText:'',
+  archiveQuery:'',
+  historyQuery:'',
+  currentArtist:null,
+};
+
+/* ============================== HELPERS ============================== */
+function esc(s){ return (s||'').replace(/</g,'&lt;'); }
+function starsAvgHTML(rating){
+  const pct = Math.max(0, Math.min(100, (rating/5)*100));
+  return `<div class="star-rating avg"><div class="layer base">★★★★★</div><div class="layer fill" style="width:${pct}%">★★★★★</div></div>`;
+}
+function starsText(n){ const full=Math.round(n); return '★'.repeat(full)+'☆'.repeat(Math.max(0,5-full)); }
+function userAvatarStyle(u){ return u.avatarImg ? `background-image:url('${u.avatarImg}')` : ''; }
+
+function albumCardHTML(a){
+  return `<div class="cover" data-open-album="${a.id}">
+    <div class="art" data-cover-url="${a.cover||''}" data-fallback-letter="${esc(a.artist[0]||'?')}" style="${albumThumb(a)}">${a.unknown ? esc(a.artist) : ''}</div>
+    <div class="meta"><div class="t">${esc(a.title)}</div><div class="a">${esc(a.artist)}${a.unknown ? ' · '+a.listeners : ''}</div></div>
+  </div>`;
+}
+function albumListRowHTML(a, rank){
+  return `<div class="list-row" data-open-album="${a.id}">
+    <div class="rank">${rank}</div>
+    <div class="art-sm" data-cover-url="${a.cover||''}" data-fallback-letter="${esc(a.artist[0]||'?')}" style="${albumThumb(a)}"></div>
+    <div class="info"><div class="t">${esc(a.title)}</div><div class="a">${esc(a.artist)} · ${a.year}</div></div>
+  </div>`;
+}
+
+/* ============================== SCREEN RENDERERS ============================== */
+function renderCatalog(device){
+  const gridClass = device==='mobile' ? 'grid-cards' : 'd-grid';
+  const rowClass = device==='mobile' ? 'row-scroll' : 'd-grid';
+
+  const q = STATE.searchQuery.trim().toLowerCase();
+  const genreFilter = STATE.activeGenre;
+  const isFiltering = q.length>0 || genreFilter!=='Всё';
+
+  const searchBarHTML = device==='mobile' ? `
+    <div class="eyebrow">Главное</div>
+    <h1 class="page-title">Найти музыку</h1>
+    <div class="search-bar" data-search-wrap>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Артист, альбом, трек…" data-search-input value="${esc(STATE.searchQuery)}">
+    </div>` : '';
+
+  const genres = ['Всё','Rock','Hip-Hop','Electronic','R&B','Pop','Latin'];
+  const chipsHTML = `<div class="chips">${genres.map(g=>`<button class="chip ${g===genreFilter?'on':''}" data-genre="${g}">${g}</button>`).join('')}</div>`;
+
+  const sortOptions = [
+    {key:'year', label:'По году'},
+    {key:'genre', label:'По жанру'},
+    {key:'artist', label:'По исполнителю'},
+  ];
+  const sortHTML = `<div class="chips" data-sort-group>${sortOptions.map(s=>`<button class="chip ${STATE.sortBy===s.key?'on':''}" data-sort="${s.key}">${s.label}</button>`).join('')}</div>`;
+
+  if(isFiltering){
+    const results = ALBUMS.filter(a=>{
+      const matchesQ = !q || a.title.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q);
+      const matchesG = genreFilter==='Всё' || a.genreBucket===genreFilter;
+      return matchesQ && matchesG;
+    });
+    const showLive = q.length >= 2 && genreFilter==='Всё';
+    return `${searchBarHTML}${chipsHTML}
+      <div class="section-head"><h2>В каталоге HearMeOut</h2><span>${results.length}</span></div>
+      <div class="${gridClass}">${ results.length ? results.map(albumCardHTML).join('') : '' }</div>
+      ${ results.length ? '' : '<div class="empty-state">Ничего не найдено среди 40 кураторских альбомов</div>' }
+      ${ showLive ? `
+        <div class="section-head" style="margin-top:22px;"><h2>🌐 Открытая библиотека</h2><span>MusicBrainz</span></div>
+        <div data-live-results><div class="archive-loading">Ищу «${esc(STATE.searchQuery)}»…</div></div>
+      ` : '' }
+    `;
+  }
+
+  const topRated = [...ALBUMS].sort((a,b)=>b.rating-a.rating).slice(0,3);
+  const unknownAlbums = ALBUMS.filter(a=>a.unknown);
+
+  const sorted = [...ALBUMS].sort((a,b)=>{
+    if(STATE.sortBy==='year') return a.year-b.year;
+    if(STATE.sortBy==='genre') return a.genreBucket.localeCompare(b.genreBucket) || a.year-b.year;
+    return a.artist.localeCompare(b.artist);
+  });
+
+  return `${searchBarHTML}${chipsHTML}
+    ${recapTeaserHTML()}
+    <div class="section-head"><h2>🔥 В тренде сейчас</h2><span>Deezer, живые данные</span></div>
+    <div class="${rowClass}" data-deezer-chart><div class="archive-loading">Загружаю чарт…</div></div>
+    <div class="section-head"><h2>Высокие оценки</h2><span>${topRated.length}</span></div>
+    <div class="${rowClass}">${topRated.map(albumCardHTML).join('')}</div>
+
+    <div class="section-head"><h2><span class="unknown-badge">?</span>Топ малоизвестных артистов</h2><span>Electronic</span></div>
+    <div class="${rowClass}">${unknownAlbums.map(albumCardHTML).join('')}</div>
+
+    <div class="section-head" style="margin-top:26px;"><h2>Весь каталог</h2><span>${ALBUMS.length}</span></div>
+    ${sortHTML}
+    <div class="${gridClass}">${sorted.map(albumCardHTML).join('')}</div>
+
+  `;
+}
+
+function renderAlbum(device, albumId){
+  const a = ALBUMS.find(x=>x.id===albumId) || ALBUMS[0];
+  const heroArt = `<div class="art-lg" data-cover-url="${a.cover||''}" data-fallback-letter="${esc(a.artist[0]||'?')}" style="${albumThumb(a)}"></div>`;
+  const tracklistHTML = a.tracklist.length
+    ? a.tracklist.map((t,i)=>`<div class="list-row"><span class="n">${String(i+1).padStart(2,'0')}</span><div class="info"><div class="t">${esc(t)}</div></div></div>`).join('')
+    : '<div class="empty-state">Треклист пока не добавлен</div>';
+  const reviewsHTML = a.reviews.map(r=>{
+    const u = USERS[r.user];
+    return `<div class="review-card">
+      <div class="head"><div class="user"><div class="avatar" style="${u?userAvatarStyle(u):''}"></div><div class="uname">${u?esc(u.handle):esc(r.user)}</div></div><div class="stars-dot">${starsText(r.stars)}</div></div>
+      <p>${esc(r.text)}</p>
+    </div>`;
+  }).join('');
+
+  if(device==='mobile'){
+    return `
+      <button class="back-btn" data-back-catalog>← Каталог</button>
+      <div class="album-hero">
+        ${heroArt}
+        <h1>${esc(a.title)}</h1>
+        <div class="sub">${esc(a.artist)} · ${a.year}</div>
+        <div class="tags"><span class="chip">${esc(a.genre)}</span></div>
+      </div>
+      <div class="avg-rating">
+        <div><div class="num">${a.rating.toFixed(1)}</div><div class="rd">${a.ratingsCount.toLocaleString('ru-RU')} оценок</div></div>
+        ${starsAvgHTML(a.rating)}
+      </div>
+      <div class="dz-preview-wrap">
+        <div class="dz-preview-label" style="margin-bottom:8px; display:flex; align-items:center; gap:6px;"><span style="color:var(--lime);">●</span> Предпрослушивание · без рекламы</div>
+        <div class="dz-preview-player" data-preview-for="${a.id}" data-preview-auto="${a.id}" data-artist="${esc(a.artist)}" data-title="${esc(a.title)}"><div class="archive-loading">Загружаю превью…</div></div>
+      </div>
+      <button class="btn-primary" data-rate-cta="${a.id}">Оценить альбом</button>
+      <button class="btn-ghost" data-wishlist>+ В список «Хочу послушать»</button>
+      <div class="section-head"><h2>Треклист</h2><span>${a.tracklist.length ? a.tracklist.length + " треков" : ""}</span></div>
+      <div style="margin-bottom:22px">${tracklistHTML}</div>
+      <div class="section-head"><h2>Рецензии</h2><span>${a.reviews.length}</span></div>
+      ${reviewsHTML || '<div class="empty-state">Пока нет рецензий</div>'}
+    `;
+  }
+  return `
+    <button class="back-btn" data-back-catalog>← Каталог</button>
+    <div class="d-album-layout">
+      <div class="cover-col">
+        <div class="art-lg" data-cover-url="${a.cover||''}" data-fallback-letter="${esc(a.artist[0]||'?')}" style="${albumThumb(a)}"></div>
+        <button class="btn-primary" style="width:100%" data-rate-cta="${a.id}">Оценить альбом</button>
+        <button class="btn-ghost" style="width:100%" data-wishlist>+ В список «Хочу послушать»</button>
+      </div>
+      <div class="info-col">
+        <div class="eyebrow">Альбом</div>
+        <h1>${esc(a.title)}</h1>
+        <div class="sub">${esc(a.artist)} · ${a.year}</div>
+        <div class="tags" style="display:flex;gap:8px;margin-bottom:20px;"><span class="chip">${esc(a.genre)}</span></div>
+        <div class="avg-rating" style="justify-content:flex-start; max-width:340px;">
+          <div><div class="num">${a.rating.toFixed(1)}</div><div class="rd">${a.ratingsCount.toLocaleString('ru-RU')} оценок</div></div>
+          ${starsAvgHTML(a.rating)}
+        </div>
+        <div class="dz-preview-wrap" style="max-width:420px;">
+          <div class="dz-preview-label" style="margin-bottom:8px; display:flex; align-items:center; gap:6px;"><span style="color:var(--lime);">●</span> Предпрослушивание · без рекламы</div>
+          <div class="dz-preview-player" data-preview-for="${a.id}" data-preview-auto="${a.id}" data-artist="${esc(a.artist)}" data-title="${esc(a.title)}"><div class="archive-loading">Загружаю превью…</div></div>
+        </div>
+        <div class="d-two-col">
+          <div><div class="section-head"><h2>Треклист</h2><span>${a.tracklist.length ? a.tracklist.length + " треков" : ""}</span></div>${tracklistHTML}</div>
+          <div><div class="section-head"><h2>Рецензии</h2><span>${a.reviews.length}</span></div>${reviewsHTML || '<div class="empty-state">Пока нет рецензий</div>'}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderArtist(device){
+  const art = STATE.currentArtist;
+  const gridClass = device==='mobile' ? 'grid-cards' : 'd-grid';
+  if(!art) return `<button class="back-btn" data-back-catalog>← Назад</button><div class="empty-state">Артист не выбран</div>`;
+  const header = `
+    <button class="back-btn" data-back-catalog>← Назад</button>
+    <div class="album-hero">
+      <div class="art-lg cover-fallback" data-artist-photo-for="${esc(art.name)}" style="display:flex;align-items:center;justify-content:center;"><span class="fallback-letter" style="font-size:48px;">${esc((art.name[0]||'?').toUpperCase())}</span></div>
+      <h1>${esc(art.name)}</h1>
+      <div class="sub">Артист · открытая библиотека MusicBrainz</div>
+    </div>
+  `;
+  let body;
+  if(art.loading) body = '<div class="archive-loading">Загружаю альбомы…</div>';
+  else if(art.error) body = `<div class="empty-state">${esc(art.error)}</div>`;
+  else if(!art.albums || !art.albums.length) body = '<div class="empty-state">Альбомы не найдены в открытой библиотеке</div>';
+  else {
+    body = `<div class="section-head"><h2>Альбомы</h2><span>${art.albums.length}</span></div>
+      <div class="${gridClass}">${art.albums.map(g=>{
+        const year = g['first-release-date'] ? g['first-release-date'].slice(0,4) : '—';
+        const coverUrl = `https://coverartarchive.org/release-group/${g.id}/front-250`;
+        return `<div class="cover">
+          <div class="art" data-cover-url="${coverUrl}" data-fallback-letter="${esc(art.name[0]||'?')}" style="background-image:url('${coverUrl}')"></div>
+          <div class="meta"><div class="t">${esc(g.title)}</div><div class="a">${year}</div></div>
+        </div>`;
+      }).join('')}</div>`;
+  }
+  return header + body;
+}
+async function openArtist(mbid, name){
+  STATE.currentArtist = { id: mbid, name, albums: null, loading: true, error: null };
+  renderScreen('artist');
+  showScreen('artist');
+  try {
+    const url = `https://musicbrainz.org/ws/2/release-group?artist=${mbid}&type=album&fmt=json&limit=24`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if(!res.ok) throw new Error('MusicBrainz request failed: ' + res.status);
+    const data = await res.json();
+    STATE.currentArtist.albums = (data['release-groups']||[]).sort((a,b)=>(a['first-release-date']||'9999').localeCompare(b['first-release-date']||'9999'));
+  } catch(err){
+    const isFileProtocol = location.protocol === 'file:';
+    STATE.currentArtist.error = isFileProtocol
+      ? 'Браузер блокирует запросы к внешним сайтам при открытии файла напрямую (file://). Загрузите файл на хостинг, чтобы это заработало.'
+      : ('Не удалось загрузить альбомы (' + err.message + ')');
+  }
+  STATE.currentArtist.loading = false;
+  renderScreen('artist');
+}
+
+function renderRate(device, albumId){
+  const a = ALBUMS.find(x=>x.id===albumId) || ALBUMS[0];
+  const val = STATE.ratingValue || 0;
+  const fillPct = (val/5*100);
+  const label = val > 0 ? `Оценка — ${val.toFixed(1)} / 5` : 'Проведите по звёздам — 0.0 / 5';
+  const isEditing = USERS.me.ratings.some(r=>r.albumId===a.id);
+  const inner = `
+    <div class="eyebrow">${isEditing ? 'Изменить оценку' : 'Оценка'}</div>
+    <div class="rate-art" data-cover-url="${a.cover||''}" data-fallback-letter="${esc(a.artist[0]||'?')}" style="${albumThumb(a)}; ${device==='desktop'?'margin-left:auto;margin-right:auto;':''}"></div>
+    <h1 class="page-title" style="text-align:center; margin-bottom:0;">${esc(a.title)}</h1>
+    <div class="rate-star-block">
+      <div class="star-rating interactive" data-star-picker="${a.id}">
+        <div class="layer base">★★★★★</div>
+        <div class="layer fill" style="width:${fillPct}%">★★★★★</div>
+      </div>
+    </div>
+    <div class="vu-label" data-star-label>${label}</div>
+    <textarea class="review-box" placeholder="Напишите рецензию (необязательно)…" data-review-text>${esc(STATE.ratingDraftText||'')}</textarea>
+    <button class="btn-primary" ${device==='desktop'?'style="width:100%"':''} data-publish="${a.id}">${isEditing ? 'Сохранить изменения' : 'Опубликовать'}</button>
+  `;
+  if(device==='mobile') return `<button class="back-btn" data-back-dynamic>← Назад</button><div class="rate-wrap">${inner}</div>`;
+  return `<button class="back-btn" data-back-dynamic>← Назад</button><div class="d-rate-panel">${inner}</div>`;
+}
+
+function historyItemHTML(r){
+  const a = ALBUMS.find(x=>x.id===r.albumId);
+  if(!a) return '';
+  return `<div class="activity-item" data-edit-rating="${a.id}">
+    <div class="thumb" data-cover-url="${a.cover||''}" data-fallback-letter="${esc(a.artist[0]||'?')}" style="${albumThumb(a)}"></div>
+    <div class="body">
+      <div><b>${esc(a.title)}</b> — ${esc(a.artist)}</div>
+      <span class="stars-dot">${starsText(r.stars)} ${r.stars.toFixed(1)}</span>
+      ${r.text ? `<div style="color:#CFC7C1;margin-top:4px;">${esc(r.text)}</div>` : ''}
+      <div class="when">${esc(r.when)}</div>
+    </div>
+  </div>`;
+}
+function renderHistory(device){
+  const q = (STATE.historyQuery||'').trim().toLowerCase();
+  let ratings = [...USERS.me.ratings].reverse();
+  if(q){
+    ratings = ratings.filter(r=>{
+      const a = ALBUMS.find(x=>x.id===r.albumId);
+      if(!a) return false;
+      return a.title.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q);
+    });
+  }
+  const body = ratings.length
+    ? ratings.map(historyItemHTML).join('')
+    : (q ? '<div class="empty-state">Ничего не найдено среди ваших оценок</div>' : '<div class="empty-state">Вы ещё не оценили ни один альбом.<br>Откройте каталог и поставьте первую оценку.</div>');
+  return `
+    <div class="eyebrow">История оценок</div>
+    <h1 class="page-title">Ваши оценки</h1>
+    <div class="search-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Искать среди оценённых…" data-history-search value="${esc(STATE.historyQuery||'')}">
+    </div>
+    <div class="stat-grid" style="margin-bottom:22px;">
+      <div class="box"><div class="v">${USERS.me.ratings.length}</div><div class="l">ОЦЕНЕНО</div></div>
+      <div class="box"><div class="v">${USERS.me.ratings.filter(r=>r.text).length}</div><div class="l">С РЕЦЕНЗИЕЙ</div></div>
+      <div class="box"><div class="v">${USERS.me.stats.avg}</div><div class="l">СР. БАЛЛ</div></div>
+    </div>
+    ${body}
+  `;
+}
+
+
+function genresBlockHTML(genres){
+  return genres.map(g=>`<div class="genre-row"><div class="name">${esc(g.g)}</div><div class="track"><div class="fill" style="width:${g.pct}%"></div></div></div>`).join('');
+}
+function top4BlockHTML(ids){
+  return ids.map((id,i)=>{
+    const a = ALBUMS.find(x=>x.id===id);
+    if(!a) return '';
+    return `<div class="art" data-cover-url="${a.cover||''}" data-fallback-letter="${esc(a.artist[0]||'?')}" style="${albumThumb(a)}" data-open-album="${a.id}"><span class="rank">${String(i+1).padStart(2,'0')}</span></div>`;
+  }).join('');
+}
+function connectBlockHTML(u){
+  const sp = u.connections.spotify;
+  const am = u.connections.appleMusic;
+  return `
+    <div class="connect-row">
+      <button class="connect-btn ${sp?'on':''}" data-connect="spotify">${sp?'✓ Spotify подключён':'Подключить Spotify'}</button>
+      <button class="connect-btn ${am?'on':''}" data-connect="appleMusic">${am?'✓ Apple Music подключён':'Подключить Apple Music'}</button>
+    </div>`;
+}
+function recapOpenButtonHTML(userId, label){
+  return `<button class="recap-open-btn" data-open-recap="${userId}">🎧 ${label || 'Открыть рекап'} →</button>`;
+}
+function renderRecap(device, userId, period){
+  const u = USERS[userId] || USERS.me;
+  const r = u.recap[period];
+  const periodLabel = {day:'День', month:'Месяц', season:'Сезон'}[period];
+  return `
+    <div class="recap-full-top">
+      <button class="recap-close" data-recap-close>✕</button>
+      <div class="segmented">
+        <button data-rperiod="day" class="${period==='day'?'on':''}">День</button>
+        <button data-rperiod="month" class="${period==='month'?'on':''}">Месяц</button>
+        <button data-rperiod="season" class="${period==='season'?'on':''}">Сезон</button>
+      </div>
+    </div>
+    <div class="recap-hero">
+      <div class="recap-hero-avatar" style="${userAvatarStyle(u)}"></div>
+      <div class="recap-hero-name">${esc(u.name)}</div>
+      <div class="recap-hero-period">${periodLabel} · Рекап</div>
+      <div class="recap-hero-vibe">«${esc(r.vibe)}»</div>
+    </div>
+    <div class="recap-stats-row">
+      <div class="recap-stat"><div class="rv">${r.minutes.toLocaleString('ru-RU')}</div><div class="rl">МИНУТ</div></div>
+      <div class="recap-stat"><div class="rv">${r.uniqueArtists}</div><div class="rl">АРТИСТОВ</div></div>
+      <div class="recap-stat"><div class="rv">${r.topGenres.length}</div><div class="rl">ЖАНРА</div></div>
+    </div>
+    <div class="recap-section">
+      <div class="recap-section-label">Топ артисты</div>
+      ${r.topArtists.map((a,i)=>`<div class="recap-rank-row"><span class="rr-num">${i+1}</span><span class="rr-name">${esc(a)}</span></div>`).join('')}
+    </div>
+    <div class="recap-section">
+      <div class="recap-section-label">Топ треки</div>
+      ${r.topSongs.map((s,i)=>`<div class="recap-rank-row"><span class="rr-num">${i+1}</span><span class="rr-name">${esc(s)}</span></div>`).join('')}
+    </div>
+    <div class="recap-section">
+      <div class="recap-section-label">Топ жанры</div>
+      <div class="recap-genre-chips">${r.topGenres.map(g=>`<span class="chip">${esc(g)}</span>`).join('')}</div>
+    </div>
+  `;
+}
+function recapTeaserHTML(){
+  const r = USERS.me.recap.day;
+  return `<div class="recap-teaser" data-open-recap="me">
+    <span class="rt-arrow">→</span>
+    <div class="rt-label">Рекап дня</div>
+    <h3>${esc(r.topArtists[0])} — на первом месте сегодня</h3>
+    <p>${r.minutes} мин · «${esc(r.vibe)}»</p>
+  </div>`;
+}
+function friendsBlockHTML(){
+  const me = USERS.me;
+  const friendRows = me.friends.map(fid=>{
+    const f = USERS[fid];
+    return `<div class="friend-row">
+      <div class="avatar-sm" style="${userAvatarStyle(f)}"></div>
+      <div class="info" data-view-friend="${f.id}"><div class="n">${esc(f.name)}</div><div class="h">${esc(f.handle)} · ${f.recap.day.minutes} мин сегодня</div></div>
+      <button data-view-friend="${f.id}">Профиль</button>
+    </div>`;
+  }).join('');
+  const suggestRows = SUGGESTED_FRIENDS.filter(id=>!me.friends.includes(id)).map(fid=>{
+    const f = USERS[fid];
+    return `<div class="friend-row">
+      <div class="avatar-sm" style="${userAvatarStyle(f)}"></div>
+      <div class="info" data-view-friend="${f.id}"><div class="n">${esc(f.name)}</div><div class="h">${esc(f.handle)}</div></div>
+      <button data-add-friend="${f.id}">+ Добавить</button>
+    </div>`;
+  }).join('');
+  return friendRows + suggestRows;
+}
+function awardsBlockHTML(){
+  const group = [USERS.me, ...USERS.me.friends.map(id=>USERS[id])];
+  const byMinutes = [...group].sort((a,b)=>b.recap.month.minutes-a.recap.month.minutes);
+  const mostMainstream = group.reduce((a,b)=> a.recap.month.topGenres.includes('Pop') ? a : b);
+  const leastMainstream = group.reduce((a,b)=> a.recap.month.uniqueArtists > b.recap.month.uniqueArtists ? a : b);
+  return `
+    <div class="award-row"><span class="award-label">🏆 Больше всех слушал(а) в этом месяце</span><span class="award-name">${esc(byMinutes[0].name)} — ${byMinutes[0].recap.month.minutes.toLocaleString('ru-RU')} мин</span></div>
+    <div class="award-row"><span class="award-label">📻 Самый мейнстримный вкус</span><span class="award-name">${esc(mostMainstream.name)}</span></div>
+    <div class="award-row"><span class="award-label">🎧 Самый нишевый вкус</span><span class="award-name">${esc(leastMainstream.name)}</span></div>
+  `;
+}
+function renderProfile(device){
+  const u = USERS.me;
+  const body = `
+    <div class="eyebrow">Профиль</div>
+    <div class="profile-head">
+      <div class="avatar-lg" data-avatar style="${userAvatarStyle(u)}">
+        <span class="hint">Изменить<br>фото</span>
+        <input type="file" accept="image/*" hidden data-avatar-input>
+      </div>
+      <div style="flex:1">
+        <input class="name-input" data-name-input value="${esc(u.name)}">
+        <input class="handle-input" data-handle-input value="${esc(u.handle)}">
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="box"><div class="v">${u.stats.ratings}</div><div class="l">ОЦЕНОК</div></div>
+      <div class="box"><div class="v">${u.stats.avg}</div><div class="l">СР. БАЛЛ</div></div>
+      <div class="box"><div class="v">${u.stats.reviews}</div><div class="l">РЕЦЕНЗИЙ</div></div>
+    </div>
+
+    <div class="section-head"><h2>Подключение</h2><span>Spotify / Apple Music</span></div>
+    <div style="margin-bottom:22px">${connectBlockHTML(u)}</div>
+
+    <div class="section-head"><h2>Рекап</h2><span>день / месяц / сезон</span></div>
+    <div style="margin-bottom:24px">${recapOpenButtonHTML("me","Открыть рекап дня")}</div>
+
+    <div class="section-head"><h2>Любимые жанры</h2><span>за всё время</span></div>
+    <div style="margin-bottom:24px">${genresBlockHTML(u.genres)}</div>
+
+    <div class="section-head"><h2>Топ-4 альбома</h2><span>всё время</span></div>
+    <div class="top4-grid">${top4BlockHTML(u.top4)}</div>
+
+    <div class="section-head"><h2>Друзья</h2><span>${u.friends.length}</span></div>
+    <div style="margin-bottom:14px">${friendsBlockHTML()}</div>
+
+    <div class="section-head"><h2>Награды месяца</h2><span>в кругу друзей</span></div>
+    <div style="margin-bottom:10px">${awardsBlockHTML()}</div>
+  `;
+  if(device==='mobile') return body;
+  return `<div class="d-profile-layout"><div class="side">
+      <div class="avatar-lg" data-avatar style="width:120px;height:120px;${userAvatarStyle(u)}">
+        <span class="hint" style="font-size:11px;">Изменить<br>фото</span>
+        <input type="file" accept="image/*" hidden data-avatar-input>
+      </div>
+      <input class="name-input" data-name-input value="${esc(u.name)}" style="font-size:22px; margin-top:14px;">
+      <input class="handle-input" data-handle-input value="${esc(u.handle)}" style="font-size:13px;">
+      <div class="stat-grid" style="grid-template-columns:1fr; margin-top:22px;">
+        <div class="box"><div class="v">${u.stats.ratings}</div><div class="l">ОЦЕНОК</div></div>
+        <div class="box"><div class="v">${u.stats.avg}</div><div class="l">СР. БАЛЛ</div></div>
+        <div class="box"><div class="v">${u.stats.reviews}</div><div class="l">РЕЦЕНЗИЙ</div></div>
+      </div>
+      <div class="section-head" style="margin-top:22px;"><h2>Друзья</h2><span>${u.friends.length}</span></div>
+      ${friendsBlockHTML()}
+    </div>
+    <div class="main">
+      <div class="section-head"><h2>Подключение</h2><span>Spotify / Apple Music</span></div>
+      <div style="margin-bottom:24px; max-width:480px;">${connectBlockHTML(u)}</div>
+      <div class="section-head"><h2>Рекап</h2><span>день / месяц / сезон</span></div>
+      <div style="margin-bottom:28px; max-width:480px;">${recapOpenButtonHTML("me","Открыть рекап дня")}</div>
+      <div class="section-head"><h2>Любимые жанры</h2><span>за всё время</span></div>
+      <div style="margin-bottom:30px; max-width:420px;">${genresBlockHTML(u.genres)}</div>
+      <div class="section-head"><h2>Топ-4 альбома</h2><span>всё время</span></div>
+      <div class="top4-grid" style="max-width:520px; margin-bottom:30px;">${top4BlockHTML(u.top4)}</div>
+      <div class="section-head"><h2>Награды месяца</h2><span>в кругу друзей</span></div>
+      <div style="max-width:480px;">${awardsBlockHTML()}</div>
+    </div>
+  </div>`;
+}
+function renderFriend(device, userId){
+  const f = USERS[userId] || USERS.nastya_fm;
+  const me = USERS.me;
+  const overlap = me.genres.map(mg=>{
+    const fg = f.genres.find(x=>x.g===mg.g);
+    return { g: mg.g, me: mg.pct, friend: fg ? fg.pct : 0 };
+  });
+  const matchScore = Math.round(overlap.reduce((s,o)=>s + Math.min(o.me,o.friend), 0) / overlap.reduce((s,o)=>s + Math.max(o.me,o.friend), 0) * 100);
+  const compareRows = overlap.map(o=>`
+    <div class="compare-row">
+      <div class="g">${esc(o.g)}</div>
+      <div class="bars">
+        <div class="b me"><i style="width:${o.me}%"></i></div>
+        <div class="b fr"><i style="width:${o.friend}%"></i></div>
+      </div>
+    </div>`).join('');
+
+  return `
+    <button class="back-btn" data-back-profile>← Профиль</button>
+    <div class="profile-head">
+      <div class="avatar-lg" style="cursor:default; ${userAvatarStyle(f)}"></div>
+      <div>
+        <h1 style="font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:700;">${esc(f.name)}</h1>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">${esc(f.handle)}</div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="box"><div class="v">${f.stats.ratings}</div><div class="l">ОЦЕНОК</div></div>
+      <div class="box"><div class="v">${f.stats.avg}</div><div class="l">СР. БАЛЛ</div></div>
+      <div class="box"><div class="v">${f.stats.reviews}</div><div class="l">РЕЦЕНЗИЙ</div></div>
+    </div>
+
+    <div class="section-head"><h2>Рекап друга</h2><span>день / месяц / сезон</span></div>
+    <div style="margin-bottom:24px">${recapOpenButtonHTML(f.id,"Рекап "+f.name.split(" ")[0])}</div>
+
+    <div class="section-head"><h2>Сравнение вкусов</h2><span>с вами</span></div>
+    <div class="compare-block">
+      <div class="compare-score"><div class="v">${matchScore}%</div><div class="l">СОВПАДЕНИЕ ПО ЖАНРАМ</div></div>
+      ${compareRows}
+      <div class="compare-legend"><span><i style="background:var(--lime)"></i>Вы</span><span><i style="background:var(--muted)"></i>${esc(f.name.split(' ')[0])}</span></div>
+    </div>
+
+    <div class="section-head"><h2>Топ-4 альбома</h2><span>всё время</span></div>
+    <div class="top4-grid">${top4BlockHTML(f.top4)}</div>
+  `;
+}
+
+
+/* ============================== DEEZER (via CORS proxy) — chart, artist photos, real previews ============================== */
+function corsProxy(url){ return 'https://corsproxy.io/?url=' + encodeURIComponent(url); }
+
+async function fetchDeezerChart(container){
+  try {
+    const res = await fetch(corsProxy('https://api.deezer.com/chart/0/albums?limit=20'));
+    if(!res.ok) throw new Error('Deezer chart request failed: ' + res.status);
+    const data = await res.json();
+    const albums = data.data || [];
+    if(!albums.length){ container.innerHTML = '<div class="empty-state">Чарт временно недоступен</div>'; return; }
+    container.innerHTML = albums.map((a,i)=>`
+      <div class="cover">
+        <div class="art" data-cover-url="${a.cover_medium}" data-fallback-letter="${esc((a.artist?.name||'?')[0])}" style="background-image:url('${a.cover_medium}')">
+          <span style="position:absolute;top:6px;left:6px;background:var(--lime);color:#1F1D1C;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;">#${i+1}</span>
+        </div>
+        <div class="meta"><div class="t">${esc(a.title)}</div><div class="a">${esc(a.artist?.name||'')}</div></div>
+      </div>`).join('');
+    attachImageFallback(container);
+  } catch(err){
+    const isFileProtocol = location.protocol === 'file:';
+    container.innerHTML = isFileProtocol
+      ? '<div class="empty-state">Чарт Deezer требует хостинга (не работает при открытии файла напрямую) — см. инструкцию по GitHub Pages.</div>'
+      : `<div class="empty-state">Чарт Deezer сейчас недоступен (${esc(err.message)}). CORS-прокси иногда лежит или лимитирует запросы — это не баг кода, а внешняя зависимость.</div>`;
+  }
+}
+
+async function fetchDeezerArtistPhoto(name, imgEl){
+  try {
+    const res = await fetch(corsProxy(`https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}&limit=1`));
+    if(!res.ok) return;
+    const data = await res.json();
+    const artist = (data.data||[])[0];
+    if(artist && artist.picture_medium){
+      imgEl.style.backgroundImage = `url('${artist.picture_medium}')`;
+      imgEl.classList.remove('cover-fallback');
+      const letter = imgEl.querySelector('.fallback-letter'); if(letter) letter.remove();
+    }
+  } catch(err){ /* silently keep letter fallback */ }
+}
+
+async function loadTrackPreview(albumTitle, artistName, playerEl){
+  playerEl.innerHTML = '<div class="archive-loading">Ищу превью на Deezer…</div>';
+  try {
+    const res = await fetch(corsProxy(`https://api.deezer.com/search?q=${encodeURIComponent(artistName + ' ' + albumTitle)}&limit=1`));
+    if(!res.ok) throw new Error('request failed');
+    const data = await res.json();
+    const track = (data.data||[])[0];
+    if(!track || !track.preview){ playerEl.innerHTML = '<div class="empty-state">Превью не найдено на Deezer</div>'; return; }
+    playerEl.innerHTML = `
+      <div class="dz-preview-label">30-сек превью «${esc(track.title)}» · Deezer</div>
+      <audio controls style="width:100%; height:36px;" src="${track.preview}"></audio>`;
+  } catch(err){
+    const isFileProtocol = location.protocol === 'file:';
+    playerEl.innerHTML = isFileProtocol
+      ? '<div class="empty-state">Требует хостинга — не работает при открытии файла напрямую (file://).</div>'
+      : '<div class="empty-state">Не удалось получить превью с Deezer сейчас.</div>';
+  }
+}
+
+/* ============================== LIVE MUSICBRAINZ ARCHIVE SEARCH ============================== */
+async function runLiveLibrarySearch(query, resultsEl){
+  try {
+    const albumsUrl = `https://musicbrainz.org/ws/2/release-group/?query=${encodeURIComponent(query)}&fmt=json&limit=8`;
+    const artistsUrl = `https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(query)}&fmt=json&limit=6`;
+    const [albumsRes, artistsRes] = await Promise.all([
+      fetch(albumsUrl, { headers: { 'Accept': 'application/json' } }),
+      fetch(artistsUrl, { headers: { 'Accept': 'application/json' } })
+    ]);
+    if(!albumsRes.ok && !artistsRes.ok) throw new Error('MusicBrainz request failed: ' + albumsRes.status);
+    const albumsData = albumsRes.ok ? await albumsRes.json() : {'release-groups':[]};
+    const artistsData = artistsRes.ok ? await artistsRes.json() : {artists:[]};
+    const groups = (albumsData['release-groups'] || []).filter(g => g['primary-type'] === 'Album' || !g['primary-type']);
+    const artists = artistsData.artists || [];
+
+    if(!groups.length && !artists.length){
+      resultsEl.innerHTML = '<div class="empty-state">Ничего не найдено в открытой библиотеке</div>';
+      return;
+    }
+
+    let html = '';
+    if(artists.length){
+      html += `<div class="lib-subhead">Артисты</div><div class="row-scroll">${artists.map(ar=>`
+        <div class="cover" data-open-artist="${ar.id}" data-artist-name="${esc(ar.name)}">
+          <div class="art artist-art cover-fallback" data-artist-photo-for="${esc(ar.name)}"><span class="fallback-letter">${esc((ar.name[0]||'?').toUpperCase())}</span></div>
+          <div class="meta"><div class="t">${esc(ar.name)}</div><div class="a">${esc(ar.type||'Артист')}</div></div>
+        </div>`).join('')}</div>`;
+    }
+    if(groups.length){
+      html += `<div class="lib-subhead">Альбомы</div><div class="grid-cards">${groups.map(g=>{
+        const artist = (g['artist-credit'] || []).map(c=>c.name).join(', ') || 'Неизвестный артист';
+        const year = g['first-release-date'] ? g['first-release-date'].slice(0,4) : '—';
+        const coverUrl = `https://coverartarchive.org/release-group/${g.id}/front-250`;
+        return `<div class="cover">
+          <div class="art" data-cover-url="${coverUrl}" data-fallback-letter="${esc(artist[0]||'?')}" style="background-image:url('${coverUrl}')"></div>
+          <div class="meta"><div class="t">${esc(g.title)}</div><div class="a">${esc(artist)} · ${year}</div></div>
+        </div>`;
+      }).join('')}</div>`;
+    }
+    resultsEl.innerHTML = html;
+    resultsEl.querySelectorAll('[data-artist-photo-for]').forEach(el=> fetchDeezerArtistPhoto(el.dataset.artistPhotoFor, el));
+    attachImageFallback(resultsEl);
+  } catch(err){
+    const isFileProtocol = location.protocol === 'file:';
+    resultsEl.innerHTML = isFileProtocol
+      ? `<div class="empty-state">Браузер блокирует запросы к внешним сайтам, потому что файл открыт напрямую (file://). Это ограничение безопасности браузера, а не баг кода.<br><br>Решение: загрузите этот HTML-файл на любой хостинг (например GitHub Pages, Netlify) или откройте его через локальный сервер — тогда живой поиск заработает.</div>`
+      : `<div class="empty-state">Не удалось получить данные из MusicBrainz (${esc(err.message)}). Попробуйте ещё раз чуть позже — у открытого API есть лимит запросов.</div>`;
+  }
+}
+
+
+function attachImageFallback(container){
+  container.querySelectorAll('[data-cover-url]').forEach(el=>{
+    const url = el.dataset.coverUrl;
+    if(!url || el.dataset.fbChecked) return;
+    el.dataset.fbChecked = '1';
+    const img = new Image();
+    img.onerror = ()=>{
+      el.classList.add('cover-fallback');
+      el.style.backgroundImage = 'none';
+      if(!el.querySelector('.fallback-letter')){
+        el.insertAdjacentHTML('afterbegin', `<span class="fallback-letter">${el.dataset.fallbackLetter || '?'}</span>`);
+      }
+    };
+    img.src = url;
+  });
+}
+
+function renderScreen(name){
+  document.querySelectorAll(`[data-screen="${name}"]`).forEach(container=>{
+    const device = container.dataset.device;
+    let html = '';
+    if(name==='catalog') html = renderCatalog(device);
+    else if(name==='album') html = renderAlbum(device, STATE.currentAlbumId);
+    else if(name==='rate') html = renderRate(device, STATE.currentAlbumId);
+    else if(name==='history') html = renderHistory(device);
+    else if(name==='recap') html = renderRecap(device, STATE.recapViewUserId, STATE.recapPeriod);
+    else if(name==='profile') html = renderProfile(device);
+    else if(name==='artist') html = renderArtist(device);
+    else if(name==='friend') html = renderFriend(device, STATE.viewingUserId);
+    container.innerHTML = html;
+    wireScreen(container, name);
+    attachImageFallback(container);
+    const chartEl = container.querySelector('[data-deezer-chart]');
+    if(chartEl) fetchDeezerChart(chartEl);
+    const artistPhotoEls = container.querySelectorAll('[data-artist-photo-for]');
+    artistPhotoEls.forEach(el=> fetchDeezerArtistPhoto(el.dataset.artistPhotoFor, el));
+    const previewEl = container.querySelector('[data-preview-auto]');
+    if(previewEl) loadTrackPreview(previewEl.dataset.title, previewEl.dataset.artist, previewEl);
+  });
+}
+function renderAll(){ ['catalog','album','rate','history','recap','profile','artist','friend'].forEach(renderScreen); }
+
+/* ============================== NAVIGATION ============================== */
+const TAB_GROUP = { catalog:'catalog', album:'catalog', artist:'catalog', history:'history', rate:'history', profile:'profile', friend:'profile' };
+function showScreen(name){
+  STATE.activeScreen = name;
+  document.querySelectorAll('[data-screen]').forEach(s=> s.classList.toggle('active', s.dataset.screen===name));
+  document.querySelectorAll('[data-tab]').forEach(t=> t.classList.toggle('active', t.dataset.tab===(TAB_GROUP[name]||name)));
+  document.querySelectorAll('.m-screens, .d-content').forEach(c=> c.scrollTop = 0);
+}
+function openAlbum(id){ STATE.currentAlbumId = id; renderScreen('album'); renderScreen('rate'); showScreen('album'); }
+function openRateFor(id, origin){
+  STATE.currentAlbumId = id;
+  STATE.rateOrigin = origin || 'album';
+  const existing = USERS.me.ratings.find(r=>r.albumId===id);
+  STATE.ratingValue = existing ? existing.stars : 0;
+  STATE.ratingDraftText = existing ? (existing.text || '') : '';
+  renderScreen('rate');
+  showScreen('rate');
+}
+function viewFriend(id){ STATE.viewingUserId = id; renderScreen('friend'); showScreen('friend'); }
+function openRecap(userId){
+  STATE.recapViewUserId = userId;
+  STATE.recapOrigin = STATE.activeScreen;
+  renderScreen('recap');
+  showScreen('recap');
+}
+function closeRecap(){ showScreen(STATE.recapOrigin || 'catalog'); }
+
+/* ============================== TOAST ============================== */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1700);
+}
+
+/* ============================== EVENT WIRING (delegated per screen container) ============================== */
+function wireScreen(container, name){
+  container.querySelectorAll('[data-open-album]').forEach(el=>{
+    el.addEventListener('click', (e)=>{ e.stopPropagation(); openAlbum(el.dataset.openAlbum); });
+  });
+  container.querySelectorAll('[data-genre]').forEach(chip=>{
+    chip.addEventListener('click', ()=>{ STATE.activeGenre = chip.dataset.genre; renderScreen('catalog'); });
+  });
+  container.querySelectorAll('[data-sort]').forEach(chip=>{
+    chip.addEventListener('click', ()=>{ STATE.sortBy = chip.dataset.sort; renderScreen('catalog'); });
+  });
+  container.querySelectorAll('[data-search-input]').forEach(input=>{
+    input.addEventListener('input', ()=>{
+      STATE.searchQuery = input.value;
+      renderScreen('catalog');
+      const live = container.querySelector('[data-search-input]');
+      if(live){ live.focus(); live.selectionStart = live.selectionEnd = live.value.length; }
+      const resultsEl = container.querySelector('[data-live-results]');
+      if(resultsEl){
+        clearTimeout(window.__hmoLibDebounce);
+        const q = STATE.searchQuery.trim();
+        window.__hmoLibDebounce = setTimeout(()=> runLiveLibrarySearch(q, resultsEl), 450);
+      }
+    });
+  });
+  container.querySelectorAll('[data-back-catalog]').forEach(b=> b.addEventListener('click', ()=> showScreen('catalog')));
+  container.querySelectorAll('[data-back-dynamic]').forEach(b=> b.addEventListener('click', ()=> showScreen(STATE.rateOrigin==='history' ? 'history' : 'album')));
+  container.querySelectorAll('[data-rate-cta]').forEach(b=> b.addEventListener('click', ()=> openRateFor(b.dataset.rateCta, 'album')));
+  container.querySelectorAll('[data-edit-rating]').forEach(el=> el.addEventListener('click', ()=> openRateFor(el.dataset.editRating, 'history')));
+  container.querySelectorAll('[data-open-artist]').forEach(el=>{
+    el.addEventListener('click', ()=> openArtist(el.dataset.openArtist, el.dataset.artistName));
+  });
+  container.querySelectorAll('[data-history-search]').forEach(input=>{
+    input.addEventListener('input', ()=>{ STATE.historyQuery = input.value; renderScreen('history');
+      const live = container.querySelector('[data-history-search]'); if(live){ live.focus(); live.selectionStart = live.selectionEnd = live.value.length; }
+    });
+  });
+
+  container.querySelectorAll('[data-wishlist]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const added = b.classList.toggle('added');
+      b.textContent = added ? '✓ В списке «Хочу послушать»' : '+ В список «Хочу послушать»';
+      showToast(added ? 'Добавлено в список' : 'Убрано из списка');
+    });
+  });
+
+  container.querySelectorAll('[data-publish]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const albumId = b.dataset.publish;
+      const album = ALBUMS.find(a=>a.id===albumId);
+      const val = STATE.ratingValue || 0;
+      if(val<=0){ showToast('Сначала выберите оценку'); return; }
+      const textArea = container.querySelector('[data-review-text]');
+      const text = textArea ? textArea.value.trim() : '';
+
+      const existing = USERS.me.ratings.find(r=>r.albumId===albumId);
+      if(existing){
+        // editing an existing rating — update in place, don't double-count
+        if(album && existing.text && !text){
+          album.reviews = album.reviews.filter(r=>!(r.user==='me'));
+        } else if(album && text){
+          const rev = album.reviews.find(r=>r.user==='me');
+          if(rev){ rev.stars = val; rev.text = text; }
+          else { album.reviews.unshift({user:'me', stars:val, text}); if(!existing.text) USERS.me.stats.reviews += 1; }
+        }
+        if(!text) { /* removed review text but kept rating */ }
+        existing.stars = val; existing.text = text || null; existing.when = 'только что';
+      } else {
+        // brand new rating
+        if(album){
+          if(text) album.reviews.unshift({user:'me', stars:val, text});
+          album.ratingsCount += 1;
+        }
+        USERS.me.stats.ratings += 1;
+        if(text) USERS.me.stats.reviews += 1;
+        USERS.me.ratings.push({albumId, stars:val, text: text || null, when:'только что'});
+      }
+      STATE.ratingValue = 0;
+      STATE.ratingDraftText = '';
+      showToast(existing ? 'Оценка обновлена' : 'Опубликовано');
+      renderScreen('album'); renderScreen('profile'); renderScreen('history');
+      showScreen(STATE.rateOrigin==='history' ? 'history' : 'album');
+    });
+  });
+
+  container.querySelectorAll('[data-star-picker]').forEach(picker=>{
+    const fill = picker.querySelector('.fill');
+    const wrap = picker.closest('.rate-wrap, .d-rate-panel') || container;
+    const label = wrap.querySelector('[data-star-label]');
+    let dragging = false;
+    function valueFromEvent(e){
+      const rect = picker.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const frac = Math.max(0, Math.min(1, x/rect.width));
+      return Math.round(frac*5*10)/10;
+    }
+    function apply(val){
+      STATE.ratingValue = val;
+      fill.style.width = (val/5*100)+'%';
+      if(label) label.textContent = 'Оценка — '+val.toFixed(1)+' / 5';
+    }
+    picker.addEventListener('pointerdown', e=>{ dragging=true; picker.setPointerCapture(e.pointerId); apply(valueFromEvent(e)); });
+    picker.addEventListener('pointermove', e=>{ if(dragging) apply(valueFromEvent(e)); });
+    picker.addEventListener('pointerup', ()=> dragging=false);
+  });
+
+  container.querySelectorAll('[data-avatar]').forEach(avatar=>{
+    const input = avatar.querySelector('[data-avatar-input]');
+    avatar.addEventListener('click', ()=> input.click());
+    input.addEventListener('change', e=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        USERS.me.avatarImg = reader.result;
+        renderScreen('profile');
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+
+  container.querySelectorAll('[data-name-input]').forEach(inp=> inp.addEventListener('change', ()=>{ USERS.me.name = inp.value; }));
+  container.querySelectorAll('[data-handle-input]').forEach(inp=> inp.addEventListener('change', ()=>{ USERS.me.handle = inp.value; }));
+
+  container.querySelectorAll('[data-connect]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = btn.dataset.connect;
+      USERS.me.connections[key] = !USERS.me.connections[key];
+      showToast(USERS.me.connections[key] ? 'Подключено' : 'Отключено');
+      renderScreen('profile');
+    });
+  });
+
+  container.querySelectorAll('[data-open-recap]').forEach(el=>{
+    el.addEventListener('click', ()=> openRecap(el.dataset.openRecap));
+  });
+  container.querySelectorAll('[data-recap-close]').forEach(b=> b.addEventListener('click', closeRecap));
+  container.querySelectorAll('[data-rperiod]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      STATE.recapPeriod = btn.dataset.rperiod;
+      renderScreen('recap');
+    });
+  });
+
+  container.querySelectorAll('[data-view-friend]').forEach(el=> el.addEventListener('click', ()=> viewFriend(el.dataset.viewFriend)));
+  container.querySelectorAll('[data-back-profile]').forEach(b=> b.addEventListener('click', ()=> showScreen('profile')));
+  container.querySelectorAll('[data-add-friend]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.addFriend;
+      if(!USERS.me.friends.includes(id)){
+        USERS.me.friends.push(id);
+        USERS[id].friends.push('me');
+        showToast('Добавлено в друзья');
+        renderScreen('profile');
+      }
+    });
+  });
+}
+
+/* ============================== TOP-LEVEL NAV & VIEW SWITCH ============================== */
+document.querySelectorAll('[data-tab]').forEach(t=> t.addEventListener('click', ()=> showScreen(t.dataset.tab)));
+
+document.querySelectorAll('[data-search-input]').forEach(input=>{
+  input.addEventListener('input', ()=>{
+    STATE.searchQuery = input.value;
+    renderScreen('catalog');
+    showScreen('catalog');
+    const resultsEl = document.querySelector('[data-screen="catalog"][data-device="desktop"] [data-live-results]');
+    if(resultsEl){
+      clearTimeout(window.__hmoLibDebounceTop);
+      const q = STATE.searchQuery.trim();
+      window.__hmoLibDebounceTop = setTimeout(()=> runLiveLibrarySearch(q, resultsEl), 450);
+    }
+  });
+});
+
+const vsBtns = document.querySelectorAll('.vs-btn');
+const mobileShell = document.getElementById('mobile-shell');
+const desktopShell = document.getElementById('desktop-shell');
+vsBtns.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    vsBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    mobileShell.classList.toggle('show', view==='mobile');
+    desktopShell.classList.toggle('show', view==='desktop');
+  });
+});
+
+/* ============================== INIT ============================== */
+renderAll();
+showScreen('catalog');
+</script>
+</body>
+</html>
