@@ -10,13 +10,82 @@ export function ConnectBlock() {
   const { t, me } = useApp();
   if (!me) return null;
   return (
-    <div className="connect-row">
-      <a className={`connect-btn ${me.connections.spotify ? 'on' : ''}`} href="/api/auth/spotify">
-        {me.connections.spotify ? t('profile.spotifyConnected') : t('profile.connectSpotify')}
-      </a>
-      <button className="connect-btn" disabled style={{ opacity: 0.5, cursor: 'default' }}>
-        {t('profile.appleMusicSoon')}
+    <>
+      <div className="connect-row">
+        <a className={`connect-btn ${me.connections.spotify ? 'on' : ''}`} href="/api/auth/spotify">
+          {me.connections.spotify ? t('profile.spotifyConnected') : t('profile.connectSpotify')}
+        </a>
+        <button className="connect-btn" disabled style={{ opacity: 0.5, cursor: 'default' }}>
+          {t('profile.appleMusicSoon')}
+        </button>
+      </div>
+      {!me.connections.spotify && (
+        <div className="connect-beta-hint">
+          <span className="chip" style={{ marginRight: 8 }}>{t('profile.connectBetaBadge')}</span>
+          {t('profile.connectBetaHint')}
+        </div>
+      )}
+    </>
+  );
+}
+
+export function ImportHistoryBlock() {
+  const { t, importStreamingHistory } = useApp();
+  const [open, setOpen] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ imported: number } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const submit = async () => {
+    if (!files.length || busy) return;
+    setBusy(true);
+    setResult(null);
+    const res = await importStreamingHistory(files);
+    setBusy(false);
+    if (res) {
+      setResult({ imported: res.imported });
+      setFiles([]);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="import-history-block">
+      <button className="btn-ghost" style={{ width: '100%' }} onClick={() => setOpen((v) => !v)}>
+        {t('profile.importTitle')}
       </button>
+      {open && (
+        <div className="import-history-panel">
+          <div className="import-history-sub">{t('profile.importSubtitle')}</div>
+          <div className="import-history-how">
+            <div className="import-history-how-title">{t('profile.importHowTitle')}</div>
+            <ol>
+              <li>{t('profile.importStep1')}</li>
+              <li>{t('profile.importStep2')}</li>
+              <li>{t('profile.importStep3')}</li>
+              <li>{t('profile.importStep4')}</li>
+              <li>{t('profile.importStep5')}</li>
+            </ol>
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".json,application/json"
+            multiple
+            onChange={(e) => setFiles(Array.from(e.target.files || []))}
+            style={{ marginBottom: 10, width: '100%' }}
+          />
+          <button className="btn-primary" style={{ width: '100%' }} disabled={!files.length || busy} onClick={submit}>
+            {busy ? t('profile.importUploading') : t('profile.importSubmit')}
+          </button>
+          {result && (
+            <div className="import-history-result">
+              {result.imported > 0 ? t('profile.importResult', { count: result.imported }) : t('profile.importResultEmpty')}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

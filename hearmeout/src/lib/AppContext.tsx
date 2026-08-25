@@ -113,6 +113,7 @@ type AppContextValue = {
   addFriend: (handle: string) => Promise<void>;
   syncSpotify: () => Promise<void>;
   onSpotifyConnected: () => Promise<void>;
+  importStreamingHistory: (files: File[]) => Promise<{ imported: number; skipped: number; errors: string[] } | null>;
   openArtist: (mbid: string, name: string) => Promise<void>;
   openSpotifyArtist: (id: string) => Promise<void>;
   ensureLiveAlbum: (id: string, spotifyId?: string) => void;
@@ -400,6 +401,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshMe();
   }, [refreshMe]);
 
+  const importStreamingHistory = useCallback(async (files: File[]) => {
+    const form = new FormData();
+    for (const f of files) form.append('files', f);
+    const res = await fetch('/api/spotify/import', { method: 'POST', body: form });
+    if (!res.ok) {
+      showToast(t('toast.importFailed'));
+      return null;
+    }
+    const result = await res.json();
+    requestedRecapKeys.current.clear();
+    setRecapCache({});
+    await refreshMe();
+    showToast(result.imported > 0 ? t('toast.importedTracks', { count: result.imported }) : t('toast.importNoNew'));
+    return result;
+  }, [showToast, t, refreshMe]);
+
   // `id` is what the rest of the app looks the album up by (a catalog slug
   // like "ok-computer", or a raw Spotify id for anything sourced live).
   // `spotifyId` is what to actually fetch — for catalog albums that's a
@@ -504,13 +521,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap, register,
     updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
-    addFriend, syncSpotify, onSpotifyConnected, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
+    addFriend, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, spotifyNew, spotifyNewRegional, spotifyObscure,
     spotifyGenreArtists, myRatings, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap, register,
     updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
-    addFriend, syncSpotify, onSpotifyConnected, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
+    addFriend, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

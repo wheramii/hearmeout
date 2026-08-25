@@ -5,7 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { LANGUAGES, LANGUAGE_LABEL, getRegionCodes, regionDisplayName } from '@/lib/i18n';
-import { ConnectBlock, RecapOpenButton, GenresBlock, Top4Grid, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
+import { ConnectBlock, ImportHistoryBlock, RecapOpenButton, GenresBlock, Top4Grid, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
 
 function AvatarPicker({ size }: { size?: number }) {
   const { t, me, updateAvatar } = useApp();
@@ -94,10 +94,11 @@ export function ProfileScreen({ device }: { device: Device }) {
       <div className="section-head"><h2>{t('profile.connection')}</h2><span>Spotify / Apple Music</span></div>
       <div style={{ marginBottom: 12 }}><ConnectBlock /></div>
       {me.connections.spotify && (
-        <button className="btn-ghost" style={{ width: '100%', marginBottom: 22 }} onClick={() => syncSpotify()}>
+        <button className="btn-ghost" style={{ width: '100%', marginBottom: 12 }} onClick={() => syncSpotify()}>
           {t('profile.syncNow')}
         </button>
       )}
+      <div style={{ marginBottom: 22 }}><ImportHistoryBlock /></div>
     </>
   );
 
