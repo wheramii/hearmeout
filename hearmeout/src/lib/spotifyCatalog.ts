@@ -133,7 +133,12 @@ export async function fetchSpotifyAlbumDetail(id: string): Promise<AlbumDetail |
   const res = await fetch(`https://api.spotify.com/v1/albums/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) return null;
+  // A 404 means the album genuinely doesn't exist on Spotify — safe to cache
+  // as "not found". Anything else (429 rate limit, 5xx, auth hiccups) is
+  // transient and must throw, so the caller's cache falls back to stale data
+  // instead of locking in a false "not found" for a full day.
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Spotify request failed (/albums/${id}): ${res.status}`);
   const a = await res.json();
   return {
     id: a.id,
@@ -167,7 +172,8 @@ export async function fetchSpotifyArtistDetail(id: string): Promise<ArtistDetail
   const res = await fetch(`https://api.spotify.com/v1/artists/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) return null;
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Spotify request failed (/artists/${id}): ${res.status}`);
   const a = await res.json();
   return {
     id: a.id,
@@ -189,7 +195,8 @@ export async function fetchArtistAlbumsSplit(id: string): Promise<{ released: Sp
   const res = await fetch(`https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single&limit=50`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) return { released: [], upcoming: [] };
+  if (res.status === 404) return { released: [], upcoming: [] };
+  if (!res.ok) throw new Error(`Spotify request failed (/artists/${id}/albums): ${res.status}`);
   const data = await res.json();
   const today = new Date().toISOString().slice(0, 10);
   const seen = new Set<string>();
