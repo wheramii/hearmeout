@@ -9,8 +9,9 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const admin = supabaseAdmin();
-  const [profile, { data: conns }, { data: friendRows }] = await Promise.all([
+  const [profile, { data: prefs }, { data: conns }, { data: friendRows }] = await Promise.all([
     getUserProfile(admin, userId),
+    admin.from('users').select('language, region').eq('id', userId).maybeSingle(),
     admin.from('connections').select('provider').eq('user_id', userId),
     admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', userId),
   ]);
@@ -29,6 +30,8 @@ export async function GET() {
     ...profile,
     connections: { spotify: connSet.has('spotify'), appleMusic: connSet.has('apple_music') },
     friends,
+    language: (prefs?.language as Me['language']) || 'ru',
+    region: prefs?.region ?? null,
   };
   return NextResponse.json(me);
 }
@@ -38,10 +41,12 @@ export async function PATCH(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const body = await request.json().catch(() => null);
-  const patch: Record<string, string> = {};
+  const patch: Record<string, string | null> = {};
   if (typeof body?.name === 'string' && body.name.trim()) patch.name = body.name.trim();
   if (typeof body?.handle === 'string' && body.handle.trim()) patch.handle = body.handle.trim();
   if (typeof body?.avatarUrl === 'string') patch.avatar_url = body.avatarUrl;
+  if (typeof body?.language === 'string' && ['ru', 'en', 'fr', 'es', 'de'].includes(body.language)) patch.language = body.language;
+  if ('region' in (body ?? {})) patch.region = typeof body.region === 'string' && body.region ? body.region : null;
   if (!Object.keys(patch).length) return NextResponse.json({ ok: true });
 
   const admin = supabaseAdmin();

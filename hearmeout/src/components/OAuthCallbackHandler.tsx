@@ -10,7 +10,7 @@ import { useApp } from '@/lib/AppContext';
 export function OAuthCallbackHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { showToast, showScreen, onSpotifyConnected } = useApp();
+  const { t, showToast, showScreen, onSpotifyConnected } = useApp();
 
   useEffect(() => {
     const connected = searchParams.get('spotify');
@@ -18,11 +18,11 @@ export function OAuthCallbackHandler() {
     if (connected === 'connected') {
       onSpotifyConnected();
       showScreen('profile');
-      showToast('Spotify подключён — история прослушиваний синхронизирована');
+      showToast(t('toast.spotifyConnected'));
       router.replace('/');
     } else if (error) {
       showScreen('profile');
-      showToast('Не удалось подключить Spotify');
+      showToast(t('toast.spotifyConnectFailed'));
       router.replace('/');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -5,7 +5,7 @@ import type { Album } from '@/lib/types';
 import { CoverArt } from './CoverArt';
 
 export function AlbumCard({ album, rankBadge }: { album: Album; rankBadge?: number }) {
-  const { openAlbum, albumRatings, spotifyCovers } = useApp();
+  const { t, openAlbum, albumRatings, spotifyCovers } = useApp();
   const rating = albumRatings[album.id];
   const cover = spotifyCovers[album.id] || album.cover;
   return (
@@ -22,7 +22,7 @@ export function AlbumCard({ album, rankBadge }: { album: Album; rankBadge?: numb
         <div className="t">{album.title}</div>
         <div className="a">{album.artist}{album.unknown ? ` · ${album.listeners}` : ''}</div>
         <div className="r" style={{ color: 'var(--muted)', fontSize: 10.5, marginTop: 1 }}>
-          {rating ? `★ ${rating.avg.toFixed(1)} · ${rating.count}` : 'оценки отсутствуют'}
+          {rating ? `★ ${rating.avg.toFixed(1)} · ${rating.count}` : t('album.noRatings')}
         </div>
       </div>
     </div>

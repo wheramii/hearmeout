@@ -30,7 +30,7 @@ export type RecapData = {
   topGenres: string[];
   minutes: number;
   uniqueArtists: number;
-  vibe: string;
+  trackCount: number;
 };
 
 export type ApiUser = { id: string; name: string; handle: string; avatarUrl: string | null };
@@ -45,6 +45,8 @@ export type PublicProfile = ApiUser & {
 export type Me = PublicProfile & {
   connections: { spotify: boolean; appleMusic: boolean };
   friends: ApiUser[];
+  language: import('./i18n').Language;
+  region: string | null;
 };
 
 export type RatingRecord = {

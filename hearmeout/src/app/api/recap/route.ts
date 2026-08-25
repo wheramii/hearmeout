@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
-import { pluralRu } from '@/lib/pluralize';
 import type { RecapData, RecapPeriod } from '@/lib/types';
 
 const PERIOD_DAYS: Record<RecapPeriod, number> = { day: 1, month: 30, season: 90 };
@@ -49,10 +48,9 @@ export async function GET(request: NextRequest) {
   const topSongs = topN(trackCounts, 3);
   const topGenres = topN(genreCounts, 3);
 
-  const vibe = rows.length === 0
-    ? 'пока нет данных за этот период — послушай что-нибудь в Spotify, и рекап заполнится'
-    : `${rows.length} ${pluralRu(rows.length, 'трек', 'трека', 'треков')}${topGenres[0] ? `, чаще всего — ${topGenres[0]}` : ''}`;
-
-  const recap: RecapData = { topArtists, topSongs, topGenres, minutes, uniqueArtists, vibe };
+  // The "vibe" line used to be built here in Russian; it's now assembled
+  // client-side (see RecapScreen) from trackCount + topGenres so it can be
+  // localized into the viewer's chosen language.
+  const recap: RecapData = { topArtists, topSongs, topGenres, minutes, uniqueArtists, trackCount: rows.length };
   return NextResponse.json(recap);
 }

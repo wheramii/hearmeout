@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useApp } from '@/lib/AppContext';
 import { supabase } from '@/lib/supabaseClient';
 import { starsText, userAvatarStyle } from '@/lib/format';
 import type { AlbumReview } from '@/lib/types';
@@ -8,6 +9,7 @@ import type { AlbumReview } from '@/lib/types';
 type Row = { stars: number; review: string | null; users: { name: string; handle: string; avatar_url: string | null } | null };
 
 export function AlbumReviews({ albumId, refreshToken }: { albumId: string; refreshToken: number }) {
+  const { t } = useApp();
   const [reviews, setReviews] = useState<AlbumReview[] | null>(null);
 
   useEffect(() => {
@@ -35,8 +37,8 @@ export function AlbumReviews({ albumId, refreshToken }: { albumId: string; refre
     return () => { cancelled = true; };
   }, [albumId, refreshToken]);
 
-  if (reviews === null) return <div className="archive-loading">Загружаю рецензии…</div>;
-  if (!reviews.length) return <div className="empty-state">Пока нет рецензий</div>;
+  if (reviews === null) return <div className="archive-loading">{t('reviews.loading')}</div>;
+  if (!reviews.length) return <div className="empty-state">{t('reviews.empty')}</div>;
 
   return (
     <>

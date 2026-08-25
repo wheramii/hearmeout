@@ -46,7 +46,7 @@ export function AppShell() {
 }
 
 function MobileShell({ active }: { active: boolean }) {
-  const { state, showScreen } = useApp();
+  const { state, t, showScreen } = useApp();
   const activeTab = TAB_GROUP[state.activeScreen];
   return (
     <div className={`mobile-shell ${active ? 'show' : ''}`}>
@@ -60,13 +60,13 @@ function MobileShell({ active }: { active: boolean }) {
         </div>
         <div className="tabbar">
           <button className={`tab ${activeTab === 'catalog' ? 'active' : ''}`} onClick={() => showScreen('catalog')}>
-            <span className="ic num">⌂</span><span className="lbl">Главное</span>
+            <span className="ic num">⌂</span><span className="lbl">{t('nav.home')}</span>
           </button>
           <button className={`tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => showScreen('history')}>
-            <span className="ic num">★</span><span className="lbl">Оценка</span>
+            <span className="ic num">★</span><span className="lbl">{t('nav.rate')}</span>
           </button>
           <button className={`tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => showScreen('profile')}>
-            <span className="ic"><ProfileIcon /></span><span className="lbl">Профиль</span>
+            <span className="ic"><ProfileIcon /></span><span className="lbl">{t('nav.profile')}</span>
           </button>
         </div>
       </div>
@@ -75,7 +75,7 @@ function MobileShell({ active }: { active: boolean }) {
 }
 
 function DesktopShell({ active }: { active: boolean }) {
-  const { state, showScreen, setSearchQuery } = useApp();
+  const { state, t, showScreen, setSearchQuery } = useApp();
   const activeTab = TAB_GROUP[state.activeScreen];
   return (
     <div className={`desktop-shell ${active ? 'show' : ''}`}>
@@ -83,13 +83,13 @@ function DesktopShell({ active }: { active: boolean }) {
         <div className="d-logo"><LogoMark />Hear<span>Me</span>Out</div>
         <nav className="d-nav">
           <button className={`d-nav-item ${activeTab === 'catalog' ? 'active' : ''}`} onClick={() => showScreen('catalog')}>
-            <HomeIcon />Главное
+            <HomeIcon />{t('nav.home')}
           </button>
           <button className={`d-nav-item ${activeTab === 'history' ? 'active' : ''}`} onClick={() => showScreen('history')}>
-            <StarIcon />Оценка
+            <StarIcon />{t('nav.rate')}
           </button>
           <button className={`d-nav-item ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => showScreen('profile')}>
-            <ProfileIcon />Профиль
+            <ProfileIcon />{t('nav.profile')}
           </button>
         </nav>
       </aside>
@@ -99,7 +99,7 @@ function DesktopShell({ active }: { active: boolean }) {
             <SearchIcon />
             <input
               type="text"
-              placeholder="Артист, альбом, трек…"
+              placeholder={t('search.placeholder')}
               value={state.searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); showScreen('catalog'); }}
             />

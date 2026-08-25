@@ -8,18 +8,20 @@ import { ObscureAlbums } from '../ObscureAlbums';
 import { GenreTopArtists } from '../GenreTopArtists';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { RecapTeaser } from './RecapTeaser';
+import { regionDisplayName } from '@/lib/i18n';
 
 const GENRES = ['Всё', 'Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
-const SORT_OPTIONS: { key: 'year' | 'genre' | 'artist'; label: string }[] = [
-  { key: 'year', label: 'По году' },
-  { key: 'genre', label: 'По жанру' },
-  { key: 'artist', label: 'По исполнителю' },
-];
 
 export function CatalogScreen({ device }: { device: Device }) {
-  const { state, albums, albumRatings, setSearchQuery, setActiveGenre, setSortBy } = useApp();
+  const { state, t, language, albums, albumRatings, me, spotifyNewRegional, setSearchQuery, setActiveGenre, setSortBy } = useApp();
   const gridClass = device === 'mobile' ? 'grid-cards' : 'd-grid';
   const rowClass = device === 'mobile' ? 'row-scroll' : 'd-grid';
+
+  const SORT_OPTIONS: { key: 'year' | 'genre' | 'artist'; label: string }[] = [
+    { key: 'year', label: t('catalog.sortYear') },
+    { key: 'genre', label: t('catalog.sortGenre') },
+    { key: 'artist', label: t('catalog.sortArtist') },
+  ];
 
   const q = state.searchQuery.trim().toLowerCase();
   const genreFilter = state.activeGenre;
@@ -29,7 +31,7 @@ export function CatalogScreen({ device }: { device: Device }) {
     <div className="chips">
       {GENRES.map((g) => (
         <button key={g} className={`chip ${g === genreFilter ? 'on' : ''}`} onClick={() => setActiveGenre(g)}>
-          {g}
+          {g === 'Всё' ? t('catalog.genreAll') : g}
         </button>
       ))}
     </div>
@@ -47,21 +49,21 @@ export function CatalogScreen({ device }: { device: Device }) {
       <>
         {device === 'mobile' && (
           <>
-            <div className="eyebrow">Главное</div>
-            <h1 className="page-title">Найти музыку</h1>
+            <div className="eyebrow">{t('catalog.eyebrow')}</div>
+            <h1 className="page-title">{t('catalog.title')}</h1>
             <div className="search-bar">
               <SearchIcon />
-              <input type="text" placeholder="Артист, альбом, трек…" value={state.searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <input type="text" placeholder={t('search.placeholder')} value={state.searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </>
         )}
         {chips}
-        <div className="section-head"><h2>В каталоге HearMeOut</h2><span>{results.length}</span></div>
+        <div className="section-head"><h2>{t('catalog.inCatalog')}</h2><span>{results.length}</span></div>
         <div className={gridClass}>{results.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
-        {!results.length && <div className="empty-state">Ничего не найдено среди 40 кураторских альбомов</div>}
+        {!results.length && <div className="empty-state">{t('catalog.noResults')}</div>}
         {showLive && (
           <>
-            <div className="section-head" style={{ marginTop: 22 }}><h2>🌐 Открытая библиотека</h2><span>MusicBrainz</span></div>
+            <div className="section-head" style={{ marginTop: 22 }}><h2>{t('catalog.openLibrary')}</h2><span>MusicBrainz</span></div>
             <LiveLibrarySearch query={state.searchQuery.trim()} />
           </>
         )}
@@ -83,32 +85,42 @@ export function CatalogScreen({ device }: { device: Device }) {
     <>
       {device === 'mobile' && (
         <>
-          <div className="eyebrow">Главное</div>
-          <h1 className="page-title">Найти музыку</h1>
+          <div className="eyebrow">{t('catalog.eyebrow')}</div>
+          <h1 className="page-title">{t('catalog.title')}</h1>
           <div className="search-bar">
             <SearchIcon />
-            <input type="text" placeholder="Артист, альбом, трек…" value={state.searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <input type="text" placeholder={t('search.placeholder')} value={state.searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
         </>
       )}
       {chips}
       <RecapTeaser />
-      <div className="section-head"><h2>🔥 Новое на Spotify</h2><span>живые данные</span></div>
+      <div className="section-head"><h2>{t('catalog.newOnSpotify')}</h2><span>{t('catalog.liveData')}</span></div>
       <SpotifyNewSection rowClass={rowClass} />
+
+      {me?.region && (
+        <>
+          <div className="section-head" style={{ marginTop: 26 }}>
+            <h2>{t('catalog.popularInRegion')}</h2><span>{regionDisplayName(me.region, language)}</span>
+          </div>
+          <SpotifyNewSection rowClass={rowClass} albums={spotifyNewRegional} />
+        </>
+      )}
+
       {topRated.length > 0 && (
         <>
-          <div className="section-head"><h2>Высокие оценки</h2><span>{topRated.length}</span></div>
+          <div className="section-head" style={{ marginTop: 26 }}><h2>{t('catalog.topRated')}</h2><span>{topRated.length}</span></div>
           <div className={rowClass}>{topRated.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
         </>
       )}
 
-      <div className="section-head"><h2><span className="unknown-badge">?</span>Малоизвестные исполнители</h2><span>Spotify · низкая популярность</span></div>
+      <div className="section-head" style={{ marginTop: 26 }}><h2><span className="unknown-badge">?</span>{t('catalog.obscureArtists')}</h2><span>{t('catalog.lowPopularity')}</span></div>
       <ObscureAlbums genre="Electronic" rowClass={rowClass} />
 
-      <div className="section-head" style={{ marginTop: 26 }}><h2>Топы по жанрам</h2><span>Spotify</span></div>
+      <div className="section-head" style={{ marginTop: 26 }}><h2>{t('catalog.genreTops')}</h2><span>Spotify</span></div>
       <GenreTopArtists rowClass={rowClass} />
 
-      <div className="section-head" style={{ marginTop: 26 }}><h2>Весь каталог</h2><span>{albums.length}</span></div>
+      <div className="section-head" style={{ marginTop: 26 }}><h2>{t('catalog.fullCatalog')}</h2><span>{albums.length}</span></div>
       <div className="chips">
         {SORT_OPTIONS.map((s) => (
           <button key={s.key} className={`chip ${state.sortBy === s.key ? 'on' : ''}`} onClick={() => setSortBy(s.key)}>

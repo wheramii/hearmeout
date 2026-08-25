@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ALBUMS } from './data';
 import { supabase } from './supabaseClient';
+import { translate, type Language, type TranslationKey } from './i18n';
 import type {
   Album, AlbumRatingInfo, ArtistState, Device, Me, RatingRecord, RecapData, RecapPeriod, ScreenName,
 } from './types';
@@ -34,6 +35,7 @@ type AuthStatus = 'loading' | 'anonymous' | 'ready';
 
 type AppState = {
   authStatus: AuthStatus;
+  language: Language;
   view: Device;
   activeScreen: ScreenName;
   currentAlbumId: string;
@@ -54,12 +56,15 @@ type AppState = {
 
 type AppContextValue = {
   state: AppState;
+  language: Language;
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
   albums: Album[];
   me: Me | null;
   albumRatings: Record<string, AlbumRatingInfo>;
   spotifyCovers: Record<string, string>;
   liveAlbums: Record<string, Album>;
   spotifyNew: CatalogAlbum[] | 'error' | null;
+  spotifyNewRegional: CatalogAlbum[] | 'error' | null;
   spotifyObscure: Record<string, CatalogAlbum[] | 'error'>;
   spotifyGenreArtists: Record<string, CatalogArtist[] | 'error'>;
   myRatings: RatingRecord[];
@@ -84,6 +89,8 @@ type AppContextValue = {
   updateProfileName: (name: string) => Promise<void>;
   updateProfileHandle: (handle: string) => Promise<void>;
   updateAvatar: (dataUrl: string) => Promise<void>;
+  updateLanguage: (language: Language) => Promise<void>;
+  updateRegion: (region: string | null) => Promise<void>;
   addFriend: (handle: string) => Promise<void>;
   syncSpotify: () => Promise<void>;
   onSpotifyConnected: () => Promise<void>;
@@ -95,6 +102,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 const initialState: AppState = {
   authStatus: 'loading',
+  language: 'ru',
   view: 'mobile',
   activeScreen: 'catalog',
   currentAlbumId: ALBUMS[0]?.id ?? '',
@@ -119,6 +127,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [albumRatings, setAlbumRatings] = useState<Record<string, AlbumRatingInfo>>({});
   const [spotifyCovers, setSpotifyCovers] = useState<Record<string, string>>({});
   const [spotifyNew, setSpotifyNew] = useState<CatalogAlbum[] | 'error' | null>(null);
+  const [spotifyNewRegional, setSpotifyNewRegional] = useState<CatalogAlbum[] | 'error' | null>(null);
   const [spotifyObscure, setSpotifyObscure] = useState<Record<string, CatalogAlbum[] | 'error'>>({});
   const [spotifyGenreArtists, setSpotifyGenreArtists] = useState<Record<string, CatalogArtist[] | 'error'>>({});
   const [myRatings, setMyRatings] = useState<RatingRecord[]>([]);
@@ -126,8 +135,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [reviewsVersion, setReviewsVersion] = useState(0);
   const requestedRecapKeys = useRef<Set<string>>(new Set());
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastRegionFetched = useRef<string | null | undefined>(undefined);
 
   const patch = useCallback((p: Partial<AppState>) => setState((s) => ({ ...s, ...p })), []);
+  const t = useCallback((key: TranslationKey, vars?: Record<string, string | number>) => translate(state.language, key, vars), [state.language]);
 
   const showToast = useCallback((msg: string) => {
     patch({ toast: msg });
@@ -139,13 +150,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const res = await fetch('/api/me');
     if (res.status === 401) {
       setMe(null);
-      patch({ authStatus: 'anonymous' });
+      // No account yet — guess a starting language from the browser so the
+      // registration screen itself isn't stuck in Russian for everyone.
+      const browserLang = typeof navigator !== 'undefined' ? navigator.language.slice(0, 2) : 'ru';
+      const guessed = (['ru', 'en', 'fr', 'es', 'de'] as const).includes(browserLang as never) ? (browserLang as Language) : 'en';
+      patch({ authStatus: 'anonymous', language: guessed });
       return;
     }
     if (!res.ok) return;
     const data: Me = await res.json();
     setMe(data);
-    patch({ authStatus: 'ready' });
+    patch({ authStatus: 'ready', language: data.language || 'ru' });
   }, [patch]);
 
   const refreshAlbumRatings = useCallback(async () => {
@@ -188,19 +203,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then(setSpotifyNew)
       .catch(() => setSpotifyNew('error'));
+  }, []);
 
-    fetch('/api/spotify/obscure?genre=Electronic')
+  // Region-aware sections: refetched whenever the profile's region setting
+  // changes (including the very first time it becomes known after login).
+  useEffect(() => {
+    if (state.authStatus !== 'ready') return;
+    const region = me?.region ?? null;
+    if (lastRegionFetched.current === region) return;
+    lastRegionFetched.current = region;
+
+    const marketQS = region ? `&market=${encodeURIComponent(region)}` : '';
+
+    if (region) {
+      fetch(`/api/spotify/new?market=${encodeURIComponent(region)}`)
+        .then((res) => (res.ok ? res.json() : Promise.reject()))
+        .then(setSpotifyNewRegional)
+        .catch(() => setSpotifyNewRegional('error'));
+    } else {
+      setSpotifyNewRegional(null);
+    }
+
+    fetch(`/api/spotify/obscure?genre=Electronic${marketQS}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((data) => setSpotifyObscure((s) => ({ ...s, Electronic: data })))
       .catch(() => setSpotifyObscure((s) => ({ ...s, Electronic: 'error' })));
 
     GENRE_BUCKETS.forEach((genre) => {
-      fetch(`/api/spotify/genre-artists?genre=${encodeURIComponent(genre)}`)
+      fetch(`/api/spotify/genre-artists?genre=${encodeURIComponent(genre)}${marketQS}`)
         .then((res) => (res.ok ? res.json() : Promise.reject()))
         .then((data) => setSpotifyGenreArtists((s) => ({ ...s, [genre]: data })))
         .catch(() => setSpotifyGenreArtists((s) => ({ ...s, [genre]: 'error' })));
     });
-  }, []);
+  }, [state.authStatus, me?.region]);
+
   useEffect(() => { if (state.authStatus === 'ready') refreshMyRatings(); }, [state.authStatus, refreshMyRatings]);
 
   const register = useCallback(async (name: string) => {
@@ -210,11 +246,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ name }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Ошибка регистрации' }));
-      throw new Error(err.error || 'Ошибка регистрации');
+      const err = await res.json().catch(() => ({ error: null }));
+      throw new Error(err.error || t('register.failed'));
     }
     await refreshMe();
-  }, [refreshMe]);
+  }, [refreshMe, t]);
 
   const showScreen = useCallback((name: ScreenName) => patch({ activeScreen: name }), [patch]);
   const openAlbum = useCallback((id: string) => patch({ currentAlbumId: id, activeScreen: 'album' }), [patch]);
@@ -272,7 +308,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ albumId, stars, review }),
     });
     if (!res.ok) {
-      showToast('Не удалось сохранить оценку');
+      showToast(t('toast.ratingSaveFailed'));
       return;
     }
     await Promise.all([refreshMyRatings(), refreshAlbumRatings(), refreshMe()]);
@@ -283,8 +319,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ratingDraftText: '',
       activeScreen: s.rateOrigin === 'history' ? 'history' : 'album',
     }));
-    showToast(isEditing ? 'Оценка обновлена' : 'Опубликовано');
-  }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast]);
+    showToast(isEditing ? t('toast.ratingUpdated') : t('toast.published'));
+  }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast, t]);
 
   const updateProfileName = useCallback(async (name: string) => {
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
@@ -301,28 +337,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshMe();
   }, [refreshMe]);
 
+  const updateLanguage = useCallback(async (language: Language) => {
+    patch({ language });
+    setMe((prev) => (prev ? { ...prev, language } : prev));
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ language }) });
+  }, [patch]);
+
+  const updateRegion = useCallback(async (region: string | null) => {
+    setMe((prev) => (prev ? { ...prev, region } : prev));
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ region }) });
+  }, []);
+
   const addFriend = useCallback(async (handle: string) => {
     const res = await fetch('/api/friends', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: null }));
-      showToast(err.error === 'not_found' ? 'Пользователь с таким @handle не найден' : 'Не удалось добавить друга');
+      showToast(err.error === 'not_found' ? t('toast.friendNotFound') : t('toast.friendAddFailed'));
       return;
     }
     await refreshMe();
-    showToast('Добавлено в друзья');
-  }, [refreshMe, showToast]);
+    showToast(t('toast.friendAdded'));
+  }, [refreshMe, showToast, t]);
 
   const syncSpotify = useCallback(async () => {
     const res = await fetch('/api/sync', { method: 'POST' });
     if (!res.ok) {
-      showToast('Не удалось синхронизировать Spotify');
+      showToast(t('toast.syncFailed'));
       return;
     }
     const { imported } = await res.json();
-    showToast(imported > 0 ? `Синхронизировано: ${imported} треков` : 'Новых треков нет');
+    showToast(imported > 0 ? t('toast.syncedTracks', { count: imported }) : t('toast.syncNoNew'));
     requestedRecapKeys.current.clear();
     setRecapCache({});
-  }, [showToast]);
+  }, [showToast, t]);
 
   const onSpotifyConnected = useCallback(async () => {
     requestedRecapKeys.current.clear();
@@ -348,8 +395,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       const isFileProtocol = typeof location !== 'undefined' && location.protocol === 'file:';
       const message = isFileProtocol
-        ? 'Браузер блокирует запросы к внешним сайтам при открытии файла напрямую (file://). Загрузите файл на хостинг, чтобы это заработало.'
-        : `Не удалось загрузить альбомы (${err instanceof Error ? err.message : String(err)})`;
+        ? t('artist.fileProtocolError')
+        : t('artist.loadError', { error: err instanceof Error ? err.message : String(err) });
       setState((s) => ({
         ...s,
         currentArtist: s.currentArtist && s.currentArtist.id === mbid
@@ -357,29 +404,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : s.currentArtist,
       }));
     }
-  }, []);
+  }, [t]);
 
   const liveAlbums = useMemo(() => {
     const map: Record<string, Album> = {};
     if (Array.isArray(spotifyNew)) {
       for (const a of spotifyNew) map[a.id] = catalogAlbumToAlbum(a);
     }
+    if (Array.isArray(spotifyNewRegional)) {
+      for (const a of spotifyNewRegional) map[a.id] = catalogAlbumToAlbum(a);
+    }
     for (const list of Object.values(spotifyObscure)) {
       if (Array.isArray(list)) for (const a of list) map[a.id] = catalogAlbumToAlbum(a);
     }
     return map;
-  }, [spotifyNew, spotifyObscure]);
+  }, [spotifyNew, spotifyNewRegional, spotifyObscure]);
 
   const value = useMemo<AppContextValue>(() => ({
-    state, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, spotifyNew, spotifyObscure, spotifyGenreArtists, myRatings, recapCache, reviewsVersion,
+    state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums,
+    spotifyNew, spotifyNewRegional, spotifyObscure, spotifyGenreArtists, myRatings, recapCache, reviewsVersion,
     showScreen, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap, register,
-    updateProfileName, updateProfileHandle, updateAvatar, addFriend, syncSpotify, onSpotifyConnected, openArtist, showToast,
-  }), [state, me, albumRatings, spotifyCovers, liveAlbums, spotifyNew, spotifyObscure, spotifyGenreArtists, myRatings, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
+    updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
+    addFriend, syncSpotify, onSpotifyConnected, openArtist, showToast,
+  }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, spotifyNew, spotifyNewRegional, spotifyObscure,
+    spotifyGenreArtists, myRatings, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap, register,
-    updateProfileName, updateProfileHandle, updateAvatar, addFriend, syncSpotify, onSpotifyConnected, openArtist, showToast]);
+    updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
+    addFriend, syncSpotify, onSpotifyConnected, openArtist, showToast]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

@@ -4,12 +4,12 @@ import { useApp } from '@/lib/AppContext';
 import { CoverArt } from './ui/CoverArt';
 
 export function ObscureAlbums({ genre, rowClass }: { genre: string; rowClass: string }) {
-  const { spotifyObscure, openAlbum } = useApp();
+  const { t, spotifyObscure, openAlbum } = useApp();
   const albums = spotifyObscure[genre];
 
-  if (albums === 'error') return <div className="empty-state">Не удалось загрузить</div>;
-  if (!albums) return <div className="archive-loading">Ищу малоизвестных исполнителей…</div>;
-  if (!albums.length) return <div className="empty-state">Ничего не нашлось</div>;
+  if (albums === 'error') return <div className="empty-state">{t('generic.loadError')}</div>;
+  if (!albums) return <div className="archive-loading">{t('obscure.loading')}</div>;
+  if (!albums.length) return <div className="empty-state">{t('obscure.empty')}</div>;
 
   return (
     <div className={rowClass}>

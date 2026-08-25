@@ -1,13 +1,14 @@
 'use client';
 
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
+import { LANGUAGES, LANGUAGE_LABEL, getRegionCodes, regionDisplayName } from '@/lib/i18n';
 import { ConnectBlock, RecapOpenButton, GenresBlock, Top4Grid, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
 
 function AvatarPicker({ size }: { size?: number }) {
-  const { me, updateAvatar } = useApp();
+  const { t, me, updateAvatar } = useApp();
   const inputRef = useRef<HTMLInputElement>(null);
   if (!me) return null;
   return (
@@ -16,7 +17,7 @@ function AvatarPicker({ size }: { size?: number }) {
       style={{ ...(size ? { width: size, height: size } : {}), ...userAvatarStyle(me) }}
       onClick={() => inputRef.current?.click()}
     >
-      <span className="hint" style={size ? { fontSize: 11 } : undefined}>Изменить<br />фото</span>
+      <span className="hint" style={size ? { fontSize: 11 } : undefined}>{t('profile.changePhoto')}</span>
       <input
         ref={inputRef}
         type="file"
@@ -34,25 +35,67 @@ function AvatarPicker({ size }: { size?: number }) {
   );
 }
 
+function LanguageRegionSection() {
+  const { t, me, language, updateLanguage, updateRegion } = useApp();
+  const regionCodes = useMemo(() => getRegionCodes(), []);
+  if (!me) return null;
+
+  const selectStyle = {
+    width: '100%',
+    background: 'var(--surface)',
+    border: '1px solid var(--line)',
+    borderRadius: 12,
+    padding: '12px 14px',
+    color: 'var(--text)',
+    fontFamily: 'var(--font-inter),sans-serif',
+    fontSize: 13.5,
+  };
+
+  return (
+    <>
+      <div className="section-head"><h2>{t('profile.language')}</h2></div>
+      <div className="chips" style={{ marginBottom: 22 }}>
+        {LANGUAGES.map((l) => (
+          <button key={l} className={`chip ${language === l ? 'on' : ''}`} onClick={() => updateLanguage(l)}>
+            {LANGUAGE_LABEL[l]}
+          </button>
+        ))}
+      </div>
+
+      <div className="section-head"><h2>{t('profile.region')}</h2><span>{t('profile.regionHint')}</span></div>
+      <select
+        style={{ ...selectStyle, marginBottom: 22 }}
+        value={me.region ?? ''}
+        onChange={(e) => updateRegion(e.target.value || null)}
+      >
+        <option value="">{t('profile.regionNone')}</option>
+        {regionCodes.map((code) => (
+          <option key={code} value={code}>{regionDisplayName(code, language)}</option>
+        ))}
+      </select>
+    </>
+  );
+}
+
 export function ProfileScreen({ device }: { device: Device }) {
-  const { me, syncSpotify, updateProfileName, updateProfileHandle } = useApp();
+  const { t, me, syncSpotify, updateProfileName, updateProfileHandle } = useApp();
   if (!me) return null;
 
   const statGrid = (
     <div className="stat-grid">
-      <div className="box"><div className="v">{me.stats.ratings}</div><div className="l">ОЦЕНОК</div></div>
-      <div className="box"><div className="v">{me.stats.avg || '—'}</div><div className="l">СР. БАЛЛ</div></div>
-      <div className="box"><div className="v">{me.stats.reviews}</div><div className="l">РЕЦЕНЗИЙ</div></div>
+      <div className="box"><div className="v">{me.stats.ratings}</div><div className="l">{t('profile.ratings')}</div></div>
+      <div className="box"><div className="v">{me.stats.avg || '—'}</div><div className="l">{t('profile.avg')}</div></div>
+      <div className="box"><div className="v">{me.stats.reviews}</div><div className="l">{t('profile.reviews')}</div></div>
     </div>
   );
 
   const connectionSection = (
     <>
-      <div className="section-head"><h2>Подключение</h2><span>Spotify / Apple Music</span></div>
+      <div className="section-head"><h2>{t('profile.connection')}</h2><span>Spotify / Apple Music</span></div>
       <div style={{ marginBottom: 12 }}><ConnectBlock /></div>
       {me.connections.spotify && (
         <button className="btn-ghost" style={{ width: '100%', marginBottom: 22 }} onClick={() => syncSpotify()}>
-          ⟳ Синхронизировать сейчас
+          {t('profile.syncNow')}
         </button>
       )}
     </>
@@ -61,7 +104,7 @@ export function ProfileScreen({ device }: { device: Device }) {
   if (device === 'mobile') {
     return (
       <>
-        <div className="eyebrow">Профиль</div>
+        <div className="eyebrow">{t('profile.eyebrow')}</div>
         <div className="profile-head">
           <AvatarPicker />
           <div style={{ flex: 1 }}>
@@ -73,20 +116,22 @@ export function ProfileScreen({ device }: { device: Device }) {
 
         {connectionSection}
 
-        <div className="section-head"><h2>Рекап</h2><span>день / месяц / сезон</span></div>
-        <div style={{ marginBottom: 24 }}><RecapOpenButton userId="me" label="Открыть рекап дня" /></div>
+        <div className="section-head"><h2>{t('profile.recap')}</h2><span>{t('profile.recapPeriods')}</span></div>
+        <div style={{ marginBottom: 24 }}><RecapOpenButton userId="me" label={t('profile.openDayRecap')} /></div>
 
-        <div className="section-head"><h2>Любимые жанры</h2><span>за всё время</span></div>
+        <div className="section-head"><h2>{t('profile.favoriteGenres')}</h2><span>{t('profile.allTime')}</span></div>
         <div style={{ marginBottom: 24 }}><GenresBlock genres={me.genres} /></div>
 
-        <div className="section-head"><h2>Топ-4 альбома</h2><span>по вашим оценкам</span></div>
-        <Top4Grid ids={me.top4Albums} />
+        <div className="section-head"><h2>{t('profile.top4')}</h2><span>{t('profile.byYourRatings')}</span></div>
+        <div style={{ marginBottom: 24 }}><Top4Grid ids={me.top4Albums} /></div>
 
-        <div className="section-head"><h2>Друзья</h2><span>{me.friends.length}</span></div>
+        <div className="section-head"><h2>{t('profile.friends')}</h2><span>{me.friends.length}</span></div>
         <div style={{ marginBottom: 14 }}><FriendsBlock /></div>
 
-        <div className="section-head"><h2>Награды месяца</h2><span>в кругу друзей</span></div>
-        <div style={{ marginBottom: 10 }}><AwardsBlock /></div>
+        <div className="section-head"><h2>{t('profile.monthAwards')}</h2><span>{t('profile.amongFriends')}</span></div>
+        <div style={{ marginBottom: 24 }}><AwardsBlock /></div>
+
+        <LanguageRegionSection />
       </>
     );
   }
@@ -98,23 +143,24 @@ export function ProfileScreen({ device }: { device: Device }) {
         <input className="name-input" defaultValue={me.name} style={{ fontSize: 22, marginTop: 14 }} onBlur={(e) => updateProfileName(e.target.value)} />
         <input className="handle-input" defaultValue={me.handle} style={{ fontSize: 13 }} onBlur={(e) => updateProfileHandle(e.target.value)} />
         <div className="stat-grid" style={{ gridTemplateColumns: '1fr', marginTop: 22 }}>
-          <div className="box"><div className="v">{me.stats.ratings}</div><div className="l">ОЦЕНОК</div></div>
-          <div className="box"><div className="v">{me.stats.avg || '—'}</div><div className="l">СР. БАЛЛ</div></div>
-          <div className="box"><div className="v">{me.stats.reviews}</div><div className="l">РЕЦЕНЗИЙ</div></div>
+          <div className="box"><div className="v">{me.stats.ratings}</div><div className="l">{t('profile.ratings')}</div></div>
+          <div className="box"><div className="v">{me.stats.avg || '—'}</div><div className="l">{t('profile.avg')}</div></div>
+          <div className="box"><div className="v">{me.stats.reviews}</div><div className="l">{t('profile.reviews')}</div></div>
         </div>
-        <div className="section-head" style={{ marginTop: 22 }}><h2>Друзья</h2><span>{me.friends.length}</span></div>
+        <div className="section-head" style={{ marginTop: 22 }}><h2>{t('profile.friends')}</h2><span>{me.friends.length}</span></div>
         <FriendsBlock />
       </div>
       <div className="main">
         {connectionSection}
-        <div className="section-head"><h2>Рекап</h2><span>день / месяц / сезон</span></div>
-        <div style={{ marginBottom: 28, maxWidth: 480 }}><RecapOpenButton userId="me" label="Открыть рекап дня" /></div>
-        <div className="section-head"><h2>Любимые жанры</h2><span>за всё время</span></div>
+        <div className="section-head"><h2>{t('profile.recap')}</h2><span>{t('profile.recapPeriods')}</span></div>
+        <div style={{ marginBottom: 28, maxWidth: 480 }}><RecapOpenButton userId="me" label={t('profile.openDayRecap')} /></div>
+        <div className="section-head"><h2>{t('profile.favoriteGenres')}</h2><span>{t('profile.allTime')}</span></div>
         <div style={{ marginBottom: 30, maxWidth: 420 }}><GenresBlock genres={me.genres} /></div>
-        <div className="section-head"><h2>Топ-4 альбома</h2><span>по вашим оценкам</span></div>
+        <div className="section-head"><h2>{t('profile.top4')}</h2><span>{t('profile.byYourRatings')}</span></div>
         <div style={{ maxWidth: 520, marginBottom: 30 }}><Top4Grid ids={me.top4Albums} /></div>
-        <div className="section-head"><h2>Награды месяца</h2><span>в кругу друзей</span></div>
-        <div style={{ maxWidth: 480 }}><AwardsBlock /></div>
+        <div className="section-head"><h2>{t('profile.monthAwards')}</h2><span>{t('profile.amongFriends')}</span></div>
+        <div style={{ maxWidth: 480, marginBottom: 30 }}><AwardsBlock /></div>
+        <div style={{ maxWidth: 420 }}><LanguageRegionSection /></div>
       </div>
     </div>
   );

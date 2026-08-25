@@ -7,7 +7,7 @@ import { userAvatarStyle } from '@/lib/format';
 import { RecapOpenButton, Top4Grid } from '../ProfileBlocks';
 
 export function FriendScreen(_props: { device: Device }) {
-  const { state, me, showScreen } = useApp();
+  const { t, state, me, showScreen } = useApp();
   const [f, setF] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,12 +21,12 @@ export function FriendScreen(_props: { device: Device }) {
     return () => { cancelled = true; };
   }, [state.viewingUserId]);
 
-  if (loading) return <div className="archive-loading">Загружаю профиль…</div>;
+  if (loading) return <div className="archive-loading">{t('friend.loadingProfile')}</div>;
   if (!f || !me) {
     return (
       <>
-        <button className="back-btn" onClick={() => showScreen('profile')}>← Профиль</button>
-        <div className="empty-state">Друг не найден</div>
+        <button className="back-btn" onClick={() => showScreen('profile')}>{t('friend.back')}</button>
+        <div className="empty-state">{t('friend.notFound')}</div>
       </>
     );
   }
@@ -40,7 +40,7 @@ export function FriendScreen(_props: { device: Device }) {
 
   return (
     <>
-      <button className="back-btn" onClick={() => showScreen('profile')}>← Профиль</button>
+      <button className="back-btn" onClick={() => showScreen('profile')}>{t('friend.back')}</button>
       <div className="profile-head">
         <div className="avatar-lg" style={{ cursor: 'default', ...userAvatarStyle(f) }} />
         <div>
@@ -49,18 +49,18 @@ export function FriendScreen(_props: { device: Device }) {
         </div>
       </div>
       <div className="stat-grid">
-        <div className="box"><div className="v">{f.stats.ratings}</div><div className="l">ОЦЕНОК</div></div>
-        <div className="box"><div className="v">{f.stats.avg || '—'}</div><div className="l">СР. БАЛЛ</div></div>
-        <div className="box"><div className="v">{f.stats.reviews}</div><div className="l">РЕЦЕНЗИЙ</div></div>
+        <div className="box"><div className="v">{f.stats.ratings}</div><div className="l">{t('profile.ratings')}</div></div>
+        <div className="box"><div className="v">{f.stats.avg || '—'}</div><div className="l">{t('profile.avg')}</div></div>
+        <div className="box"><div className="v">{f.stats.reviews}</div><div className="l">{t('profile.reviews')}</div></div>
       </div>
 
-      <div className="section-head"><h2>Рекап друга</h2><span>день / месяц / сезон</span></div>
-      <div style={{ marginBottom: 24 }}><RecapOpenButton userId={f.id} label={`Рекап ${f.name.split(' ')[0]}`} /></div>
+      <div className="section-head"><h2>{t('friend.recap')}</h2><span>{t('profile.recapPeriods')}</span></div>
+      <div style={{ marginBottom: 24 }}><RecapOpenButton userId={f.id} label={t('friend.recapOf', { name: f.name.split(' ')[0] })} /></div>
 
-      <div className="section-head"><h2>Сравнение вкусов</h2><span>с вами</span></div>
+      <div className="section-head"><h2>{t('friend.compare')}</h2><span>{t('friend.withYou')}</span></div>
       {overlap.length ? (
         <div className="compare-block">
-          <div className="compare-score"><div className="v">{matchScore}%</div><div className="l">СОВПАДЕНИЕ ПО ЖАНРАМ</div></div>
+          <div className="compare-score"><div className="v">{matchScore}%</div><div className="l">{t('friend.matchScore')}</div></div>
           {overlap.map((o) => (
             <div className="compare-row" key={o.g}>
               <div className="g">{o.g}</div>
@@ -71,15 +71,15 @@ export function FriendScreen(_props: { device: Device }) {
             </div>
           ))}
           <div className="compare-legend">
-            <span><i style={{ background: 'var(--lime)' }} />Вы</span>
+            <span><i style={{ background: 'var(--lime)' }} />{t('friend.you')}</span>
             <span><i style={{ background: 'var(--muted)' }} />{f.name.split(' ')[0]}</span>
           </div>
         </div>
       ) : (
-        <div className="empty-state">Пока недостаточно данных для сравнения</div>
+        <div className="empty-state">{t('friend.notEnoughCompare')}</div>
       )}
 
-      <div className="section-head"><h2>Топ-4 альбома</h2><span>по оценкам</span></div>
+      <div className="section-head"><h2>{t('friend.top4')}</h2><span>{t('friend.byRatings')}</span></div>
       <Top4Grid ids={f.top4Albums} />
     </>
   );

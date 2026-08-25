@@ -4,20 +4,20 @@ import { useState, type FormEvent } from 'react';
 import { useApp } from '@/lib/AppContext';
 
 export function RegisterModal() {
-  const { register } = useApp();
+  const { t, register } = useApp();
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim()) { setError('Введите имя'); return; }
+    if (!name.trim()) { setError(t('register.nameRequired')); return; }
     setSubmitting(true);
     setError(null);
     try {
       await register(name.trim());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось создать аккаунт');
+      setError(err instanceof Error ? err.message : t('register.failed'));
       setSubmitting(false);
     }
   }
@@ -28,19 +28,19 @@ export function RegisterModal() {
         onSubmit={handleSubmit}
         style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 28, maxWidth: 360, width: '100%' }}
       >
-        <div className="eyebrow">Добро пожаловать в HearMeOut</div>
-        <h1 className="page-title" style={{ marginBottom: 14 }}>Как вас зовут?</h1>
+        <div className="eyebrow">{t('register.welcome')}</div>
+        <h1 className="page-title" style={{ marginBottom: 14 }}>{t('register.question')}</h1>
         <input
           className="name-input"
           style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 14, fontSize: 15 }}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Иван Соколов"
+          placeholder={t('register.namePlaceholder')}
           autoFocus
         />
         {error && <div style={{ color: 'var(--coral)', fontSize: 12.5, marginBottom: 12 }}>{error}</div>}
         <button className="btn-primary" style={{ width: '100%', marginBottom: 0 }} disabled={submitting}>
-          {submitting ? 'Создаём…' : 'Создать аккаунт'}
+          {submitting ? t('register.submitting') : t('register.submit')}
         </button>
       </form>
     </div>

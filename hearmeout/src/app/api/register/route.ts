@@ -6,7 +6,7 @@ import { slugifyHandle } from '@/lib/slug';
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const name = typeof body?.name === 'string' ? body.name.trim() : '';
-  if (!name) return NextResponse.json({ error: 'Имя обязательно' }, { status: 400 });
+  if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
   const admin = supabaseAdmin();
   const base = slugifyHandle(name);

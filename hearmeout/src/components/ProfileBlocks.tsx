@@ -3,18 +3,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle } from '@/lib/format';
+import { toLocale } from '@/lib/i18n';
 import { CoverArt } from './ui/CoverArt';
 
 export function ConnectBlock() {
-  const { me } = useApp();
+  const { t, me } = useApp();
   if (!me) return null;
   return (
     <div className="connect-row">
       <a className={`connect-btn ${me.connections.spotify ? 'on' : ''}`} href="/api/auth/spotify">
-        {me.connections.spotify ? '✓ Spotify подключён' : 'Подключить Spotify'}
+        {me.connections.spotify ? t('profile.spotifyConnected') : t('profile.connectSpotify')}
       </a>
       <button className="connect-btn" disabled style={{ opacity: 0.5, cursor: 'default' }}>
-        Apple Music (скоро)
+        {t('profile.appleMusicSoon')}
       </button>
     </div>
   );
@@ -26,7 +27,8 @@ export function RecapOpenButton({ userId, label }: { userId: string; label: stri
 }
 
 export function GenresBlock({ genres }: { genres: { g: string; pct: number }[] }) {
-  if (!genres.length) return <div className="empty-state">Пока недостаточно данных — синхронизируй Spotify</div>;
+  const { t } = useApp();
+  if (!genres.length) return <div className="empty-state">{t('profile.notEnoughData')}</div>;
   return (
     <>
       {genres.map((g) => (
@@ -40,8 +42,8 @@ export function GenresBlock({ genres }: { genres: { g: string; pct: number }[] }
 }
 
 export function Top4Grid({ ids }: { ids: string[] }) {
-  const { albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
-  if (!ids.length) return <div className="empty-state">Ещё нет оценённых альбомов</div>;
+  const { t, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
+  if (!ids.length) return <div className="empty-state">{t('profile.noRatedAlbums')}</div>;
   return (
     <div className="top4-grid">
       {ids.map((id, i) => {
@@ -59,7 +61,7 @@ export function Top4Grid({ ids }: { ids: string[] }) {
 }
 
 export function FriendsBlock() {
-  const { me, viewFriend, addFriend } = useApp();
+  const { t, me, viewFriend, addFriend } = useApp();
   const [handle, setHandle] = useState('');
   const [submitting, setSubmitting] = useState(false);
   if (!me) return null;
@@ -73,10 +75,10 @@ export function FriendsBlock() {
             <div className="n">{f.name}</div>
             <div className="h">{f.handle}</div>
           </div>
-          <button onClick={() => viewFriend(f.id)}>Профиль</button>
+          <button onClick={() => viewFriend(f.id)}>{t('friends.viewProfile')}</button>
         </div>
       ))}
-      {!me.friends.length && <div className="empty-state">Пока нет друзей</div>}
+      {!me.friends.length && <div className="empty-state">{t('friends.empty')}</div>}
       <form
         style={{ display: 'flex', gap: 8, marginTop: 10 }}
         onSubmit={async (e) => {
@@ -91,11 +93,11 @@ export function FriendsBlock() {
         <input
           className="handle-input"
           style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '8px 10px', flex: 1 }}
-          placeholder="@handle друга"
+          placeholder={t('friends.handlePlaceholder')}
           value={handle}
           onChange={(e) => setHandle(e.target.value)}
         />
-        <button className="chip" type="submit" disabled={submitting}>+ Добавить</button>
+        <button className="chip" type="submit" disabled={submitting}>{t('friends.add')}</button>
       </form>
     </>
   );
@@ -104,7 +106,7 @@ export function FriendsBlock() {
 type Award = { name: string; value: number };
 
 export function AwardsBlock() {
-  const { me } = useApp();
+  const { t, language, me } = useApp();
   const [mostMinutes, setMostMinutes] = useState<Award | null>(null);
   const [mostNiche, setMostNiche] = useState<Award | null>(null);
   const [loading, setLoading] = useState(true);
@@ -141,14 +143,14 @@ export function AwardsBlock() {
   }, [me]);
 
   if (!me) return null;
-  if (!me.friends.length) return <div className="empty-state">Добавь друзей, чтобы увидеть награды месяца</div>;
-  if (loading) return <div className="archive-loading">Считаю…</div>;
-  if (!mostMinutes || !mostNiche) return <div className="empty-state">Пока не с чем сравнивать — ни у кого нет данных за месяц</div>;
+  if (!me.friends.length) return <div className="empty-state">{t('awards.needFriends')}</div>;
+  if (loading) return <div className="archive-loading">{t('awards.computing')}</div>;
+  if (!mostMinutes || !mostNiche) return <div className="empty-state">{t('awards.notEnough')}</div>;
 
   return (
     <>
-      <div className="award-row"><span className="award-label">🏆 Больше всех слушал(а) в этом месяце</span><span className="award-name">{mostMinutes.name} — {mostMinutes.value.toLocaleString('ru-RU')} мин</span></div>
-      <div className="award-row"><span className="award-label">🎧 Самый нишевый вкус</span><span className="award-name">{mostNiche.name} — {mostNiche.value} артистов</span></div>
+      <div className="award-row"><span className="award-label">{t('awards.mostMinutes')}</span><span className="award-name">{mostMinutes.name} — {mostMinutes.value.toLocaleString(toLocale(language))} {t('awards.minutesShort')}</span></div>
+      <div className="award-row"><span className="award-label">{t('awards.mostNiche')}</span><span className="award-name">{mostNiche.name} — {mostNiche.value} {t('awards.artistsShort')}</span></div>
     </>
   );
 }

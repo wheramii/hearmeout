@@ -75,15 +75,26 @@ export async function fetchAlbumCovers(spotifyIds: { ourId: string; spotifyId: s
 // tag:new and tag:hipster silently cap at limit=10 — anything higher is a
 // 400 "Invalid limit" from Spotify, confirmed by hand (undocumented quirk
 // specific to those two tag filters; ordinary search allows up to 50).
-export async function fetchNewOnSpotify(limit = 10): Promise<CatalogAlbum[]> {
-  const data = await spotifyGet('/search', { q: 'tag:new', type: 'album', limit: String(limit) });
+// `market` biases/filters results toward what's actually available in that
+// country on Spotify — the real mechanism their API exposes for "popular in
+// region X" (there's no separate regional-charts endpoint we have access to).
+function isValidMarket(market?: string | null): market is string {
+  return !!market && /^[A-Z]{2}$/.test(market);
+}
+
+export async function fetchNewOnSpotify(limit = 10, market?: string | null): Promise<CatalogAlbum[]> {
+  const params: Record<string, string> = { q: 'tag:new', type: 'album', limit: String(limit) };
+  if (isValidMarket(market)) params.market = market;
+  const data = await spotifyGet('/search', params);
   return (data.albums?.items || []).map(toCatalogAlbum);
 }
 
 // Real top artists per genre bucket, via the genre: search field filter.
-export async function fetchGenreTopArtists(genreBucket: string, limit = 8): Promise<CatalogArtist[]> {
+export async function fetchGenreTopArtists(genreBucket: string, limit = 8, market?: string | null): Promise<CatalogArtist[]> {
   const keyword = GENRE_SEARCH_KEYWORD[genreBucket] ?? genreBucket.toLowerCase();
-  const data = await spotifyGet('/search', { q: `genre:${keyword}`, type: 'artist', limit: String(limit) });
+  const params: Record<string, string> = { q: `genre:${keyword}`, type: 'artist', limit: String(limit) };
+  if (isValidMarket(market)) params.market = market;
+  const data = await spotifyGet('/search', params);
   return (data.artists?.items || []).map((a: { id: string; name: string; images: { url: string }[] }) => ({
     id: a.id,
     name: a.name,
@@ -94,8 +105,10 @@ export async function fetchGenreTopArtists(genreBucket: string, limit = 8): Prom
 // "Малоизвестные исполнители": Spotify doesn't expose a monthly-listeners
 // field over the public API, so this uses tag:hipster — Spotify's own
 // bottom-10%-popularity search filter — as the closest real substitute.
-export async function fetchObscureAlbums(genreBucket: string, limit = 10): Promise<CatalogAlbum[]> {
+export async function fetchObscureAlbums(genreBucket: string, limit = 10, market?: string | null): Promise<CatalogAlbum[]> {
   const keyword = GENRE_SEARCH_KEYWORD[genreBucket] ?? genreBucket.toLowerCase();
-  const data = await spotifyGet('/search', { q: `tag:hipster ${keyword}`, type: 'album', limit: String(limit) });
+  const params: Record<string, string> = { q: `tag:hipster ${keyword}`, type: 'album', limit: String(limit) };
+  if (isValidMarket(market)) params.market = market;
+  const data = await spotifyGet('/search', params);
   return (data.albums?.items || []).map(toCatalogAlbum);
 }

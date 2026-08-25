@@ -22,13 +22,13 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "HearMeOut",
-  description: "HearMeOut — слушай, оценивай, сравнивай со друзьями",
+  description: "HearMeOut — listen, rate, and compare taste with friends",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="ru"
+      lang="en"
       className={`${spaceGrotesk.variable} ${inter.variable} ${ibmPlexMono.variable}`}
     >
       <body>{children}</body>

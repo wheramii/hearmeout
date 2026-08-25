@@ -7,7 +7,7 @@ import { CoverArt } from '../ui/CoverArt';
 import { StarPicker } from '../ui/StarPicker';
 
 export function RateScreen({ device }: { device: Device }) {
-  const { state, albums, liveAlbums, myRatings, spotifyCovers, showScreen, setRatingValue, publishRating, showToast } = useApp();
+  const { state, t, albums, liveAlbums, myRatings, spotifyCovers, showScreen, setRatingValue, publishRating, showToast } = useApp();
   const a = albums.find((x) => x.id === state.currentAlbumId) || liveAlbums[state.currentAlbumId] || albums[0];
   const cover = spotifyCovers[a.id] || a.cover;
   const [text, setText] = useState(state.ratingDraftText);
@@ -15,12 +15,12 @@ export function RateScreen({ device }: { device: Device }) {
   useEffect(() => setText(state.ratingDraftText), [state.currentAlbumId, state.ratingDraftText]);
 
   const val = state.ratingValue || 0;
-  const label = val > 0 ? `Оценка — ${val.toFixed(1)} / 5` : 'Проведите по звёздам — 0.0 / 5';
+  const label = val > 0 ? t('rate.hintValue', { value: val.toFixed(1) }) : t('rate.hintEmpty');
   const isEditing = myRatings.some((r) => r.albumId === a.id);
 
   const inner = (
     <>
-      <div className="eyebrow">{isEditing ? 'Изменить оценку' : 'Оценка'}</div>
+      <div className="eyebrow">{isEditing ? t('rate.editTitle') : t('rate.newTitle')}</div>
       <CoverArt
         url={cover}
         fallbackLetter={a.artist[0] || '?'}
@@ -34,7 +34,7 @@ export function RateScreen({ device }: { device: Device }) {
       <div className="vu-label">{label}</div>
       <textarea
         className="review-box"
-        placeholder="Напишите рецензию (необязательно)…"
+        placeholder={t('rate.reviewPlaceholder')}
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
@@ -42,18 +42,18 @@ export function RateScreen({ device }: { device: Device }) {
         className="btn-primary"
         style={device === 'desktop' ? { width: '100%' } : undefined}
         onClick={() => {
-          if (val <= 0) { showToast('Сначала выберите оценку'); return; }
+          if (val <= 0) { showToast(t('rate.needStars')); return; }
           publishRating(a.id, val, text.trim());
         }}
       >
-        {isEditing ? 'Сохранить изменения' : 'Опубликовать'}
+        {isEditing ? t('rate.save') : t('rate.publish')}
       </button>
     </>
   );
 
   const back = (
     <button className="back-btn" onClick={() => showScreen(state.rateOrigin === 'history' ? 'history' : 'album')}>
-      ← Назад
+      {t('rate.back')}
     </button>
   );
 

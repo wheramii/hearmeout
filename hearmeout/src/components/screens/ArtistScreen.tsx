@@ -7,30 +7,30 @@ import { CoverArt } from '../ui/CoverArt';
 import { ArtistAvatar } from '../ui/ArtistAvatar';
 
 export function ArtistScreen({ device }: { device: Device }) {
-  const { state, showScreen } = useApp();
+  const { t, state, showScreen } = useApp();
   const art = state.currentArtist;
   const gridClass = device === 'mobile' ? 'grid-cards' : 'd-grid';
 
   if (!art) {
     return (
       <>
-        <button className="back-btn" onClick={() => showScreen('catalog')}>← Назад</button>
-        <div className="empty-state">Артист не выбран</div>
+        <button className="back-btn" onClick={() => showScreen('catalog')}>{t('artist.back')}</button>
+        <div className="empty-state">{t('artist.notSelected')}</div>
       </>
     );
   }
 
   let body;
   if (art.loading) {
-    body = <div className="archive-loading">Загружаю альбомы…</div>;
+    body = <div className="archive-loading">{t('artist.loadingAlbums')}</div>;
   } else if (art.error) {
     body = <div className="empty-state">{art.error}</div>;
   } else if (!art.albums || !art.albums.length) {
-    body = <div className="empty-state">Альбомы не найдены в открытой библиотеке</div>;
+    body = <div className="empty-state">{t('artist.notFound')}</div>;
   } else {
     body = (
       <>
-        <div className="section-head"><h2>Альбомы</h2><span>{art.albums.length}</span></div>
+        <div className="section-head"><h2>{t('artist.albums')}</h2><span>{art.albums.length}</span></div>
         <div className={gridClass}>
           {art.albums.map((g) => {
             const year = g['first-release-date'] ? g['first-release-date'].slice(0, 4) : '—';
@@ -49,11 +49,11 @@ export function ArtistScreen({ device }: { device: Device }) {
 
   return (
     <>
-      <button className="back-btn" onClick={() => showScreen('catalog')}>← Назад</button>
+      <button className="back-btn" onClick={() => showScreen('catalog')}>{t('artist.back')}</button>
       <div className="album-hero">
         <ArtistAvatar name={art.name} className="art-lg cover-fallback" fallbackStyle={{ fontSize: 48 }} />
         <h1>{art.name}</h1>
-        <div className="sub">Артист · открытая библиотека MusicBrainz</div>
+        <div className="sub">{t('artist.subtitle')}</div>
       </div>
       {body}
     </>
