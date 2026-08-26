@@ -12,10 +12,10 @@ export async function GET(request: NextRequest) {
     const data = await res.json();
     const artist = (data.data || [])[0];
     if (!artist?.picture_medium) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-    return NextResponse.json(
-      { photo: artist.picture_medium },
-      { headers: { 'Cache-Control': 's-maxage=86400, stale-while-revalidate=604800' } }
-    );
+    // No Cache-Control: Netlify's edge cache keys this route by path only,
+    // ignoring the `name` query string — every artist would otherwise get
+    // whichever photo happened to be cached for the first request.
+    return NextResponse.json({ photo: artist.picture_medium });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }

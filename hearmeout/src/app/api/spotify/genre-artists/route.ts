@@ -13,7 +13,10 @@ export async function GET(request: NextRequest) {
       3600,
       () => fetchGenreTopArtists(genre, 8, market)
     );
-    return NextResponse.json(artists, { headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' } });
+    // No Cache-Control: Netlify's edge cache ignores the genre/market query
+    // string for this route — withSpotifyCache above already caches
+    // correctly per genre+market.
+    return NextResponse.json(artists);
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }

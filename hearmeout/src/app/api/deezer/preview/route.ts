@@ -81,7 +81,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (!result) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-    return NextResponse.json(result, { headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' } });
+    // No Cache-Control here: Netlify's edge cache keys this route by path
+    // only, ignoring the artist/title query string — an s-maxage header
+    // was making every album return whatever got cached for the very
+    // first request, regardless of what was actually asked for.
+    return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
