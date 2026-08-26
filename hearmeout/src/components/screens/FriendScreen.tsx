@@ -3,8 +3,54 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, PublicProfile } from '@/lib/types';
-import { userAvatarStyle } from '@/lib/format';
+import { userAvatarStyle, starsText, formatRelative } from '@/lib/format';
 import { RecapOpenButton, Top4Grid } from '../ProfileBlocks';
+import { CoverArt } from '../ui/CoverArt';
+import type { RatingRecord } from '@/lib/types';
+
+function FriendHistoryItem({ rating }: { rating: RatingRecord }) {
+  const { albums, liveAlbums, spotifyCovers, language, openAlbum } = useApp();
+  const a = liveAlbums[rating.albumId] || albums.find((x) => x.id === rating.albumId);
+  if (!a) return null;
+  const cover = spotifyCovers[a.id] || a.cover;
+  return (
+    <div className="activity-item" onClick={() => openAlbum(a.id)}>
+      <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="thumb" />
+      <div className="body">
+        <div><b>{a.title}</b> — {a.artist}</div>
+        <span className="stars-dot">{starsText(rating.stars)} {rating.stars.toFixed(1)}</span>
+        {rating.review && <div style={{ color: '#CFC7C1', marginTop: 4 }}>{rating.review}</div>}
+        <div className="when">{formatRelative(rating.createdAt, language)}</div>
+      </div>
+    </div>
+  );
+}
+
+function FriendsOfFriendRow({ user }: { user: NonNullable<PublicProfile['friends']>[number] }) {
+  const { t, me, friendRequests, addFriend, viewFriend } = useApp();
+  if (!me) return null;
+
+  const isMe = user.id === me.id;
+  const isFriend = me.friends.some((fr) => fr.id === user.id);
+  const isPending = friendRequests.outgoing.some((r) => r.user.id === user.id);
+
+  return (
+    <div className="friend-row">
+      <div className="avatar-sm" style={userAvatarStyle(user)} />
+      <div className="info" onClick={() => viewFriend(user.id)}>
+        <div className="n">{user.name}</div>
+        <div className="h">{user.handle}</div>
+      </div>
+      {isMe ? null : isFriend ? (
+        <span className="chip" style={{ opacity: 0.6 }}>{t('friend.alreadyFriend')}</span>
+      ) : isPending ? (
+        <span className="chip" style={{ opacity: 0.6 }}>{t('friend.requestSent')}</span>
+      ) : (
+        <button onClick={() => addFriend(user.handle)}>{t('friend.addThem')}</button>
+      )}
+    </div>
+  );
+}
 
 export function FriendScreen(_props: { device: Device }) {
   const { t, state, me, showScreen } = useApp();
@@ -81,6 +127,24 @@ export function FriendScreen(_props: { device: Device }) {
 
       <div className="section-head"><h2>{t('friend.top4')}</h2><span>{t('friend.byRatings')}</span></div>
       <Top4Grid ids={f.top4Albums} />
+
+      {f.recentRatings && (
+        <>
+          <div className="section-head"><h2>{t('friend.history')}</h2><span>{f.recentRatings.length}</span></div>
+          {f.recentRatings.length ? f.recentRatings.map((r) => (
+            <FriendHistoryItem key={r.albumId} rating={r} />
+          )) : <div className="empty-state">{t('history.emptyLine1')}</div>}
+        </>
+      )}
+
+      {f.friends && (
+        <>
+          <div className="section-head"><h2>{t('friend.friendsOf', { name: f.name.split(' ')[0] })}</h2><span>{f.friends.length}</span></div>
+          {f.friends.length ? f.friends.map((u) => (
+            <FriendsOfFriendRow key={u.id} user={u} />
+          )) : <div className="empty-state">{t('friend.noFriends')}</div>}
+        </>
+      )}
     </>
   );
 }

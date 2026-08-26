@@ -44,6 +44,11 @@ export type PublicProfile = ApiUser & {
   genres: { g: string; pct: number }[];
   top4Albums: string[];
   minutesToday: number;
+  // Only populated for the viewer's own profile, or when the viewer is
+  // already an accepted friend of this person — lets friends discover
+  // mutual connections without exposing a stranger's whole friend graph.
+  friends?: ApiUser[];
+  recentRatings?: RatingRecord[];
 };
 
 export type Me = PublicProfile & {
@@ -51,7 +56,11 @@ export type Me = PublicProfile & {
   friends: ApiUser[];
   language: import('./i18n').Language;
   region: string | null;
+  hasPassword: boolean;
+  email: string | null;
 };
+
+export type FriendRequest = { id: number; user: ApiUser; createdAt: string };
 
 export type RatingRecord = {
   albumId: string;

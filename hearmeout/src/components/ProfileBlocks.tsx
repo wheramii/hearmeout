@@ -6,6 +6,82 @@ import { userAvatarStyle } from '@/lib/format';
 import { toLocale } from '@/lib/i18n';
 import { CoverArt } from './ui/CoverArt';
 
+export function AccountBlock() {
+  const { t, me, claimAccount, logout, showToast } = useApp();
+  const [claiming, setClaiming] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  if (!me) return null;
+
+  const submitClaim = async () => {
+    if (!email.trim() || !password || submitting) return;
+    setSubmitting(true);
+    try {
+      await claimAccount(email.trim(), password);
+      showToast(t('profile.passwordSetSuccess'));
+      setClaiming(false);
+      setEmail('');
+      setPassword('');
+    } catch (err) {
+      const code = err instanceof Error ? err.message : '';
+      showToast(code === 'email_taken' ? t('profile.claimEmailTaken') : t('profile.claimFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="account-id-row">
+        <div>
+          <div className="account-id-label">{t('profile.yourId')}</div>
+          <div className="account-id-value">{me.handle}</div>
+        </div>
+      </div>
+      <div className="account-id-hint">{t('profile.yourIdHint')}</div>
+
+      {me.hasPassword ? (
+        <div className="account-email-row">
+          <span className="chip">{t('profile.hasPasswordBadge')}</span>
+          {me.email && <span className="account-email">{t('profile.emailLabel')}: {me.email}</span>}
+        </div>
+      ) : claiming ? (
+        <div className="import-history-panel">
+          <div className="import-history-sub">{t('profile.passwordSetHint')}</div>
+          <input
+            type="email"
+            className="name-input"
+            style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, width: '100%' }}
+            placeholder={t('register.emailPlaceholder')}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
+            type="password"
+            className="name-input"
+            style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, width: '100%' }}
+            placeholder={t('register.passwordPlaceholder')}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button className="btn-primary" style={{ width: '100%' }} disabled={submitting} onClick={submitClaim}>
+            {t('profile.passwordSetSubmit')}
+          </button>
+        </div>
+      ) : (
+        <button className="btn-ghost" style={{ width: '100%' }} onClick={() => setClaiming(true)}>
+          {t('profile.passwordSetTitle')}
+        </button>
+      )}
+
+      <button className="btn-ghost" style={{ width: '100%', marginTop: 10 }} onClick={() => logout()}>
+        {t('profile.logout')}
+      </button>
+    </>
+  );
+}
+
 export function ConnectBlock() {
   const { t, me } = useApp();
   if (!me) return null;
@@ -126,6 +202,47 @@ export function Top4Grid({ ids }: { ids: string[] }) {
         );
       })}
     </div>
+  );
+}
+
+export function FriendRequestsBlock() {
+  const { t, friendRequests, respondToFriendRequest } = useApp();
+  if (!friendRequests.incoming.length && !friendRequests.outgoing.length) return null;
+
+  return (
+    <>
+      {friendRequests.incoming.length > 0 && (
+        <>
+          <div className="section-head"><h2>{t('friends.incomingRequests')}</h2><span>{friendRequests.incoming.length}</span></div>
+          {friendRequests.incoming.map((r) => (
+            <div className="friend-row" key={r.id}>
+              <div className="avatar-sm" style={userAvatarStyle(r.user)} />
+              <div className="info">
+                <div className="n">{r.user.name}</div>
+                <div className="h">{r.user.handle}</div>
+              </div>
+              <button onClick={() => respondToFriendRequest(r.id, 'accept')}>{t('friends.accept')}</button>
+              <button onClick={() => respondToFriendRequest(r.id, 'decline')}>{t('friends.decline')}</button>
+            </div>
+          ))}
+        </>
+      )}
+      {friendRequests.outgoing.length > 0 && (
+        <>
+          <div className="section-head"><h2>{t('friends.outgoingRequests')}</h2><span>{friendRequests.outgoing.length}</span></div>
+          {friendRequests.outgoing.map((r) => (
+            <div className="friend-row" key={r.id}>
+              <div className="avatar-sm" style={userAvatarStyle(r.user)} />
+              <div className="info">
+                <div className="n">{r.user.name}</div>
+                <div className="h">{r.user.handle}</div>
+              </div>
+              <span className="chip" style={{ opacity: 0.6 }}>{t('friends.pendingBadge')}</span>
+            </div>
+          ))}
+        </>
+      )}
+    </>
   );
 }
 

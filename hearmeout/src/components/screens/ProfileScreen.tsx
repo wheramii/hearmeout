@@ -5,7 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { LANGUAGES, LANGUAGE_LABEL, getRegionCodes, regionDisplayName } from '@/lib/i18n';
-import { ConnectBlock, ImportHistoryBlock, RecapOpenButton, GenresBlock, Top4Grid, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
+import { AccountBlock, ConnectBlock, ImportHistoryBlock, RecapOpenButton, GenresBlock, Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
 
 function AvatarPicker({ size }: { size?: number }) {
   const { t, me, updateAvatar } = useApp();
@@ -89,6 +89,13 @@ export function ProfileScreen({ device }: { device: Device }) {
     </div>
   );
 
+  const accountSection = (
+    <>
+      <div className="section-head"><h2>{t('profile.accountSection')}</h2></div>
+      <div style={{ marginBottom: 22 }}><AccountBlock /></div>
+    </>
+  );
+
   const connectionSection = (
     <>
       <div className="section-head"><h2>{t('profile.connection')}</h2><span>Spotify / Apple Music</span></div>
@@ -115,6 +122,7 @@ export function ProfileScreen({ device }: { device: Device }) {
         </div>
         {statGrid}
 
+        {accountSection}
         {connectionSection}
 
         <div className="section-head"><h2>{t('profile.recap')}</h2><span>{t('profile.recapPeriods')}</span></div>
@@ -126,6 +134,7 @@ export function ProfileScreen({ device }: { device: Device }) {
         <div className="section-head"><h2>{t('profile.top4')}</h2><span>{t('profile.byYourRatings')}</span></div>
         <div style={{ marginBottom: 24 }}><Top4Grid ids={me.top4Albums} /></div>
 
+        <FriendRequestsBlock />
         <div className="section-head"><h2>{t('profile.friends')}</h2><span>{me.friends.length}</span></div>
         <div style={{ marginBottom: 14 }}><FriendsBlock /></div>
 
@@ -148,10 +157,12 @@ export function ProfileScreen({ device }: { device: Device }) {
           <div className="box"><div className="v">{me.stats.avg || '—'}</div><div className="l">{t('profile.avg')}</div></div>
           <div className="box"><div className="v">{me.stats.reviews}</div><div className="l">{t('profile.reviews')}</div></div>
         </div>
+        <FriendRequestsBlock />
         <div className="section-head" style={{ marginTop: 22 }}><h2>{t('profile.friends')}</h2><span>{me.friends.length}</span></div>
         <FriendsBlock />
       </div>
       <div className="main">
+        {accountSection}
         {connectionSection}
         <div className="section-head"><h2>{t('profile.recap')}</h2><span>{t('profile.recapPeriods')}</span></div>
         <div style={{ marginBottom: 28, maxWidth: 480 }}><RecapOpenButton userId="me" label={t('profile.openDayRecap')} /></div>

@@ -2,22 +2,47 @@
 
 import { useState, type FormEvent } from 'react';
 import { useApp } from '@/lib/AppContext';
+import type { TranslationKey } from '@/lib/i18n';
+
+const ERROR_KEY: Record<string, TranslationKey> = {
+  email_taken: 'register.emailTaken',
+  invalid_email: 'register.invalidEmail',
+  weak_password: 'register.weakPassword',
+  name_required: 'register.nameRequired',
+  invalid_credentials: 'login.invalidCredentials',
+  account_not_linked: 'login.accountNotLinked',
+};
 
 export function RegisterModal() {
-  const { t, register } = useApp();
+  const { t, registerWithPassword, loginWithPassword } = useApp();
+  const [mode, setMode] = useState<'register' | 'login'>('register');
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  function mapError(err: unknown, fallback: TranslationKey): string {
+    const code = err instanceof Error ? err.message : '';
+    return t(ERROR_KEY[code] || fallback);
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim()) { setError(t('register.nameRequired')); return; }
+    if (mode === 'register' && !name.trim()) { setError(t('register.nameRequired')); return; }
+    if (!email.trim()) { setError(t('register.emailRequired')); return; }
+    if (!password) { setError(t('register.passwordRequired')); return; }
+
     setSubmitting(true);
     setError(null);
     try {
-      await register(name.trim());
+      if (mode === 'register') {
+        await registerWithPassword(name.trim(), email.trim(), password);
+      } else {
+        await loginWithPassword(email.trim(), password);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('register.failed'));
+      setError(mapError(err, mode === 'register' ? 'register.failed' : 'login.failed'));
       setSubmitting(false);
     }
   }
@@ -29,18 +54,50 @@ export function RegisterModal() {
         style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 28, maxWidth: 360, width: '100%' }}
       >
         <div className="eyebrow">{t('register.welcome')}</div>
-        <h1 className="page-title" style={{ marginBottom: 14 }}>{t('register.question')}</h1>
+        <h1 className="page-title" style={{ marginBottom: 14 }}>{mode === 'register' ? t('register.question') : t('login.title')}</h1>
+
+        {mode === 'register' && (
+          <input
+            className="name-input"
+            style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, fontSize: 15, width: '100%' }}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('register.namePlaceholder')}
+            autoFocus
+          />
+        )}
         <input
+          type="email"
           className="name-input"
-          style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 14, fontSize: 15 }}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t('register.namePlaceholder')}
-          autoFocus
+          style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, fontSize: 15, width: '100%' }}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder={t('register.emailPlaceholder')}
         />
+        <input
+          type="password"
+          className="name-input"
+          style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 14, fontSize: 15, width: '100%' }}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder={t('register.passwordPlaceholder')}
+        />
+
         {error && <div style={{ color: 'var(--coral)', fontSize: 12.5, marginBottom: 12 }}>{error}</div>}
-        <button className="btn-primary" style={{ width: '100%', marginBottom: 0 }} disabled={submitting}>
-          {submitting ? t('register.submitting') : t('register.submit')}
+
+        <button className="btn-primary" style={{ width: '100%', marginBottom: 12 }} disabled={submitting}>
+          {submitting
+            ? (mode === 'register' ? t('register.submitting') : t('login.submitting'))
+            : (mode === 'register' ? t('register.submit') : t('login.submit'))}
+        </button>
+
+        <button
+          type="button"
+          className="btn-ghost"
+          style={{ width: '100%' }}
+          onClick={() => { setMode((m) => (m === 'register' ? 'login' : 'register')); setError(null); }}
+        >
+          {mode === 'register' ? t('register.switchToLogin') : t('login.switchToRegister')}
         </button>
       </form>
     </div>
