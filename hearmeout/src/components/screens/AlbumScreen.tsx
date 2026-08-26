@@ -6,7 +6,7 @@ import type { Device } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { StarsAvg } from '../ui/StarsAvg';
 import { pluralForKey, toLocale } from '@/lib/i18n';
-import { TrackPreview } from '../TrackPreview';
+import { CirclePlayer } from '../CirclePlayer';
 import { AlbumReviews } from '../AlbumReviews';
 
 export function AlbumScreen({ device }: { device: Device }) {
@@ -63,17 +63,6 @@ export function AlbumScreen({ device }: { device: Device }) {
     </div>
   );
 
-  const previewBlock = (
-    <div className="dz-preview-wrap" style={device === 'desktop' ? { maxWidth: 420 } : undefined}>
-      <div className="dz-preview-label" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ color: 'var(--lime)' }}>●</span> {t('album.preview')}
-      </div>
-      <div className="dz-preview-player">
-        <TrackPreview artist={a.artist} title={a.title} />
-      </div>
-    </div>
-  );
-
   const wishlistBtn = (
     <button
       className={`btn-ghost ${wishlisted ? 'added' : ''}`}
@@ -89,13 +78,13 @@ export function AlbumScreen({ device }: { device: Device }) {
       <>
         <button className="back-btn" onClick={() => showScreen('catalog')}>{t('album.backToCatalog')}</button>
         <div className="album-hero">
+          <CirclePlayer artist={a.artist} title={a.title} size={48} className="album-hero-player" />
           {heroArt}
           <h1>{a.title}</h1>
           <div className="sub">{artistLabel}{a.year ? ` · ${a.year}` : ''}</div>
           <div className="tags">{a.genre && <span className="chip">{a.genre}</span>}</div>
         </div>
         {ratingBlock}
-        {previewBlock}
         <button className="btn-primary" onClick={() => openRateFor(a.id, 'album')}>{t('album.rateAlbum')}</button>
         {wishlistBtn}
         <div className="section-head"><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>
@@ -120,8 +109,10 @@ export function AlbumScreen({ device }: { device: Device }) {
           <h1>{a.title}</h1>
           <div className="sub">{artistLabel}{a.year ? ` · ${a.year}` : ''}</div>
           <div className="tags" style={{ display: 'flex', gap: 8, marginBottom: 20 }}>{a.genre && <span className="chip">{a.genre}</span>}</div>
-          <div style={{ justifyContent: 'flex-start', maxWidth: 340 }}>{ratingBlock}</div>
-          {previewBlock}
+          <div className="d-rating-row" style={{ maxWidth: 420, marginBottom: 20 }}>
+            <div style={{ flex: 1 }}>{ratingBlock}</div>
+            <CirclePlayer artist={a.artist} title={a.title} size={64} />
+          </div>
           <div className="d-two-col">
             <div>
               <div className="section-head"><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>

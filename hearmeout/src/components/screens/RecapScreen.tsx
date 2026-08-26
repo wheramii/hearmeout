@@ -6,6 +6,7 @@ import type { Device, PublicProfile, RecapPeriod } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { pluralForKey, toLocale, type TranslationKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
+import { CirclePlayer } from '../CirclePlayer';
 
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', month: 'recap.month', season: 'recap.season' };
 
@@ -53,6 +54,9 @@ export function RecapScreen(_props: { device: Device }) {
         </div>
       </div>
       <div className="recap-hero">
+        {r && r.topSongs[0] && (
+          <CirclePlayer artist={r.topSongs[0].artist} title={r.topSongs[0].title} size={72} className="recap-player" />
+        )}
         <div className="recap-hero-avatar" style={userAvatarStyle({ avatarUrl })} />
         <div className="recap-hero-name">{name}</div>
         <div className="recap-hero-period">{t(PERIOD_KEY[state.recapPeriod])} {t('recap.periodLabel')}</div>

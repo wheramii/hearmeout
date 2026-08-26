@@ -1,15 +1,24 @@
-export function LogoMark() {
+import { useId } from 'react';
+
+export function LogoMark({ size = 24, animate = false }: { size?: number; animate?: boolean }) {
+  const gradientId = useId();
   return (
-    <svg viewBox="0 0 64 64" width="24" height="24" style={{ flexShrink: 0 }}>
+    <svg
+      viewBox="0 0 64 64"
+      width={size}
+      height={size}
+      style={{ flexShrink: 0 }}
+      className={animate ? 'logo-mark playing' : 'logo-mark'}
+    >
       <defs>
-        <linearGradient id="logo-g" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="var(--lime)" />
           <stop offset="1" stopColor="var(--coral)" />
         </linearGradient>
       </defs>
-      <rect x="14" y="26" width="8" height="12" rx="4" fill="url(#logo-g)" />
-      <rect x="28" y="16" width="8" height="32" rx="4" fill="url(#logo-g)" />
-      <rect x="42" y="22" width="8" height="20" rx="4" fill="url(#logo-g)" />
+      <rect className="logo-bar logo-bar-1" x="14" y="26" width="8" height="12" rx="4" fill={`url(#${gradientId})`} />
+      <rect className="logo-bar logo-bar-2" x="28" y="16" width="8" height="32" rx="4" fill={`url(#${gradientId})`} />
+      <rect className="logo-bar logo-bar-3" x="42" y="22" width="8" height="20" rx="4" fill={`url(#${gradientId})`} />
     </svg>
   );
 }

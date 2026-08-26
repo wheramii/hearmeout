@@ -47,7 +47,6 @@ const ru = {
   'album.tracklistEmpty': 'Треклист пока не добавлен',
   'album.tracksCount': 'треков',
   'album.reviews': 'Рецензии',
-  'album.preview': 'Предпрослушивание · без рекламы',
   'album.noRatings': 'оценки отсутствуют',
   'album.ratingOne': 'оценка',
   'album.ratingFew': 'оценки',
@@ -55,12 +54,6 @@ const ru = {
 
   'reviews.loading': 'Загружаю рецензии…',
   'reviews.empty': 'Пока нет рецензий',
-
-  'preview.loading': 'Ищу превью на Deezer…',
-  'preview.notFound': 'Превью не найдено на Deezer',
-  'preview.fileProtocol': 'Требует хостинга — не работает при открытии файла напрямую (file://).',
-  'preview.failed': 'Не удалось получить превью с Deezer сейчас.',
-  'preview.label': '30-сек превью «{title}» · Deezer',
 
   'rate.editTitle': 'Изменить оценку',
   'rate.newTitle': 'Оценка',
@@ -320,7 +313,6 @@ const en: Dict = {
   'album.tracklistEmpty': 'Tracklist not added yet',
   'album.tracksCount': 'tracks',
   'album.reviews': 'Reviews',
-  'album.preview': 'Preview · ad-free',
   'album.noRatings': 'no ratings yet',
   'album.ratingOne': 'rating',
   'album.ratingFew': 'ratings',
@@ -328,12 +320,6 @@ const en: Dict = {
 
   'reviews.loading': 'Loading reviews…',
   'reviews.empty': 'No reviews yet',
-
-  'preview.loading': 'Looking for a preview on Deezer…',
-  'preview.notFound': 'No preview found on Deezer',
-  'preview.fileProtocol': "Needs hosting — doesn't work when the file is opened directly (file://).",
-  'preview.failed': "Couldn't get a preview from Deezer right now.",
-  'preview.label': '30-sec preview of "{title}" · Deezer',
 
   'rate.editTitle': 'Edit rating',
   'rate.newTitle': 'Rating',
@@ -590,7 +576,6 @@ const fr: Dict = {
   'album.tracklistEmpty': "La liste des titres n'est pas encore disponible",
   'album.tracksCount': 'titres',
   'album.reviews': 'Avis',
-  'album.preview': 'Extrait · sans publicité',
   'album.noRatings': 'aucune note pour le moment',
   'album.ratingOne': 'note',
   'album.ratingFew': 'notes',
@@ -598,12 +583,6 @@ const fr: Dict = {
 
   'reviews.loading': 'Chargement des avis…',
   'reviews.empty': "Aucun avis pour l'instant",
-
-  'preview.loading': 'Recherche d\'un extrait sur Deezer…',
-  'preview.notFound': 'Aucun extrait trouvé sur Deezer',
-  'preview.fileProtocol': "Nécessite un hébergement — ne fonctionne pas en ouvrant le fichier directement (file://).",
-  'preview.failed': "Impossible d'obtenir un extrait Deezer pour le moment.",
-  'preview.label': 'Extrait de 30 s « {title} » · Deezer',
 
   'rate.editTitle': 'Modifier la note',
   'rate.newTitle': 'Note',
@@ -860,7 +839,6 @@ const es: Dict = {
   'album.tracklistEmpty': 'La lista de canciones aún no está disponible',
   'album.tracksCount': 'canciones',
   'album.reviews': 'Reseñas',
-  'album.preview': 'Vista previa · sin anuncios',
   'album.noRatings': 'sin valoraciones todavía',
   'album.ratingOne': 'valoración',
   'album.ratingFew': 'valoraciones',
@@ -868,12 +846,6 @@ const es: Dict = {
 
   'reviews.loading': 'Cargando reseñas…',
   'reviews.empty': 'Aún no hay reseñas',
-
-  'preview.loading': 'Buscando una vista previa en Deezer…',
-  'preview.notFound': 'No se encontró vista previa en Deezer',
-  'preview.fileProtocol': 'Necesita alojamiento — no funciona al abrir el archivo directamente (file://).',
-  'preview.failed': 'No se pudo obtener la vista previa de Deezer ahora.',
-  'preview.label': 'Vista previa de 30 s de «{title}» · Deezer',
 
   'rate.editTitle': 'Editar valoración',
   'rate.newTitle': 'Valoración',
@@ -1130,7 +1102,6 @@ const de: Dict = {
   'album.tracklistEmpty': 'Titelliste noch nicht verfügbar',
   'album.tracksCount': 'Titel',
   'album.reviews': 'Rezensionen',
-  'album.preview': 'Vorschau · werbefrei',
   'album.noRatings': 'noch keine Bewertungen',
   'album.ratingOne': 'Bewertung',
   'album.ratingFew': 'Bewertungen',
@@ -1138,12 +1109,6 @@ const de: Dict = {
 
   'reviews.loading': 'Rezensionen werden geladen…',
   'reviews.empty': 'Noch keine Rezensionen',
-
-  'preview.loading': 'Suche Vorschau bei Deezer…',
-  'preview.notFound': 'Keine Vorschau bei Deezer gefunden',
-  'preview.fileProtocol': 'Benötigt Hosting — funktioniert nicht, wenn die Datei direkt geöffnet wird (file://).',
-  'preview.failed': 'Vorschau von Deezer momentan nicht verfügbar.',
-  'preview.label': '30-Sek-Vorschau „{title}“ · Deezer',
 
   'rate.editTitle': 'Bewertung ändern',
   'rate.newTitle': 'Bewertung',
