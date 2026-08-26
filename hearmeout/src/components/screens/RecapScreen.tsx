@@ -54,12 +54,14 @@ export function RecapScreen(_props: { device: Device }) {
         </div>
       </div>
       <div className="recap-hero">
-        {r && r.topSongs[0] && (
-          <CirclePlayer artist={r.topSongs[0].artist} title={r.topSongs[0].title} size={72} className="recap-player" />
-        )}
         <div className="recap-hero-avatar" style={userAvatarStyle({ avatarUrl })} />
         <div className="recap-hero-name">{name}</div>
-        <div className="recap-hero-period">{t(PERIOD_KEY[state.recapPeriod])} {t('recap.periodLabel')}</div>
+        <div className="recap-hero-period-row">
+          <div className="recap-hero-period">{t(PERIOD_KEY[state.recapPeriod])} {t('recap.periodLabel')}</div>
+          {r && r.topSongs[0] && (
+            <CirclePlayer artist={r.topSongs[0].artist} title={r.topSongs[0].title} size={28} />
+          )}
+        </div>
         {r && (r.trackCount > 0 ? <div className="recap-hero-vibe">«{vibe}»</div> : <div className="recap-hero-vibe">{t('recap.vibeEmpty')}</div>)}
       </div>
       {!r ? (

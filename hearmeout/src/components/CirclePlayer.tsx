@@ -2,22 +2,23 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { fetchTrackPreview } from '@/lib/deezer';
-import { LogoMark } from './ui/Icons';
+import { LogoMark, PlayIcon } from './ui/Icons';
 
 type Status = 'loading' | 'ready' | 'unavailable';
 
 const RADIUS = 46;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-// A compact circular progress ring (30s Deezer preview) with the HearMeOut
-// mark centered in it — the mark's bars bounce like an equalizer while
-// playing. Autoplay is attempted on mount; browsers that block unmuted
-// autoplay just leave it paused until the ring itself is tapped.
-export function CirclePlayer({ artist, title, size = 56, autoPlay = true, className }: {
+// A compact circular progress ring (30s Deezer preview) with a play button
+// centered in it — tapping it starts playback and swaps the button for the
+// HearMeOut mark, whose bars bounce like an equalizer while playing.
+// Autoplay isn't used here: both the mobile and desktop shells stay mounted
+// at once (only one is visible via CSS), so autoplaying would start two
+// overlapping audio streams for the same track.
+export function CirclePlayer({ artist, title, size = 56, className }: {
   artist: string;
   title: string;
   size?: number;
-  autoPlay?: boolean;
   className?: string;
 }) {
   const [status, setStatus] = useState<Status>('loading');
@@ -42,13 +43,6 @@ export function CirclePlayer({ artist, title, size = 56, autoPlay = true, classN
       .catch(() => { if (!cancelled) setStatus('unavailable'); });
     return () => { cancelled = true; };
   }, [artist, title]);
-
-  useEffect(() => {
-    if (status !== 'ready' || !autoPlay || !audioRef.current) return;
-    audioRef.current.play().catch(() => {
-      // Autoplay-with-sound blocked by the browser — needs an explicit tap.
-    });
-  }, [status, autoPlay]);
 
   const toggle = () => {
     const el = audioRef.current;
@@ -79,8 +73,8 @@ export function CirclePlayer({ artist, title, size = 56, autoPlay = true, classN
           />
         )}
       </svg>
-      <div className="circle-player-center">
-        <LogoMark animate={playing} size={Math.round(size * 0.4)} />
+      <div className={`circle-player-center ${status !== 'ready' ? 'dim' : ''}`.trim()}>
+        {playing ? <LogoMark animate size={Math.round(size * 0.4)} /> : <PlayIcon size={Math.round(size * 0.36)} />}
       </div>
       {preview && (
         <audio

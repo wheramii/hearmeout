@@ -40,6 +40,14 @@ export function StarIcon() {
   );
 }
 
+export function PlayIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" style={{ flexShrink: 0 }}>
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+
 export function ProfileIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor">

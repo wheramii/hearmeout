@@ -103,7 +103,8 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:700
 .recap-hero{ text-align:center; margin-bottom:28px; }
 .recap-hero-avatar{ width:64px; height:64px; border-radius:50%; margin:0 auto 12px; background:linear-gradient(135deg,var(--lime),var(--coral)); background-size:cover; background-position:center; }
 .recap-hero-name{ font-family:var(--font-space-grotesk),sans-serif; font-weight:700; font-size:17px; }
-.recap-hero-period{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; color:var(--lime); letter-spacing:.14em; margin:6px 0 16px; text-transform:uppercase; }
+.recap-hero-period-row{ display:flex; align-items:center; justify-content:center; gap:8px; margin:6px 0 16px; }
+.recap-hero-period{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; color:var(--lime); letter-spacing:.14em; text-transform:uppercase; }
 .recap-hero-vibe{ font-size:17px; font-style:italic; color:var(--text); line-height:1.4; max-width:300px; margin:0 auto; }
 .recap-stats-row{ display:flex; justify-content:center; gap:28px; margin-bottom:30px; }
 .recap-stat{ text-align:center; }
@@ -254,11 +255,11 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:700
 .circle-player-ring{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
 .cp-track{ fill:none; stroke:var(--line); stroke-width:6; }
 .cp-progress{ fill:none; stroke:var(--lime); stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset .15s linear; }
-.circle-player-center{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+.circle-player-center{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text); }
+.circle-player-center.dim{ opacity:.4; }
 
 .album-hero-player{ position:absolute; top:0; right:0; }
 .d-rating-row{ display:flex; align-items:center; gap:16px; }
-.recap-player{ margin:0 auto 18px; }
 
 .logo-mark .logo-bar{ transform-box:fill-box; transform-origin:50% 100%; }
 .logo-mark.playing .logo-bar-1{ animation:logo-eq-bounce .9s ease-in-out infinite; animation-delay:0s; }
