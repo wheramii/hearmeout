@@ -1,27 +1,21 @@
-// Deezer has no CORS headers, so the browser hits it through a public CORS proxy —
-// ported as-is from the prototype. Same external-dependency caveat applies:
-// the proxy occasionally rate-limits or goes down.
-function corsProxy(url: string) {
-  return 'https://corsproxy.io/?url=' + encodeURIComponent(url);
-}
-
+// Deezer lookups go through our own server routes (see src/app/api/deezer/*)
+// instead of a public CORS proxy — that proxy was flaky enough for real
+// visitors (rate limits, outages) to leave the preview player stuck loading
+// forever and artist photos permanently falling back to initials.
 export async function fetchDeezerArtistPhoto(name: string): Promise<string | null> {
   try {
-    const res = await fetch(corsProxy(`https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}&limit=1`));
+    const res = await fetch(`/api/deezer/artist-photo?name=${encodeURIComponent(name)}`);
     if (!res.ok) return null;
     const data = await res.json();
-    const artist = (data.data || [])[0];
-    return artist?.picture_medium || null;
+    return data.photo ?? null;
   } catch {
     return null;
   }
 }
 
 export async function fetchTrackPreview(artistName: string, albumTitle: string): Promise<{ title: string; preview: string } | null> {
-  const res = await fetch(corsProxy(`https://api.deezer.com/search?q=${encodeURIComponent(artistName + ' ' + albumTitle)}&limit=1`));
+  const res = await fetch(`/api/deezer/preview?artist=${encodeURIComponent(artistName)}&title=${encodeURIComponent(albumTitle)}`);
+  if (res.status === 404) return null;
   if (!res.ok) throw new Error('request failed');
-  const data = await res.json();
-  const track = (data.data || [])[0];
-  if (!track || !track.preview) return null;
-  return { title: track.title, preview: track.preview };
+  return res.json();
 }
