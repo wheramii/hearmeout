@@ -7,7 +7,7 @@ import { SpotifyNewSection } from '../SpotifyNewSection';
 import { ObscureAlbums } from '../ObscureAlbums';
 import { GenreTopArtists } from '../GenreTopArtists';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
-import { RecapTeaser } from './RecapTeaser';
+import { FriendsRow } from '../FriendsRow';
 import { regionDisplayName } from '@/lib/i18n';
 
 const GENRES = ['Всё', 'Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
@@ -94,7 +94,7 @@ export function CatalogScreen({ device }: { device: Device }) {
         </>
       )}
       {chips}
-      <RecapTeaser />
+      <FriendsRow />
       <div className="section-head"><h2>{t('catalog.newOnSpotify')}</h2><span>{t('catalog.liveData')}</span></div>
       <SpotifyNewSection rowClass={rowClass} />
 

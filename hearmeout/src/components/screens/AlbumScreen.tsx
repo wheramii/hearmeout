@@ -10,10 +10,13 @@ import { CirclePlayer } from '../CirclePlayer';
 import { AlbumReviews } from '../AlbumReviews';
 
 export function AlbumScreen({ device }: { device: Device }) {
-  const { state, t, language, albums, liveAlbums, albumRatings, spotifyCovers, reviewsVersion, showScreen, openRateFor, openSpotifyArtist, ensureLiveAlbum } = useApp();
+  const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, spotifyCovers, reviewsVersion, showScreen, openRateFor, openSpotifyArtist, ensureLiveAlbum } = useApp();
   const staticMatch = albums.find((x) => x.id === state.currentAlbumId);
   const enriched = liveAlbums[state.currentAlbumId];
-  const a = enriched || staticMatch || albums[0];
+  // No `|| albums[0]` fallback here on purpose: silently substituting an
+  // unrelated album when enrichment fails (e.g. Spotify rate-limited) is
+  // exactly what looked like clicking one album but landing on another.
+  const a = enriched || staticMatch;
 
   useEffect(() => {
     if (state.activeScreen === 'album' && !enriched) ensureLiveAlbum(state.currentAlbumId, staticMatch?.spotifyId);
@@ -21,7 +24,17 @@ export function AlbumScreen({ device }: { device: Device }) {
   }, [state.activeScreen, state.currentAlbumId, enriched]);
 
   const [wishlisted, setWishlisted] = useState(false);
-  useEffect(() => setWishlisted(false), [a.id]);
+  useEffect(() => { setWishlisted(false); }, [a?.id]);
+
+  if (!a) {
+    const failed = !!failedAlbumIds[state.currentAlbumId];
+    return (
+      <>
+        <button className="back-btn" onClick={() => showScreen('catalog')}>{t('album.backToCatalog')}</button>
+        <div className="empty-state">{failed ? t('album.loadError') : t('album.loading')}</div>
+      </>
+    );
+  }
 
   const ratingInfo = albumRatings[a.id];
   const cover = spotifyCovers[a.id] || a.cover;

@@ -7,7 +7,9 @@
 
 :root {
   --bg: #1F1D1C; --surface: #2A2725; --surface-2: #332F2C; --line: #433E3A;
-  --lime: #FC7B03; --coral: #C75E00; --text: #E6DEDA; --muted: #948C86;
+  /* Softened from the original fully-saturated #FC7B03/#C75E00 — same warm
+     orange family, less neon/glowing against the dark background. */
+  --lime: #F0955F; --coral: #D9824D; --text: #E6DEDA; --muted: #948C86;
   /* Warm-tinted card backgrounds, rotated across sections instead of one
      flat surface color everywhere — the Super Fan reference leans on
      colorful cards rather than monochrome panels. */
@@ -92,15 +94,23 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 .segmented button{ flex:1; font-family:var(--font-ibm-plex-mono),monospace; font-size:11.5px; font-weight:600; padding:9px 4px; border-radius:12px; border:none; background:none; color:var(--muted); cursor:pointer; transition:background .15s ease, color .15s ease; }
 .segmented button.on{ background:var(--lime); color:#1F1D1C; }
 
+/* Home-screen row: the recap square, one square per friend, and a round
+   "add friends" button — all side by side, horizontally scrollable. */
+.friends-row{
+  display:flex; align-items:center; gap:12px; margin-bottom:26px;
+  overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;
+  touch-action:pan-x; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch;
+}
+.friends-row::-webkit-scrollbar{ display:none; }
+
 /* recap teaser card (home screen) — square, same footprint as an album
    cover tile, not a wide banner. */
 .recap-teaser{
   position:relative; border-radius:20px; overflow:hidden; cursor:pointer;
   background:linear-gradient(135deg, var(--tint-amber), var(--bg));
   border:1px solid var(--line);
-  width:156px; aspect-ratio:1; padding:14px;
+  width:156px; height:156px; flex-shrink:0; padding:14px;
   display:flex; flex-direction:column; justify-content:space-between;
-  margin-bottom:26px;
 }
 .recap-teaser::before{ content:''; position:absolute; inset:0; background:linear-gradient(135deg, rgba(252,123,3,.22), transparent 65%); pointer-events:none; }
 .recap-teaser .rt-label{ font-family:var(--font-ibm-plex-mono),monospace; font-size:9.5px; color:var(--lime); text-transform:uppercase; letter-spacing:.1em; position:relative; }
@@ -111,6 +121,28 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 }
 .recap-teaser p{ font-size:10.5px; color:var(--muted); position:relative; }
 .recap-teaser .rt-arrow{ position:absolute; top:14px; right:14px; color:var(--lime); font-size:16px; }
+
+.friend-tile{
+  position:relative; width:156px; height:156px; flex-shrink:0; border-radius:20px;
+  overflow:hidden; cursor:pointer; background-size:cover; background-position:center;
+  background-color:var(--surface); border:1px solid var(--line);
+  display:flex; align-items:flex-end; padding:12px;
+}
+.friend-tile::after{ content:''; position:absolute; inset:0; background:linear-gradient(to top, rgba(18,17,16,.75), transparent 55%); pointer-events:none; }
+.friend-tile .ft-name{ position:relative; font-family:var(--font-space-grotesk),sans-serif; font-weight:700; font-size:13px; color:#fff; line-height:1.2; }
+.friend-tile.cover-fallback{ background-image:none; }
+.friend-tile .fallback-letter{ position:absolute; top:14px; left:14px; font-size:26px; color:var(--muted); }
+
+.add-friend-tile{
+  flex-shrink:0; width:84px; align-self:stretch; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:8px; cursor:pointer; background:none; border:none;
+}
+.add-friend-tile .aft-btn{
+  width:64px; height:64px; border-radius:50%; flex-shrink:0;
+  background:var(--surface); border:1.5px dashed var(--line);
+  display:flex; align-items:center; justify-content:center; color:var(--lime); font-size:26px; font-weight:300;
+}
+.add-friend-tile .aft-label{ font-size:10px; color:var(--muted); text-align:center; font-family:var(--font-ibm-plex-mono),monospace; line-height:1.3; }
 
 /* full-screen recap (Super Fan style takeover) */
 .recap-full-top{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:26px; }

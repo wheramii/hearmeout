@@ -82,6 +82,7 @@ type AppContextValue = {
   albumRatings: Record<string, AlbumRatingInfo>;
   spotifyCovers: Record<string, string>;
   liveAlbums: Record<string, Album>;
+  failedAlbumIds: Record<string, true>;
   spotifyNew: CatalogAlbum[] | 'error' | null;
   spotifyNewRegional: CatalogAlbum[] | 'error' | null;
   spotifyObscure: Record<string, CatalogAlbum[] | 'error'>;
@@ -162,6 +163,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [recapCache, setRecapCache] = useState<Record<string, RecapData>>({});
   const [reviewsVersion, setReviewsVersion] = useState(0);
   const [fetchedAlbums, setFetchedAlbums] = useState<Record<string, Album>>({});
+  const [failedAlbumIds, setFailedAlbumIds] = useState<Record<string, true>>({});
   const requestedAlbumIds = useRef<Set<string>>(new Set());
   const requestedRecapKeys = useRef<Set<string>>(new Set());
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -493,10 +495,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     fetch(`/api/spotify/album/${spotifyId || id}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((detail: AlbumDetail | null) => {
-        if (detail) setFetchedAlbums((s) => ({ ...s, [id]: albumDetailToAlbum(detail, id) }));
-        else requestedAlbumIds.current.delete(id);
+        requestedAlbumIds.current.delete(id);
+        if (detail) {
+          setFetchedAlbums((s) => ({ ...s, [id]: albumDetailToAlbum(detail, id) }));
+          setFailedAlbumIds((s) => { if (!(id in s)) return s; const n = { ...s }; delete n[id]; return n; });
+        } else {
+          setFailedAlbumIds((s) => ({ ...s, [id]: true }));
+        }
       })
-      .catch(() => requestedAlbumIds.current.delete(id));
+      .catch(() => {
+        requestedAlbumIds.current.delete(id);
+        setFailedAlbumIds((s) => ({ ...s, [id]: true }));
+      });
   }, []);
 
   const openSpotifyArtist = useCallback(async (id: string) => {
@@ -581,7 +591,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [spotifyNew, spotifyNewRegional, spotifyObscure, fetchedAlbums]);
 
   const value = useMemo<AppContextValue>(() => ({
-    state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums,
+    state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     spotifyNew, spotifyNewRegional, spotifyObscure, spotifyGenreArtists, myRatings, friendRequests, recapCache, reviewsVersion,
     showScreen, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod,
@@ -589,7 +599,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     registerWithPassword, loginWithPassword, claimAccount, logout,
     updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
-  }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, spotifyNew, spotifyNewRegional, spotifyObscure,
+  }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyNew, spotifyNewRegional, spotifyObscure,
     spotifyGenreArtists, myRatings, friendRequests, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
