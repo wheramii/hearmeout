@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchTrackPreview } from '@/lib/deezer';
 import { LogoMark, PlayIcon } from './ui/Icons';
+import { stopOthers, releaseIfCurrent } from '@/lib/audioRegistry';
 
 type Status = 'loading' | 'ready' | 'unavailable';
 
@@ -44,11 +45,20 @@ export function CirclePlayer({ artist, title, size = 56, className }: {
     return () => { cancelled = true; };
   }, [artist, title]);
 
+  useEffect(() => {
+    const el = audioRef.current;
+    return () => { if (el) releaseIfCurrent(el); };
+  });
+
   const toggle = () => {
     const el = audioRef.current;
     if (!el) return;
-    if (el.paused) el.play().catch(() => {});
-    else el.pause();
+    if (el.paused) {
+      stopOthers(el);
+      el.play().catch(() => {});
+    } else {
+      el.pause();
+    }
   };
 
   const offset = CIRCUMFERENCE * (1 - progress);
