@@ -5,7 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { LANGUAGES, LANGUAGE_LABEL, getRegionCodes, regionDisplayName } from '@/lib/i18n';
-import { AccountBlock, ConnectBlock, ImportHistoryBlock, RecapOpenButton, GenresBlock, Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
+import { AccountBlock, ConnectBlock, ImportHistoryBlock, GenresBlock, Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
 
 function AvatarPicker({ size }: { size?: number }) {
   const { t, me, updateAvatar } = useApp();
@@ -125,9 +125,6 @@ export function ProfileScreen({ device }: { device: Device }) {
         {accountSection}
         {connectionSection}
 
-        <div className="section-head"><h2>{t('profile.recap')}</h2><span>{t('profile.recapPeriods')}</span></div>
-        <div style={{ marginBottom: 24 }}><RecapOpenButton userId="me" label={t('profile.openDayRecap')} /></div>
-
         <div className="section-head"><h2>{t('profile.favoriteGenres')}</h2><span>{t('profile.allTime')}</span></div>
         <div style={{ marginBottom: 24 }}><GenresBlock genres={me.genres} /></div>
 
@@ -164,8 +161,6 @@ export function ProfileScreen({ device }: { device: Device }) {
       <div className="main">
         {accountSection}
         {connectionSection}
-        <div className="section-head"><h2>{t('profile.recap')}</h2><span>{t('profile.recapPeriods')}</span></div>
-        <div style={{ marginBottom: 28, maxWidth: 480 }}><RecapOpenButton userId="me" label={t('profile.openDayRecap')} /></div>
         <div className="section-head"><h2>{t('profile.favoriteGenres')}</h2><span>{t('profile.allTime')}</span></div>
         <div style={{ marginBottom: 30, maxWidth: 420 }}><GenresBlock genres={me.genres} /></div>
         <div className="section-head"><h2>{t('profile.top4')}</h2><span>{t('profile.byYourRatings')}</span></div>
