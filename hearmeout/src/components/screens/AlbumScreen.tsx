@@ -5,13 +5,16 @@ import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { StarsAvg } from '../ui/StarsAvg';
+import { PlayIcon } from '../ui/Icons';
 import { pluralForKey, toLocale } from '@/lib/i18n';
-import { CirclePlayer } from '../CirclePlayer';
+import { usePlayer, type QueueTrack } from '@/lib/PlayerContext';
+import { TransportRing } from '../DockedPlayer';
 import { AlbumReviews } from '../AlbumReviews';
 import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
 
 export function AlbumScreen({ device }: { device: Device }) {
   const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, spotifyCovers, reviewsVersion, showScreen, openRateFor, openSpotifyArtist, ensureLiveAlbum } = useApp();
+  const { currentTrack, playQueue } = usePlayer();
   const staticMatch = albums.find((x) => x.id === state.currentAlbumId);
   const enriched = liveAlbums[state.currentAlbumId];
   // No `|| albums[0]` fallback here on purpose: silently substituting an
@@ -50,15 +53,29 @@ export function AlbumScreen({ device }: { device: Device }) {
     </span>
   ) : a.artist;
 
+  const albumIsCurrent = currentTrack?.albumId === a.id;
+  const trackQueue: QueueTrack[] = a.tracklist.map((tr) => ({ title: tr, artist: a.artist, cover, albumId: a.id, spotifyId: a.spotifyId }));
+
   const tracklist = a.tracklist.length ? (
-    a.tracklist.map((tr, i) => (
-      <div className="list-row" key={tr}>
-        <span className="n">{String(i + 1).padStart(2, '0')}</span>
-        <div className="info"><div className="t">{tr}</div></div>
-      </div>
-    ))
+    a.tracklist.map((tr, i) => {
+      const isRowCurrent = albumIsCurrent && currentTrack?.title === tr;
+      return (
+        <div className={`list-row ${isRowCurrent ? 'playing' : ''}`} key={tr} onClick={() => playQueue(trackQueue, i)}>
+          <span className="n">{String(i + 1).padStart(2, '0')}</span>
+          <div className="info"><div className="t">{tr}</div></div>
+        </div>
+      );
+    })
   ) : (
     <div className="empty-state">{t('album.tracklistEmpty')}</div>
+  );
+
+  const headerPlayBtn = !a.tracklist.length ? null : albumIsCurrent ? (
+    <TransportRing size={52} />
+  ) : (
+    <button className="header-play-btn" onClick={() => playQueue(trackQueue, 0)} aria-label={t('album.rateAlbum')}>
+      <PlayIcon size={20} />
+    </button>
   );
 
   const openSpotifyUrl = a.spotifyId ? `https://open.spotify.com/album/${a.spotifyId}` : null;
@@ -93,10 +110,12 @@ export function AlbumScreen({ device }: { device: Device }) {
           {heroArt}
           <h1>{a.title}</h1>
           <span className="artist-link">{artistLabel}</span>
-          <div className="album-title-row" style={{ justifyContent: 'center', marginTop: 14 }}>
-            <CirclePlayer artist={a.artist} title={a.title} size={52} />
-            <span className="preview-label">{t('album.preview30s')}</span>
-          </div>
+          {headerPlayBtn && (
+            <div className="album-title-row" style={{ justifyContent: 'center', marginTop: 14 }}>
+              {headerPlayBtn}
+              <span className="preview-label">{t('album.preview30s')}</span>
+            </div>
+          )}
         </div>
         <div className="avg-rating">
           {ratingInfo ? (
@@ -130,8 +149,8 @@ export function AlbumScreen({ device }: { device: Device }) {
           {metaMono && <div className="meta-mono">{metaMono}</div>}
           <div className="album-title-row">
             <h1>{a.title}</h1>
-            <CirclePlayer artist={a.artist} title={a.title} size={52} />
-            <span className="preview-label">{t('album.preview30s')}</span>
+            {headerPlayBtn}
+            {headerPlayBtn && <span className="preview-label">{t('album.preview30s')}</span>}
           </div>
           <span className="artist-link">{artistLabel}</span>
           {actions(undefined)}

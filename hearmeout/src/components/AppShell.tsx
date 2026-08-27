@@ -7,6 +7,7 @@ import { userAvatarStyle } from '@/lib/format';
 import { Toast } from './ui/Toast';
 import { ProfileIcon, LogoMark } from './ui/Icons';
 import { ThemeToggle } from './ThemeToggle';
+import { DockedPlayerDesktop, DockedPlayerMobile } from './DockedPlayer';
 import { CatalogScreen, SearchIcon } from './screens/CatalogScreen';
 import { AlbumScreen } from './screens/AlbumScreen';
 import { RateScreen } from './screens/RateScreen';
@@ -60,6 +61,7 @@ function MobileShell({ active }: { active: boolean }) {
             </section>
           ))}
         </div>
+        <DockedPlayerMobile />
         <div className="tabbar">
           <button className={`tab ${activeTab === 'catalog' ? 'active' : ''}`} onClick={() => showScreen('catalog')}>
             <span className="ic num">⌂</span><span className="lbl">{t('nav.home')}</span>
@@ -120,6 +122,7 @@ function DesktopShell({ active }: { active: boolean }) {
             ))}
           </div>
         </div>
+        <DockedPlayerDesktop />
       </div>
     </div>
   );

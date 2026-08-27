@@ -369,14 +369,45 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 .rating-dist-axis{ display:flex; justify-content:space-between; margin-top:6px; font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; color:var(--muted-2); }
 .rating-dist-empty{ font-family:var(--font-ibm-plex-mono),monospace; font-size:11px; color:var(--muted); margin-top:12px; }
 
-/* Circular preview player: a progress ring that lengthens as the 30s clip
-   plays, with the HearMeOut mark centered in it (bars bounce while playing). */
-.circle-player{ position:relative; cursor:pointer; flex-shrink:0; }
-.circle-player-ring{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
+/* Ring stroke shared by the docked transport's TransportRing. */
 .cp-track{ fill:none; stroke:var(--line); stroke-width:6; }
 .cp-progress{ fill:none; stroke:var(--lime); stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset .15s linear; }
-.circle-player-center{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text); }
-.circle-player-center.dim{ opacity:.4; }
+
+/* Global docked preview transport — one shared instance, driven by
+   PlayerContext, replacing the old per-item CirclePlayer islands. */
+.docked-player{
+  display:flex; align-items:center; gap:14px; height:74px; flex-shrink:0;
+  padding:0 24px; background:var(--surface); border-top:1px solid var(--line);
+}
+.docked-player .dp-art{ width:46px; height:46px; border-radius:8px; flex-shrink:0; background-size:cover; background-position:center; background-color:var(--surface-2); border:1px solid var(--line); }
+.dp-info{ min-width:0; }
+.dp-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:600; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dp-artist{ font-size:11.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dp-time{ font-family:var(--font-ibm-plex-mono),monospace; font-size:11px; color:var(--muted); flex-shrink:0; }
+.dp-spacer{ flex:1; }
+.dp-chip{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10.5px; color:var(--accent-text); background:var(--accent-bg); border:1px solid var(--accent-border); padding:4px 10px; border-radius:999px; flex-shrink:0; }
+
+.docked-player-mobile{
+  display:flex; align-items:center; gap:10px; padding:8px 12px; margin:0 14px 8px; flex-shrink:0;
+  background:var(--surface); border:1px solid var(--line); border-radius:18px;
+  box-shadow:0 10px 26px -14px rgba(0,0,0,.3);
+}
+.docked-player-mobile .dp-art{ width:38px; height:38px; border-radius:8px; flex-shrink:0; background-size:cover; background-position:center; background-color:var(--surface-2); border:1px solid var(--line); }
+.docked-player-mobile .dp-info{ flex:1; min-width:0; }
+.docked-player-mobile .dp-time{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10.5px; color:var(--muted); flex-shrink:0; }
+
+.transport-ring{ position:relative; cursor:pointer; flex-shrink:0; }
+.transport-ring-svg{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
+.transport-ring-center{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text); }
+
+.list-row.playing{ background:var(--accent-bg); border-radius:10px; padding-left:8px; padding-right:8px; border-bottom-color:transparent; }
+.list-row.playing .n, .list-row.playing .t{ color:var(--lime); }
+
+.header-play-btn{
+  width:52px; height:52px; border-radius:50%; flex-shrink:0; border:none; cursor:pointer;
+  background:var(--lime); color:var(--on-accent); display:flex; align-items:center; justify-content:center;
+  box-shadow:0 5px 16px -4px rgba(0,0,0,.3);
+}
 
 .logo-mark .logo-bar{ transform-box:fill-box; transform-origin:50% 100%; }
 .logo-mark.playing .logo-bar-1{ animation:logo-eq-bounce .9s ease-in-out infinite; animation-delay:0s; }

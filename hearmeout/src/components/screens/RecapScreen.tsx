@@ -6,12 +6,15 @@ import type { Device, PublicProfile, RecapPeriod } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { pluralForKey, toLocale, type TranslationKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
-import { CirclePlayer } from '../CirclePlayer';
+import { PlayIcon } from '../ui/Icons';
+import { usePlayer } from '@/lib/PlayerContext';
+import { TransportRing } from '../DockedPlayer';
 
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', month: 'recap.month', season: 'recap.season' };
 
 export function RecapScreen(_props: { device: Device }) {
   const { state, t, language, me, ensureRecap, recapCache, closeRecap, setRecapPeriod, openAlbum, openSpotifyArtist } = useApp();
+  const { currentTrack, playQueue } = usePlayer();
   const targetId = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
   const isMe = state.recapViewUserId === 'me';
   const [profile, setProfile] = useState<PublicProfile | null>(null);
@@ -79,7 +82,21 @@ export function RecapScreen(_props: { device: Device }) {
                 <div className="rsc-title">{r.topSongs[0].title}</div>
                 <div className="rsc-artist">{r.topSongs[0].artist}</div>
               </div>
-              <CirclePlayer artist={r.topSongs[0].artist} title={r.topSongs[0].title} size={44} />
+              {currentTrack?.title === r.topSongs[0].title && currentTrack?.artist === r.topSongs[0].artist ? (
+                <div onClick={(e) => e.stopPropagation()}><TransportRing size={44} /></div>
+              ) : (
+                <button
+                  className="header-play-btn"
+                  style={{ width: 44, height: 44 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    playQueue([{ title: r.topSongs[0].title, artist: r.topSongs[0].artist, cover: r.topSongs[0].cover, albumId: r.topSongs[0].albumId }], 0);
+                  }}
+                  aria-label={t('recap.songOfWeek')}
+                >
+                  <PlayIcon size={18} />
+                </button>
+              )}
             </div>
           )}
           <div className="recap-section">
