@@ -28,8 +28,26 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tokens = await exchangeCodeForTokens(code);
     const admin = supabaseAdmin();
+
+    // Real enforcement of the "до 5 мест" beta cap — until now that copy
+    // was informational only, nothing actually counted connections. A
+    // premium account skips the check entirely (their real perk); everyone
+    // else is capped at 5 live Spotify syncs across the whole app, which
+    // mirrors Spotify's own dev-mode user allowlist being the real scarce
+    // resource here.
+    const { data: existingOwn } = await admin.from('connections').select('user_id').eq('user_id', userId).eq('provider', 'spotify').maybeSingle();
+    if (!existingOwn) {
+      const { data: prefs } = await admin.from('users').select('is_premium').eq('id', userId).maybeSingle();
+      if (!prefs?.is_premium) {
+        const { count } = await admin.from('connections').select('user_id', { count: 'exact', head: true }).eq('provider', 'spotify');
+        if ((count ?? 0) >= 5) {
+          return NextResponse.redirect(`${origin}/?spotify_error=slots_full`);
+        }
+      }
+    }
+
+    const tokens = await exchangeCodeForTokens(code);
 
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
     const { error: upsertErr } = await admin.from('connections').upsert(

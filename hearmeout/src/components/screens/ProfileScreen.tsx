@@ -6,6 +6,13 @@ import type { Device } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate } from '@/lib/format';
 import { LANGUAGE_LABEL, regionDisplayName, pluralForKey } from '@/lib/i18n';
 import { GenresBlock, TasteFingerprint, RecentRatingsGrid, Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock, LovedTracksBlock } from '../ProfileBlocks';
+import { PremiumBadge } from '../ui/PremiumBadge';
+
+function ProfileBanner() {
+  const { me } = useApp();
+  if (!me?.bannerUrl) return null;
+  return <div style={{ height: 110, borderRadius: 16, marginBottom: -40, backgroundImage: `url('${me.bannerUrl}')`, backgroundSize: 'cover', backgroundPosition: 'center' }} />;
+}
 
 function AvatarPicker({ size }: { size?: number }) {
   const { t, me, updateAvatar } = useApp();
@@ -103,10 +110,12 @@ export function ProfileScreen({ device }: { device: Device }) {
     return (
       <>
         <div className="eyebrow">{t('profile.eyebrow')}</div>
+        <ProfileBanner />
         <div className="profile-head">
           <AvatarPicker />
           <div style={{ flex: 1 }}>
             <input className="name-input" defaultValue={me.name} onBlur={(e) => updateProfileName(e.target.value)} />
+            {me.isPremium && <PremiumBadge />}
             <input className="handle-input" defaultValue={me.handle} onBlur={(e) => updateProfileHandle(e.target.value)} />
             <div className="profile-joined">{me.friends.length} {friendsSuffix} · {t('profile.joined')} {formatJoinDate(me.joinedAt, language)}</div>
           </div>
@@ -143,9 +152,10 @@ export function ProfileScreen({ device }: { device: Device }) {
 
   return (
     <div className="d-profile-layout">
+      <ProfileBanner />
       <div className="side">
         <AvatarPicker size={120} />
-        <input className="name-input" defaultValue={me.name} style={{ fontSize: 22, marginTop: 14 }} onBlur={(e) => updateProfileName(e.target.value)} />
+        <div><input className="name-input" defaultValue={me.name} style={{ fontSize: 22, marginTop: 14 }} onBlur={(e) => updateProfileName(e.target.value)} />{me.isPremium && <PremiumBadge />}</div>
         <input className="handle-input" defaultValue={me.handle} style={{ fontSize: 13 }} onBlur={(e) => updateProfileHandle(e.target.value)} />
         <div className="profile-joined">{t('profile.joined')} {formatJoinDate(me.joinedAt, language)}</div>
         <div className="stat-grid cols-2" style={{ marginTop: 22 }}>

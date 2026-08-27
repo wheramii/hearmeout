@@ -16,8 +16,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   const memberIds = (memberRows || []).map((m) => m.user_id as string);
   if (!memberIds.includes(userId)) return NextResponse.json({ error: 'not_a_member' }, { status: 403 });
 
-  const { data: users } = await admin.from('users').select('id, name, handle, avatar_url').in('id', memberIds);
-  const members: ApiUser[] = (users || []).map((u) => ({ id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url }));
+  const { data: users } = await admin.from('users').select('id, name, handle, avatar_url, is_premium').in('id', memberIds);
+  const members: ApiUser[] = (users || []).map((u) => ({ id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url, isPremium: !!u.is_premium }));
   const userById = new Map(members.map((m) => [m.id, m]));
 
   const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();

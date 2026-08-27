@@ -5,6 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import type { Device, StatsData, StatsRange } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { HeartIcon } from '../ui/Icons';
+import { PremiumLock } from '../ui/PremiumLock';
 import { toLocale, type Language } from '@/lib/i18n';
 
 const RANGES: StatsRange[] = ['4w', '6m', 'year', 'all'];
@@ -14,6 +15,58 @@ const RANGE_KEY: Record<StatsRange, string> = { '4w': 'stats.range4w', '6m': 'st
 // shown as a short local date so "which week is this" is never a mystery.
 function weekLabelText(weekLabel: string, language: Language): string {
   return new Date(weekLabel).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' });
+}
+
+// A real GitHub-style year grid of listening intensity, premium-only. The
+// fetch only happens for an already-premium account — a non-premium viewer
+// never even requests /api/stats/calendar (it would 403 server-side anyway;
+// no point spending the request), PremiumLock just shows a static, unlit
+// placeholder grid behind the lock overlay instead.
+function CalendarHeatmap() {
+  const { t, me } = useApp();
+  const [days, setDays] = useState<{ day: string; minutes: number }[] | null>(null);
+
+  useEffect(() => {
+    if (!me?.isPremium) return;
+    let cancelled = false;
+    fetch('/api/stats/calendar').then((r) => (r.ok ? r.json() : null)).then((d) => { if (!cancelled && d) setDays(d.days); });
+    return () => { cancelled = true; };
+  }, [me?.isPremium]);
+
+  const byDay = new Map((days || []).map((d) => [d.day, d.minutes]));
+  const maxMinutes = Math.max(1, ...(days || []).map((d) => d.minutes));
+  const cells: { day: string; minutes: number }[] = [];
+  const cursor = new Date();
+  cursor.setFullYear(cursor.getFullYear() - 1);
+  cursor.setDate(cursor.getDate() + 1);
+  for (let i = 0; i < 371; i++) {
+    const key = cursor.toISOString().slice(0, 10);
+    cells.push({ day: key, minutes: byDay.get(key) || 0 });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return (
+    <>
+      <div className="section-head" style={{ marginTop: 22 }}><h2>{t('stats.calendarTitle')}</h2></div>
+      <PremiumLock label={t('stats.calendarLocked')}>
+        <div style={{ overflowX: 'auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(53,10px)', gridAutoRows: '10px', gap: 3, width: 'max-content' }}>
+            {cells.map((c) => (
+              <div
+                key={c.day}
+                title={`${c.day}: ${c.minutes} ${t('recap.minutes')}`}
+                style={{
+                  width: 10, height: 10, borderRadius: 2,
+                  background: c.minutes ? 'var(--lime)' : 'var(--surface-2)',
+                  opacity: c.minutes ? Math.min(1, 0.25 + (c.minutes / maxMinutes) * 0.75) : 1,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </PremiumLock>
+    </>
+  );
 }
 
 export function StatsScreen(_props: { device: Device }) {
@@ -104,6 +157,8 @@ export function StatsScreen(_props: { device: Device }) {
             ))}
           </div>
           <div className="stats-heatmap-axis"><span>00</span><span>08</span><span>16</span><span>23</span></div>
+
+          <CalendarHeatmap />
 
           {data.genreSplit.length > 0 && (
             <>

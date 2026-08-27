@@ -121,6 +121,8 @@ type AppContextValue = {
   updateProfileName: (name: string) => Promise<void>;
   updateProfileHandle: (handle: string) => Promise<void>;
   updateAvatar: (dataUrl: string) => Promise<void>;
+  updateBanner: (dataUrl: string) => Promise<void>;
+  updateAccentPalette: (palette: string) => Promise<void>;
   updateLanguage: (language: Language) => Promise<void>;
   updateRegion: (region: string | null) => Promise<void>;
   addFriend: (handle: string) => Promise<void>;
@@ -284,6 +286,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { if (state.authStatus === 'ready') refreshMyRatings(); }, [state.authStatus, refreshMyRatings]);
   useEffect(() => { if (state.authStatus === 'ready') refreshLovedTracks(); }, [state.authStatus, refreshLovedTracks]);
+
+  // Only a premium account's palette choice is ever applied — a non-premium
+  // account can't reach the picker (server-gated too), but this is a second
+  // real check, not just relying on the UI having stayed locked.
+  useEffect(() => {
+    if (me?.isPremium && me.accentPalette) document.documentElement.dataset.accent = me.accentPalette;
+    else delete document.documentElement.dataset.accent;
+  }, [me?.isPremium, me?.accentPalette]);
   useEffect(() => { if (state.authStatus === 'ready') refreshFriendRequests(); }, [state.authStatus, refreshFriendRequests]);
 
   const registerWithPassword = useCallback(async (name: string, email: string, password: string) => {
@@ -432,6 +442,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateAvatar = useCallback(async (dataUrl: string) => {
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatarUrl: dataUrl }) });
+    await refreshMe();
+  }, [refreshMe]);
+
+  const updateBanner = useCallback(async (dataUrl: string) => {
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bannerUrl: dataUrl }) });
+    await refreshMe();
+  }, [refreshMe]);
+
+  const updateAccentPalette = useCallback(async (palette: string) => {
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accentPalette: palette }) });
     await refreshMe();
   }, [refreshMe]);
 
@@ -621,7 +641,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
-    updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentPalette, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
     spotifyGenreArtists, myRatings, lovedTracks, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
@@ -629,7 +649,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
-    updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentPalette, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

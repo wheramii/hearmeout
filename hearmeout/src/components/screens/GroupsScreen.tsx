@@ -126,7 +126,10 @@ export function GroupsScreen({ device }: { device: Device }) {
         {detail.members.map((m) => (
           <div className="box" key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left', padding: '10px 12px' }}>
             <div className="avatar-sm" style={{ width: 28, height: 28, ...userAvatarStyle(m) }} />
-            <div style={{ fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+              {m.name}
+              {m.isPremium && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--lime)', flexShrink: 0 }} title="Premium" />}
+            </div>
           </div>
         ))}
       </div>

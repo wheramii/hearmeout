@@ -1,16 +1,41 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import type { Device, PublicProfile, RecapPeriod } from '@/lib/types';
+import type { Device, PublicProfile, RecapData, RecapPeriod } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { pluralForKey, toLocale, type TranslationKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { PlayIcon } from '../ui/Icons';
 import { usePlayer } from '@/lib/PlayerContext';
 import { TransportRing } from '../DockedPlayer';
+import { PremiumLock } from '../ui/PremiumLock';
+import { drawRecapPoster } from '@/lib/posterCanvas';
 
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', month: 'recap.month', season: 'recap.season' };
+
+function PosterDownloadButton({ data, name, periodLabel }: { data: RecapData; name: string; periodLabel: string }) {
+  const { t } = useApp();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const download = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    drawRecapPoster(canvas, data, name, periodLabel);
+    const url = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'hearmeout-recap.png';
+    link.click();
+  };
+
+  return (
+    <PremiumLock label={t('recap.posterLocked')}>
+      <button className="btn-ghost" style={{ width: '100%', marginTop: 14 }} onClick={download}>{t('recap.downloadPoster')}</button>
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+    </PremiumLock>
+  );
+}
 
 export function RecapScreen(_props: { device: Device }) {
   const { state, t, language, me, ensureRecap, recapCache, closeRecap, setRecapPeriod, setRecapSeasonKey, recapSeasons, openAlbum, openSpotifyArtist } = useApp();
@@ -163,6 +188,7 @@ export function RecapScreen(_props: { device: Device }) {
               <div className="recap-genre-chips">{r.topGenres.map((g) => <span className="chip" key={g}>{g}</span>)}</div>
             ) : <div className="empty-state">{t('recap.noData')}</div>}
           </div>
+          <PosterDownloadButton data={r} name={name || ''} periodLabel={`${t(PERIOD_KEY[state.recapPeriod])} ${t('recap.periodLabel')}`} />
         </>
       )}
     </>

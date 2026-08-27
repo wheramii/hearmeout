@@ -22,7 +22,7 @@ export function OAuthCallbackHandler() {
       router.replace('/');
     } else if (error) {
       showScreen('profile');
-      showToast(t('toast.spotifyConnectFailed'));
+      showToast(error === 'slots_full' ? t('toast.spotifySlotsFull') : t('toast.spotifyConnectFailed'));
       router.replace('/');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -26,6 +26,26 @@
   --text: #2a2521; --muted: #7d7568; --muted-2: #9a9184; --ink-soft: #433d35;
   --tint-amber: #f6e8da; --tint-teal: #e3ebe0; --tint-plum: #ece0ea;
 }
+/* Premium accent palettes — override ONLY the two accent hues (+ the text
+   color that sits on top of them). Everything else (body text, background,
+   --muted, --line) is untouched by design, so no palette choice can ever
+   make the site's actual text unreadable — the risk the user flagged when
+   this was first proposed as a free-RGB-picker feature. --accent-bg/
+   --accent-text/--accent-border derive from --lime via color-mix() instead
+   of being hand-set per palette, so they automatically stay coherent with
+   whichever palette is active in both the dark and light theme. */
+html[data-accent] {
+  --accent-bg: color-mix(in srgb, var(--lime) 15%, var(--surface));
+  --accent-text: var(--lime);
+  --accent-border: color-mix(in srgb, var(--lime) 35%, transparent);
+}
+html[data-accent="calm-1"] { --lime: #7a9b8e; --coral: #a67c6d; --on-accent: #16211d; }
+html[data-accent="calm-2"] { --lime: #8a93c2; --coral: #b891a6; --on-accent: #17182a; }
+html[data-accent="bright-1"] { --lime: #4d8dff; --coral: #ff5c8a; --on-accent: #ffffff; }
+html[data-accent="bright-2"] { --lime: #ff8a3d; --coral: #9b5de5; --on-accent: #241505; }
+html[data-accent="acid-1"] { --lime: #b6ff2e; --coral: #ff2fb0; --on-accent: #12200a; }
+html[data-accent="acid-2"] { --lime: #f4ff2e; --coral: #00e5ff; --on-accent: #1a1900; }
+
 *{ box-sizing: border-box; }
 html, body { height: 100%; overflow-x: hidden; overscroll-behavior-x: none; }
 html{ color-scheme: dark; }

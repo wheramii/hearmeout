@@ -6,6 +6,7 @@ import { userAvatarStyle } from '@/lib/format';
 import { toLocale } from '@/lib/i18n';
 import { CoverArt } from './ui/CoverArt';
 import { StarsAvg } from './ui/StarsAvg';
+import { PremiumBadge } from './ui/PremiumBadge';
 import type { RatingRecord } from '@/lib/types';
 
 export function AccountBlock() {
@@ -330,7 +331,7 @@ export function FriendsBlock() {
         <div className="friend-row" key={f.id}>
           <div className="avatar-sm" style={userAvatarStyle(f)} />
           <div className="info" onClick={() => viewFriend(f.id)}>
-            <div className="n">{f.name}</div>
+            <div className="n">{f.name}{f.isPremium && <PremiumBadge />}</div>
             <div className="h">{f.handle}</div>
           </div>
           <button onClick={() => viewFriend(f.id)}>{t('friends.viewProfile')}</button>

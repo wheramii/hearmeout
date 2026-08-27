@@ -7,6 +7,7 @@ import { CoverArt } from '../ui/CoverArt';
 import { starsText } from '@/lib/format';
 import { toLocale } from '@/lib/i18n';
 import { SearchIcon } from './CatalogScreen';
+import { PremiumLock } from '../ui/PremiumLock';
 
 type Filter = 'all' | 'high' | 'low' | 'reviewed';
 type Sort = 'newest' | 'oldest';
@@ -53,6 +54,23 @@ function exportCsv(ratings: RatingRecord[], albums: ReturnType<typeof useApp>['a
   const link = document.createElement('a');
   link.href = url;
   link.download = 'hearmeout-ratings.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportJson(ratings: RatingRecord[], albums: ReturnType<typeof useApp>['albums'], liveAlbums: ReturnType<typeof useApp>['liveAlbums']) {
+  const rows = ratings
+    .map((r) => {
+      const a = liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId);
+      if (!a) return null;
+      return { date: r.createdAt, title: a.title, artist: a.artist, score: r.stars, review: r.review || null };
+    })
+    .filter((r) => r !== null);
+  const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'hearmeout-ratings.json';
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -156,9 +174,14 @@ export function HistoryScreen({ device }: { device: Device }) {
       <div className="history-side-card">
         <h3>{t('history.exportTitle')}</h3>
         <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 12 }}>{t('history.exportDesc')}</p>
-        <button className="btn-ghost" style={{ width: '100%', marginBottom: 0 }} disabled={!myRatings.length} onClick={() => exportCsv(myRatings, albums, liveAlbums)}>
+        <button className="btn-ghost" style={{ width: '100%', marginBottom: 10 }} disabled={!myRatings.length} onClick={() => exportCsv(myRatings, albums, liveAlbums)}>
           {t('history.exportBtn')}
         </button>
+        <PremiumLock label={t('history.exportJsonLocked')}>
+          <button className="btn-ghost" style={{ width: '100%', marginBottom: 0 }} disabled={!myRatings.length} onClick={() => exportJson(myRatings, albums, liveAlbums)}>
+            {t('history.exportJsonBtn')}
+          </button>
+        </PremiumLock>
       </div>
     </>
   );

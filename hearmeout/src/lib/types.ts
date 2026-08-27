@@ -46,7 +46,7 @@ export type RecapData = {
   trackCount: number;
 };
 
-export type ApiUser = { id: string; name: string; handle: string; avatarUrl: string | null };
+export type ApiUser = { id: string; name: string; handle: string; avatarUrl: string | null; isPremium?: boolean };
 
 export type DiscoverMatchPerson = ApiUser & { score: number; sharedAlbums: number };
 
@@ -71,6 +71,9 @@ export type Me = PublicProfile & {
   language: import('./i18n').Language;
   region: string | null;
   hasPassword: boolean;
+  isPremium: boolean;
+  bannerUrl: string | null;
+  accentPalette: string | null;
   email: string | null;
 };
 
