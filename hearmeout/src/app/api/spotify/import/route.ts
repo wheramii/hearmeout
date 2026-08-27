@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import { importStreamingHistory } from '@/lib/streamingHistoryImport';
+import { enrichListeningHistoryCovers } from '@/lib/enrichListeningHistory';
 
 const MAX_FILES = 50;
 // Spotify's real "Extended streaming history" export splits into files by
@@ -27,7 +28,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await importStreamingHistory(supabaseAdmin(), userId, files);
+    const admin = supabaseAdmin();
+    const result = await importStreamingHistory(admin, userId, files);
+    // Fire-and-forget: the raw export has real track ids but no cover art,
+    // and looking up thousands of them one at a time shouldn't hold up the
+    // "imported N plays" response. Runs on after this request returns.
+    enrichListeningHistoryCovers(admin, userId).catch(() => {});
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
