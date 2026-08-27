@@ -25,9 +25,37 @@ export function LogoMark({ size = 24, animate = false }: { size?: number; animat
 
 export function HomeIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 11l9-8 9 8" />
-      <path d="M5 10v10h14V10" />
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2.1L2 10.5V21a1 1 0 0 0 1 1h6v-7h6v7h6a1 1 0 0 0 1-1V10.5L12 2.1z" />
+    </svg>
+  );
+}
+
+export function PeopleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="8.5" cy="8" r="3.3" />
+      <path d="M2 20c0-3.7 2.9-6.2 6.5-6.2S15 16.3 15 20z" />
+      <circle cx="17" cy="8.7" r="2.6" />
+      <path d="M14 20c.3-2.8 1.9-4.9 4.3-5.7 2.7.6 4.7 2.9 4.7 5.7z" />
+    </svg>
+  );
+}
+
+export function BarsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <rect x="4" y="12" width="4" height="9" rx="1.2" />
+      <rect x="10" y="5" width="4" height="16" rx="1.2" />
+      <rect x="16" y="9" width="4" height="12" rx="1.2" />
+    </svg>
+  );
+}
+
+export function CompassSearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path fillRule="evenodd" clipRule="evenodd" d="M11 4a7 7 0 104.65 12.24l4.05 4.06a1 1 0 001.42-1.42l-4.06-4.05A7 7 0 0011 4zm-5 7a5 5 0 1110 0 5 5 0 01-10 0z" />
     </svg>
   );
 }

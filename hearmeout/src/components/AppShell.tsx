@@ -5,7 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import type { Device, ScreenName } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { Toast } from './ui/Toast';
-import { ProfileIcon, LogoMark } from './ui/Icons';
+import { ProfileIcon, LogoMark, HomeIcon, StarIcon, PeopleIcon, BarsIcon, CompassSearchIcon } from './ui/Icons';
 import { ThemeToggle } from './ThemeToggle';
 import { DockedPlayerDesktop, DockedPlayerMobile } from './DockedPlayer';
 import { CatalogScreen, SearchIcon } from './screens/CatalogScreen';
@@ -66,7 +66,7 @@ export function AppShell() {
 }
 
 function MobileShell({ active }: { active: boolean }) {
-  const { state, t, showScreen } = useApp();
+  const { state, t, me, showScreen } = useApp();
   const activeTab = TAB_GROUP[state.activeScreen];
   return (
     <div className={`mobile-shell ${active ? 'show' : ''}`}>
@@ -80,19 +80,24 @@ function MobileShell({ active }: { active: boolean }) {
         </div>
         <DockedPlayerMobile />
         <div className="tabbar">
-          <button className={`tab ${activeTab === 'catalog' ? 'active' : ''}`} onClick={() => showScreen('catalog')}>
-            <span className="lbl">{t('nav.home')}</span>
+          <button className={`tab ${activeTab === 'catalog' ? 'active' : ''}`} onClick={() => showScreen('catalog')} aria-label={t('nav.home')}>
+            <span className="ic"><HomeIcon /></span>
           </button>
-          <button className={`tab ${activeTab === 'match' ? 'active' : ''}`} onClick={() => showScreen('match')}>
-            <span className="lbl">{t('nav.friends')}</span>
+          <button className={`tab ${activeTab === 'rate' ? 'active' : ''}`} onClick={() => showScreen('history')} aria-label={t('nav.rate')}>
+            <span className="ic"><StarIcon /></span>
           </button>
-          <button className={`tab ${activeTab === 'discover' ? 'active' : ''}`} onClick={() => showScreen('discover')}>
-            <span className="lbl">{t('nav.find')}</span>
+          <button className={`tab ${activeTab === 'match' ? 'active' : ''}`} onClick={() => showScreen('match')} aria-label={t('nav.match')}>
+            <span className="ic"><PeopleIcon /></span>
           </button>
-          <button className={`tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => showScreen('profile')}>
-            <span className="lbl">{t('nav.profile')}</span>
+          <button className={`tab ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => showScreen('stats')} aria-label={t('nav.stats')}>
+            <span className="ic"><BarsIcon /></span>
           </button>
-          <button className="tab-add" onClick={() => showScreen('catalog')} aria-label={t('nav.rate')}>+</button>
+          <button className={`tab ${activeTab === 'discover' ? 'active' : ''}`} onClick={() => showScreen('discover')} aria-label={t('nav.find')}>
+            <span className="ic"><CompassSearchIcon /></span>
+          </button>
+          <button className={`tab tab-avatar ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => showScreen('profile')} aria-label={t('nav.profile')}>
+            <span className="ic avatar" style={me ? userAvatarStyle(me) : undefined}>{!me?.avatarUrl && <ProfileIcon />}</span>
+          </button>
         </div>
       </div>
     </div>
