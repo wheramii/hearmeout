@@ -87,8 +87,6 @@ type AppContextValue = {
   spotifyCovers: Record<string, string>;
   liveAlbums: Record<string, Album>;
   failedAlbumIds: Record<string, true>;
-  spotifyNew: CatalogAlbum[] | 'error' | null;
-  spotifyNewRegional: CatalogAlbum[] | 'error' | null;
   spotifyObscure: Record<string, CatalogAlbum[] | 'error'>;
   spotifyGenreArtists: Record<string, CatalogArtist[] | 'error'>;
   myRatings: RatingRecord[];
@@ -160,8 +158,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);
   const [albumRatings, setAlbumRatings] = useState<Record<string, AlbumRatingInfo>>({});
   const [spotifyCovers, setSpotifyCovers] = useState<Record<string, string>>({});
-  const [spotifyNew, setSpotifyNew] = useState<CatalogAlbum[] | 'error' | null>(null);
-  const [spotifyNewRegional, setSpotifyNewRegional] = useState<CatalogAlbum[] | 'error' | null>(null);
   const [spotifyObscure, setSpotifyObscure] = useState<Record<string, CatalogAlbum[] | 'error'>>({});
   const [spotifyGenreArtists, setSpotifyGenreArtists] = useState<Record<string, CatalogArtist[] | 'error'>>({});
   const [myRatings, setMyRatings] = useState<RatingRecord[]>([]);
@@ -186,7 +182,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshMe = useCallback(async () => {
     const res = await fetch('/api/me');
-    if (res.status === 401) {
+    if (res.status === 401 || res.status === 404) {
       setMe(null);
       // No account yet — guess a starting language from the browser so the
       // registration screen itself isn't stuck in Russian for everyone.
@@ -239,16 +235,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .catch(() => {});
   }, []);
 
-  // Fetched once here (not per-component) since both the mobile and desktop
-  // shells are always mounted — fetching in each consumer would double every
-  // request and reliably trip Spotify's search rate limit.
-  useEffect(() => {
-    fetch('/api/spotify/new')
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then(setSpotifyNew)
-      .catch(() => setSpotifyNew('error'));
-  }, []);
-
   // Region-aware sections: refetched whenever the profile's region setting
   // changes (including the very first time it becomes known after login).
   useEffect(() => {
@@ -258,15 +244,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     lastRegionFetched.current = region;
 
     const marketQS = region ? `&market=${encodeURIComponent(region)}` : '';
-
-    if (region) {
-      fetch(`/api/spotify/new?market=${encodeURIComponent(region)}`)
-        .then((res) => (res.ok ? res.json() : Promise.reject()))
-        .then(setSpotifyNewRegional)
-        .catch(() => setSpotifyNewRegional('error'));
-    } else {
-      setSpotifyNewRegional(null);
-    }
 
     fetch(`/api/spotify/obscure?genre=Electronic${marketQS}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
@@ -586,29 +563,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const liveAlbums = useMemo(() => {
     const map: Record<string, Album> = {};
-    if (Array.isArray(spotifyNew)) {
-      for (const a of spotifyNew) map[a.id] = catalogAlbumToAlbum(a);
-    }
-    if (Array.isArray(spotifyNewRegional)) {
-      for (const a of spotifyNewRegional) map[a.id] = catalogAlbumToAlbum(a);
-    }
     for (const list of Object.values(spotifyObscure)) {
       if (Array.isArray(list)) for (const a of list) map[a.id] = catalogAlbumToAlbum(a);
     }
     for (const [id, a] of Object.entries(fetchedAlbums)) map[id] = a;
     return map;
-  }, [spotifyNew, spotifyNewRegional, spotifyObscure, fetchedAlbums]);
+  }, [spotifyObscure, fetchedAlbums]);
 
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
-    spotifyNew, spotifyNewRegional, spotifyObscure, spotifyGenreArtists, myRatings, friendRequests, recapCache, reviewsVersion,
+    spotifyObscure, spotifyGenreArtists, myRatings, friendRequests, recapCache, reviewsVersion,
     showScreen, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
     updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
-  }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyNew, spotifyNewRegional, spotifyObscure,
+  }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
     spotifyGenreArtists, myRatings, friendRequests, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,

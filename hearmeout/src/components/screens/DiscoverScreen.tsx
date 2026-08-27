@@ -8,9 +8,8 @@ import { userAvatarStyle, starsText, formatRelative } from '@/lib/format';
 import { CoverArt } from '../ui/CoverArt';
 import { AlbumCard } from '../ui/AlbumCard';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
-import { SpotifyNewSection } from '../SpotifyNewSection';
+import { PopularNowSection } from '../PopularNowSection';
 import { SearchIcon } from './CatalogScreen';
-import { regionDisplayName } from '@/lib/i18n';
 
 type Filter = 'all' | 'albums' | 'artists' | 'people';
 
@@ -96,7 +95,7 @@ function SiteReviewsBlock() {
 }
 
 export function DiscoverScreen({ device }: { device: Device }) {
-  const { t, me, language, albums, spotifyNewRegional, spotifyNew } = useApp();
+  const { t, me, albums } = useApp();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [people, setPeople] = useState<PersonResult[] | null>(null);
@@ -169,14 +168,8 @@ export function DiscoverScreen({ device }: { device: Device }) {
         </>
       ) : (
         <>
-          <div className="section-head"><h2>{t('catalog.newOnSpotify')}</h2><span>{t('catalog.liveData')}</span></div>
-          <SpotifyNewSection rowClass={rowClass} albums={spotifyNew} />
-          {me.region && (
-            <>
-              <div className="section-head" style={{ marginTop: 26 }}><h2>{t('discover.newRegion')}</h2><span>{regionDisplayName(me.region, language)}</span></div>
-              <SpotifyNewSection rowClass={rowClass} albums={spotifyNewRegional} />
-            </>
-          )}
+          <div className="section-head"><h2>{t('catalog.popularNow')}</h2><span>{t('catalog.popularNowSubtitle')}</span></div>
+          <PopularNowSection rowClass={rowClass} />
           <div className="section-head" style={{ marginTop: 26 }}><h2>{t('discover.reviewsWorthReading')}</h2></div>
           <SiteReviewsBlock />
         </>

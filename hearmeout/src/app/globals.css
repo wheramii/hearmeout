@@ -430,9 +430,7 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 
 .history-side-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px; }
 .history-side-card h3{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; font-weight:500; }
-.history-hist-chart{ display:flex; align-items:flex-end; gap:6px; height:70px; margin-bottom:8px; }
-.history-hist-bar{ flex:1; border-radius:3px 3px 0 0; background:var(--lime); }
-.history-hist-labels{ display:flex; justify-content:space-between; font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; color:var(--muted-2); }
+.history-chart-caption{ font-size:11px; color:var(--muted); line-height:1.5; margin-bottom:10px; }
 .history-sparkline{ display:flex; align-items:flex-end; gap:5px; height:56px; margin-bottom:8px; }
 .history-sparkline .bar{ flex:1; border-radius:2px 2px 0 0; background:var(--lime); }
 .history-sparkline-labels{ display:flex; justify-content:space-between; font-family:var(--font-ibm-plex-mono),monospace; font-size:9.5px; color:var(--muted-2); }

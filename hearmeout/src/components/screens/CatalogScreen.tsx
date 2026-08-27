@@ -3,17 +3,16 @@
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { AlbumCard } from '../ui/AlbumCard';
-import { SpotifyNewSection } from '../SpotifyNewSection';
+import { PopularNowSection } from '../PopularNowSection';
 import { ObscureAlbums } from '../ObscureAlbums';
 import { GenreTopArtists } from '../GenreTopArtists';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { FriendsRow } from '../FriendsRow';
-import { regionDisplayName } from '@/lib/i18n';
 
 const GENRES = ['Всё', 'Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 
 export function CatalogScreen({ device }: { device: Device }) {
-  const { state, t, language, albums, albumRatings, me, spotifyNewRegional, setSearchQuery, setActiveGenre, setSortBy } = useApp();
+  const { state, t, albums, albumRatings, setSearchQuery, setActiveGenre, setSortBy } = useApp();
   const gridClass = device === 'mobile' ? 'grid-cards' : 'd-grid';
   const rowClass = device === 'mobile' ? 'row-scroll' : 'd-grid';
 
@@ -95,17 +94,8 @@ export function CatalogScreen({ device }: { device: Device }) {
       )}
       {chips}
       <FriendsRow />
-      <div className="section-head"><h2>{t('catalog.newOnSpotify')}</h2><span>{t('catalog.liveData')}</span></div>
-      <SpotifyNewSection rowClass={rowClass} />
-
-      {me?.region && (
-        <>
-          <div className="section-head" style={{ marginTop: 26 }}>
-            <h2>{t('catalog.popularInRegion')}</h2><span>{regionDisplayName(me.region, language)}</span>
-          </div>
-          <SpotifyNewSection rowClass={rowClass} albums={spotifyNewRegional} />
-        </>
-      )}
+      <div className="section-head"><h2>{t('catalog.popularNow')}</h2><span>{t('catalog.popularNowSubtitle')}</span></div>
+      <PopularNowSection rowClass={rowClass} />
 
       {topRated.length > 0 && (
         <>

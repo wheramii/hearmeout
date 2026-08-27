@@ -88,9 +88,12 @@ export function HistoryScreen({ device }: { device: Device }) {
     return [...map.entries()];
   }, [filtered]);
 
+  // 50 buckets, one per exact tenth-star value (0.1–5.0) — matches the
+  // per-album distribution on the album page, instead of collapsing to
+  // whole stars.
   const scoreBuckets = useMemo(() => {
-    const buckets = [0, 0, 0, 0, 0];
-    for (const r of myRatings) buckets[Math.min(5, Math.max(1, Math.round(r.stars))) - 1]++;
+    const buckets = new Array(50).fill(0);
+    for (const r of myRatings) buckets[Math.min(50, Math.max(1, Math.round(r.stars * 10))) - 1]++;
     return buckets;
   }, [myRatings]);
   const maxBucket = Math.max(1, ...scoreBuckets);
@@ -100,12 +103,12 @@ export function HistoryScreen({ device }: { device: Device }) {
     for (const r of myRatings) {
       const d = new Date(r.createdAt);
       const k = monthKey(r.createdAt);
-      const cur = map.get(k) || { sum: 0, count: 0, label: d.toLocaleDateString(toLocale(language), { month: 'short' }) };
+      const cur = map.get(k) || { sum: 0, count: 0, label: d.toLocaleDateString(toLocale(language), { month: 'short', year: '2-digit' }) };
       cur.sum += r.stars;
       cur.count += 1;
       map.set(k, cur);
     }
-    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-6).map(([, v]) => ({ avg: v.sum / v.count, label: v.label }));
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-6).map(([, v]) => ({ avg: v.sum / v.count, count: v.count, label: v.label }));
   }, [myRatings, language]);
   const maxMonthlyAvg = Math.max(1, ...monthlyAvg.map((m) => m.avg));
 
@@ -124,26 +127,30 @@ export function HistoryScreen({ device }: { device: Device }) {
         <h3>{t('history.scoreDistTitle')}</h3>
         {myRatings.length ? (
           <>
-            <div className="history-hist-chart">
+            <p className="history-chart-caption">{t('history.scoreDistCaption')}</p>
+            <div className="rating-dist-chart" style={{ height: 60 }}>
               {scoreBuckets.map((n, i) => (
-                <div key={i} className="history-hist-bar" style={{ height: `${Math.max(4, (n / maxBucket) * 100)}%` }} />
+                <div key={i} className="rating-dist-bar" style={{ height: `${n ? Math.max(6, (n / maxBucket) * 100) : 0}%` }} title={`${((i + 1) / 10).toFixed(1)} ★ · ${n}`} />
               ))}
             </div>
-            <div className="history-hist-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+            <div className="rating-dist-axis"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
           </>
         ) : <div className="empty-state">{t('history.notEnoughForChart')}</div>}
       </div>
       <div className="history-side-card">
         <h3>{t('history.monthlySparkTitle')}</h3>
-        {monthlyAvg.length ? (
+        {monthlyAvg.length >= 2 ? (
           <>
+            <p className="history-chart-caption">{t('history.monthlySparkCaption')}</p>
             <div className="history-sparkline">
               {monthlyAvg.map((m, i) => (
-                <div key={i} className="bar" style={{ height: `${Math.max(4, (m.avg / maxMonthlyAvg) * 100)}%` }} />
+                <div key={i} className="bar" style={{ height: `${Math.max(4, (m.avg / maxMonthlyAvg) * 100)}%` }} title={`${m.label}: ${m.avg.toFixed(1)} (${m.count})`} />
               ))}
             </div>
             <div className="history-sparkline-labels">{monthlyAvg.map((m, i) => <span key={i}>{m.label}</span>)}</div>
           </>
+        ) : monthlyAvg.length === 1 ? (
+          <p className="history-chart-caption">{t('history.monthlySparkSingle', { label: monthlyAvg[0].label, avg: monthlyAvg[0].avg.toFixed(1), count: monthlyAvg[0].count })}</p>
         ) : <div className="empty-state">{t('history.notEnoughForChart')}</div>}
       </div>
       <div className="history-side-card">

@@ -69,25 +69,10 @@ export async function fetchAlbumCovers(spotifyIds: { ourId: string; spotifyId: s
   return Object.fromEntries(results.filter((r): r is readonly [string, string] => r !== null));
 }
 
-// "Trending" substitute: /v1/browse/new-releases is 403 for dev-mode apps,
-// so this uses the tag:new search filter (Spotify's own "released in the
-// last two weeks" flag) — genuinely live catalog data, music only (never
-// podcasts, since we only ever search type=album/track).
-// tag:new and tag:hipster silently cap at limit=10 — anything higher is a
-// 400 "Invalid limit" from Spotify, confirmed by hand (undocumented quirk
-// specific to those two tag filters; ordinary search allows up to 50).
 // `market` biases/filters results toward what's actually available in that
-// country on Spotify — the real mechanism their API exposes for "popular in
-// region X" (there's no separate regional-charts endpoint we have access to).
+// country on Spotify.
 function isValidMarket(market?: string | null): market is string {
   return !!market && /^[A-Z]{2}$/.test(market);
-}
-
-export async function fetchNewOnSpotify(limit = 10, market?: string | null): Promise<CatalogAlbum[]> {
-  const params: Record<string, string> = { q: 'tag:new', type: 'album', limit: String(limit) };
-  if (isValidMarket(market)) params.market = market;
-  const data = await spotifyGet('/search', params);
-  return (data.albums?.items || []).map(toCatalogAlbum);
 }
 
 // Real top artists per genre bucket, via the genre: search field filter.
@@ -112,6 +97,17 @@ export async function fetchObscureAlbums(genreBucket: string, limit = 10, market
   if (isValidMarket(market)) params.market = market;
   const data = await spotifyGet('/search', params);
   return (data.albums?.items || []).map(toCatalogAlbum);
+}
+
+// Resolves an arbitrary title/artist pair (e.g. a MusicBrainz release group
+// that has no Spotify id of its own) to a real Spotify album id, so results
+// from non-Spotify sources (library search, an artist's MusicBrainz
+// discography) can still open a real album page instead of being a dead
+// click. limit=1 dodges the "Invalid limit" cap confirmed on this app's tier.
+export async function resolveSpotifyAlbumId(title: string, artist: string): Promise<string | null> {
+  const params: Record<string, string> = { q: `album:${title} artist:${artist}`, type: 'album', limit: '1' };
+  const data = await spotifyGet('/search', params);
+  return data.albums?.items?.[0]?.id ?? null;
 }
 
 export type AlbumTrack = { id: string; title: string; trackNumber: number };

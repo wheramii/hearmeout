@@ -11,6 +11,12 @@ export type Album = {
   unknown?: boolean;
   listeners?: string;
   tracklist: string[];
+  // Position in a real "most-streamed on Spotify (all-time)" ranking
+  // (sourced from kworb.net) — lower is more streamed. Only set on the
+  // catalog-expansion batch; used to power "Популярно сейчас" with a real,
+  // disclosed ranking instead of Spotify's dev-tier search (which has no
+  // trending/charts endpoint available to this app).
+  popularRank?: number;
 };
 
 // Live aggregate from the `ratings` table (album_ratings view) — replaces

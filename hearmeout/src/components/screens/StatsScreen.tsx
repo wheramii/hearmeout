@@ -4,10 +4,16 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, StatsData, StatsRange } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
-import { toLocale } from '@/lib/i18n';
+import { toLocale, type Language } from '@/lib/i18n';
 
 const RANGES: StatsRange[] = ['4w', '6m', 'year', 'all'];
 const RANGE_KEY: Record<StatsRange, string> = { '4w': 'stats.range4w', '6m': 'stats.range6m', year: 'stats.rangeYear', all: 'stats.rangeAll' };
+
+// weekLabel from the API is the Monday-anchored ISO date of the week —
+// shown as a short local date so "which week is this" is never a mystery.
+function weekLabelText(weekLabel: string, language: Language): string {
+  return new Date(weekLabel).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' });
+}
 
 export function StatsScreen(_props: { device: Device }) {
   const { t, language, me } = useApp();
@@ -56,12 +62,25 @@ export function StatsScreen(_props: { device: Device }) {
           </div>
 
           <div className="section-head" style={{ marginTop: 26 }}><h2>{t('stats.hoursPerWeek')}</h2></div>
-          {data.hoursPerWeek.length ? (
-            <div className="rating-dist-chart" style={{ height: 90, marginBottom: 26 }}>
-              {data.hoursPerWeek.map((w, i) => (
-                <div key={i} className="rating-dist-bar" style={{ height: `${Math.max(4, (w.hours / maxWeek) * 100)}%` }} title={`${w.weekLabel}: ${w.hours}h`} />
-              ))}
-            </div>
+          {data.hoursPerWeek.length >= 2 ? (
+            <>
+              <p className="history-chart-caption">{t('stats.hoursPerWeekCaption')}</p>
+              <div className="rating-dist-chart" style={{ height: 90, marginBottom: 6 }}>
+                {data.hoursPerWeek.map((w, i) => (
+                  <div key={i} className="rating-dist-bar" style={{ height: `${w.hours ? Math.max(6, (w.hours / maxWeek) * 100) : 0}%` }} title={`${weekLabelText(w.weekLabel, language)}: ${w.hours}h`} />
+                ))}
+              </div>
+              <div className="rating-dist-axis" style={{ marginBottom: 26 }}>
+                {data.hoursPerWeek.map((w, i) => {
+                  const step = data.hoursPerWeek.length > 8 ? 3 : 1;
+                  return <span key={i}>{i % step === 0 || i === data.hoursPerWeek.length - 1 ? weekLabelText(w.weekLabel, language) : ''}</span>;
+                })}
+              </div>
+            </>
+          ) : data.hoursPerWeek.length === 1 ? (
+            <p className="history-chart-caption" style={{ marginBottom: 26 }}>
+              {t('stats.hoursPerWeekSingle', { label: weekLabelText(data.hoursPerWeek[0].weekLabel, language), hours: data.hoursPerWeek[0].hours })}
+            </p>
           ) : <div className="empty-state">{t('stats.notEnough')}</div>}
 
           <div className="section-head"><h2>{t('stats.topArtists')}</h2></div>
