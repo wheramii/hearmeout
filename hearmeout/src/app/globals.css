@@ -34,17 +34,21 @@
    --accent-text/--accent-border derive from --lime via color-mix() instead
    of being hand-set per palette, so they automatically stay coherent with
    whichever palette is active in both the dark and light theme. */
-html[data-accent] {
+/* :root (not html) so these match the (0,2,0) specificity of the
+   :root[data-theme=...] blocks above — plain `html[data-accent]` lost that
+   specificity fight every time (element+attribute < pseudo-class+attribute)
+   and silently never applied, regardless of source order. */
+:root[data-accent] {
   --accent-bg: color-mix(in srgb, var(--lime) 15%, var(--surface));
   --accent-text: var(--lime);
   --accent-border: color-mix(in srgb, var(--lime) 35%, transparent);
 }
-html[data-accent="calm-1"] { --lime: #7a9b8e; --coral: #a67c6d; --on-accent: #16211d; }
-html[data-accent="calm-2"] { --lime: #8a93c2; --coral: #b891a6; --on-accent: #17182a; }
-html[data-accent="bright-1"] { --lime: #4d8dff; --coral: #ff5c8a; --on-accent: #ffffff; }
-html[data-accent="bright-2"] { --lime: #ff8a3d; --coral: #9b5de5; --on-accent: #241505; }
-html[data-accent="acid-1"] { --lime: #b6ff2e; --coral: #ff2fb0; --on-accent: #12200a; }
-html[data-accent="acid-2"] { --lime: #f4ff2e; --coral: #00e5ff; --on-accent: #1a1900; }
+:root[data-accent="calm-1"] { --lime: #7a9b8e; --coral: #a67c6d; --on-accent: #16211d; }
+:root[data-accent="calm-2"] { --lime: #8a93c2; --coral: #b891a6; --on-accent: #17182a; }
+:root[data-accent="bright-1"] { --lime: #4d8dff; --coral: #ff5c8a; --on-accent: #ffffff; }
+:root[data-accent="bright-2"] { --lime: #ff8a3d; --coral: #9b5de5; --on-accent: #241505; }
+:root[data-accent="acid-1"] { --lime: #b6ff2e; --coral: #ff2fb0; --on-accent: #12200a; }
+:root[data-accent="acid-2"] { --lime: #f4ff2e; --coral: #00e5ff; --on-accent: #1a1900; }
 
 *{ box-sizing: border-box; }
 html, body { height: 100%; overflow-x: hidden; overscroll-behavior-x: none; }

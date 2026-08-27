@@ -23,7 +23,7 @@ function weekLabelText(weekLabel: string, language: Language): string {
 // no point spending the request), PremiumLock just shows a static, unlit
 // placeholder grid behind the lock overlay instead.
 function CalendarHeatmap() {
-  const { t, me } = useApp();
+  const { t, me, language } = useApp();
   const [days, setDays] = useState<{ day: string; minutes: number }[] | null>(null);
 
   useEffect(() => {
@@ -49,12 +49,13 @@ function CalendarHeatmap() {
     <>
       <div className="section-head" style={{ marginTop: 22 }}><h2>{t('stats.calendarTitle')}</h2></div>
       <PremiumLock label={t('stats.calendarLocked')}>
+        <p className="history-chart-caption">{t('stats.calendarCaption')}</p>
         <div style={{ overflowX: 'auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(53,10px)', gridAutoRows: '10px', gap: 3, width: 'max-content' }}>
             {cells.map((c) => (
               <div
                 key={c.day}
-                title={`${c.day}: ${c.minutes} ${t('recap.minutes')}`}
+                title={`${new Date(c.day).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short', year: 'numeric' })}: ${c.minutes} ${t('recap.minutes')}`}
                 style={{
                   width: 10, height: 10, borderRadius: 2,
                   background: c.minutes ? 'var(--lime)' : 'var(--surface-2)',
@@ -63,6 +64,13 @@ function CalendarHeatmap() {
               />
             ))}
           </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 10.5, color: 'var(--muted)' }}>
+          <span>{t('stats.calendarLess')}</span>
+          {[0.2, 0.4, 0.6, 0.8, 1].map((op) => (
+            <span key={op} style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--lime)', opacity: op, display: 'inline-block' }} />
+          ))}
+          <span>{t('stats.calendarMore')}</span>
         </div>
       </PremiumLock>
     </>
