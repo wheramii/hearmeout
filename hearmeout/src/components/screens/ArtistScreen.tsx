@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, SpotifyArtistAlbum } from '@/lib/types';
 import { coverArtUrl } from '@/lib/musicbrainz';
@@ -29,9 +29,25 @@ function SpotifyAlbumCard({ album, fallbackLetter, onOpen, unreleasedLabel, scor
 }
 
 export function ArtistScreen({ device }: { device: Device }) {
-  const { t, state, language, albumRatings, myRatings, showScreen, openAlbum } = useApp();
+  const { t, state, language, albumRatings, myRatings, showScreen, openAlbum, showToast } = useApp();
   const art = state.currentArtist;
   const gridClass = device === 'mobile' ? 'grid-cards' : 'd-grid';
+  const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
+
+  const openMbGroup = async (title: string, artistName: string, groupId: string) => {
+    if (resolvingGroup) return;
+    setResolvingGroup(groupId);
+    try {
+      const res = await fetch(`/api/spotify/resolve-album?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artistName)}`);
+      if (!res.ok) { showToast(t('toast.albumOpenFailed')); return; }
+      const { id } = await res.json();
+      openAlbum(id);
+    } catch {
+      showToast(t('toast.albumOpenFailed'));
+    } finally {
+      setResolvingGroup(null);
+    }
+  };
 
   const communityScore = useMemo(() => {
     if (!art?.releasedAlbums) return null;
@@ -162,7 +178,7 @@ export function ArtistScreen({ device }: { device: Device }) {
             const year = g['first-release-date'] ? g['first-release-date'].slice(0, 4) : '—';
             const cover = coverArtUrl(g.id);
             return (
-              <div className="cover" key={g.id}>
+              <div className="cover" key={g.id} onClick={() => openMbGroup(g.title, art.name, g.id)} style={{ cursor: 'pointer', opacity: resolvingGroup === g.id ? 0.6 : 1 }}>
                 <CoverArt url={cover} fallbackLetter={art.name[0] || '?'} className="art" />
                 <div className="meta"><div className="t">{g.title}</div><div className="a">{year}</div></div>
               </div>

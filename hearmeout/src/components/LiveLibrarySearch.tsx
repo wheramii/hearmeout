@@ -7,10 +7,26 @@ import { CoverArt } from './ui/CoverArt';
 import { ArtistAvatar } from './ui/ArtistAvatar';
 
 export function LiveLibrarySearch({ query }: { query: string }) {
-  const { t, openArtist } = useApp();
+  const { t, openArtist, openAlbum, showToast } = useApp();
   const [result, setResult] = useState<{ artists: LibraryArtist[]; groups: LibraryReleaseGroup[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [resolving, setResolving] = useState<string | null>(null);
+
+  const openGroup = async (title: string, artist: string, groupId: string) => {
+    if (resolving) return;
+    setResolving(groupId);
+    try {
+      const res = await fetch(`/api/spotify/resolve-album?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`);
+      if (!res.ok) { showToast(t('toast.albumOpenFailed')); return; }
+      const { id } = await res.json();
+      openAlbum(id);
+    } catch {
+      showToast(t('toast.albumOpenFailed'));
+    } finally {
+      setResolving(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +77,7 @@ export function LiveLibrarySearch({ query }: { query: string }) {
               const year = g['first-release-date'] ? g['first-release-date'].slice(0, 4) : '—';
               const cover = coverArtUrl(g.id);
               return (
-                <div className="cover" key={g.id}>
+                <div className="cover" key={g.id} onClick={() => openGroup(g.title, artist, g.id)} style={{ cursor: 'pointer', opacity: resolving === g.id ? 0.6 : 1 }}>
                   <CoverArt url={cover} fallbackLetter={artist[0] || '?'} className="art" />
                   <div className="meta"><div className="t">{g.title}</div><div className="a">{artist} · {year}</div></div>
                 </div>
