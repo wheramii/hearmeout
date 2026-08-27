@@ -60,47 +60,51 @@ export function AlbumScreen({ device }: { device: Device }) {
     <div className="empty-state">{t('album.tracklistEmpty')}</div>
   );
 
-  const ratingBlock = (
-    <div className="avg-rating">
-      {ratingInfo ? (
-        <>
-          <div>
-            <div className="num">{ratingInfo.avg.toFixed(1)}</div>
-            <div className="rd">{ratingInfo.count.toLocaleString(toLocale(language))} {pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}</div>
-          </div>
-          <StarsAvg rating={ratingInfo.avg} />
-        </>
-      ) : (
-        <div className="rd">{t('album.noRatings')}</div>
+  const openSpotifyUrl = a.spotifyId ? `https://open.spotify.com/album/${a.spotifyId}` : null;
+
+  const actions = (justify: 'center' | undefined) => (
+    <div className={`album-actions ${justify === 'center' ? 'center' : ''}`}>
+      <button className="action-chip primary" onClick={() => openRateFor(a.id, 'album')}>{t('album.rateAlbum')}</button>
+      <button className={`action-chip ${wishlisted ? 'added' : ''}`} onClick={() => setWishlisted((v) => !v)}>
+        {wishlisted ? t('album.inWishlist') : t('album.addWishlist')}
+      </button>
+      {openSpotifyUrl && (
+        <a className="action-chip" href={openSpotifyUrl} target="_blank" rel="noreferrer">{t('album.openInSpotify')}</a>
       )}
     </div>
   );
 
-  const wishlistBtn = (
-    <button
-      className={`btn-ghost ${wishlisted ? 'added' : ''}`}
-      style={device === 'desktop' ? { width: '100%' } : undefined}
-      onClick={() => setWishlisted((v) => !v)}
-    >
-      {wishlisted ? t('album.inWishlist') : t('album.addWishlist')}
-    </button>
-  );
+  const metaMono = [a.genre, a.year || null].filter(Boolean).join(' · ');
 
   if (device === 'mobile') {
     return (
       <>
         <button className="back-btn" onClick={() => showScreen('catalog')}>{t('album.backToCatalog')}</button>
         <div className="album-hero">
-          <CirclePlayer artist={a.artist} title={a.title} size={48} className="album-hero-player" />
+          {metaMono && <div className="meta-mono">{metaMono}</div>}
           {heroArt}
           <h1>{a.title}</h1>
-          <div className="sub">{artistLabel}{a.year ? ` · ${a.year}` : ''}</div>
-          <div className="tags">{a.genre && <span className="chip">{a.genre}</span>}</div>
+          <span className="artist-link">{artistLabel}</span>
+          <div className="album-title-row" style={{ justifyContent: 'center', marginTop: 14 }}>
+            <CirclePlayer artist={a.artist} title={a.title} size={52} />
+            <span className="preview-label">{t('album.preview30s')}</span>
+          </div>
         </div>
-        {ratingBlock}
-        <button className="btn-primary" onClick={() => openRateFor(a.id, 'album')}>{t('album.rateAlbum')}</button>
-        {wishlistBtn}
-        <div className="section-head"><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>
+        <div className="avg-rating">
+          {ratingInfo ? (
+            <>
+              <div>
+                <div className="num">{ratingInfo.avg.toFixed(1)}</div>
+                <div className="rd">{ratingInfo.count.toLocaleString(toLocale(language))} {pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}</div>
+              </div>
+              <StarsAvg rating={ratingInfo.avg} />
+            </>
+          ) : (
+            <div className="rd">{t('album.noRatings')}</div>
+          )}
+        </div>
+        {actions('center')}
+        <div className="section-head" style={{ marginTop: 22 }}><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>
         <div style={{ marginBottom: 22 }}>{tracklist}</div>
         <div className="section-head"><h2>{t('album.reviews')}</h2></div>
         <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
@@ -111,31 +115,38 @@ export function AlbumScreen({ device }: { device: Device }) {
   return (
     <>
       <button className="back-btn" onClick={() => showScreen('catalog')}>{t('album.backToCatalog')}</button>
-      <div className="d-album-layout">
-        <div className="cover-col">
-          {heroArt}
-          <button className="btn-primary" style={{ width: '100%' }} onClick={() => openRateFor(a.id, 'album')}>{t('album.rateAlbum')}</button>
-          {wishlistBtn}
+      <div className="album-band">
+        {heroArt}
+        <div className="album-band-mid">
+          {metaMono && <div className="meta-mono">{metaMono}</div>}
+          <div className="album-title-row">
+            <h1>{a.title}</h1>
+            <CirclePlayer artist={a.artist} title={a.title} size={52} />
+            <span className="preview-label">{t('album.preview30s')}</span>
+          </div>
+          <span className="artist-link">{artistLabel}</span>
+          {actions(undefined)}
         </div>
-        <div className="info-col">
-          <div className="eyebrow">{t('album.eyebrow')}</div>
-          <h1>{a.title}</h1>
-          <div className="sub">{artistLabel}{a.year ? ` · ${a.year}` : ''}</div>
-          <div className="tags" style={{ display: 'flex', gap: 8, marginBottom: 20 }}>{a.genre && <span className="chip">{a.genre}</span>}</div>
-          <div className="d-rating-row" style={{ maxWidth: 420, marginBottom: 20 }}>
-            <div style={{ flex: 1 }}>{ratingBlock}</div>
-            <CirclePlayer artist={a.artist} title={a.title} size={64} />
-          </div>
-          <div className="d-two-col">
-            <div>
-              <div className="section-head"><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>
-              {tracklist}
-            </div>
-            <div>
-              <div className="section-head"><h2>{t('album.reviews')}</h2></div>
-              <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
-            </div>
-          </div>
+        <div className="album-band-score">
+          {ratingInfo ? (
+            <>
+              <div className="num">{ratingInfo.avg.toFixed(1)}</div>
+              <StarsAvg rating={ratingInfo.avg} />
+              <div className="rd">{ratingInfo.count.toLocaleString(toLocale(language))} {pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}</div>
+            </>
+          ) : (
+            <div className="rd">{t('album.noRatings')}</div>
+          )}
+        </div>
+      </div>
+      <div className="d-two-col">
+        <div>
+          <div className="section-head"><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>
+          {tracklist}
+        </div>
+        <div>
+          <div className="section-head"><h2>{t('album.reviews')}</h2></div>
+          <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
         </div>
       </div>
     </>

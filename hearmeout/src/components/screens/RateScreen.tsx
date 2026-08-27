@@ -49,16 +49,30 @@ export function RateScreen({ device }: { device: Device }) {
         style={device === 'desktop' ? { marginLeft: 'auto', marginRight: 'auto' } : undefined}
       />
       <h1 className="page-title" style={{ textAlign: 'center', marginBottom: 0 }}>{a.title}</h1>
-      <div className="rate-star-block">
-        <StarPicker value={val} onChange={setRatingValue} />
+
+      <div className="rate-card">
+        <div className="rate-card-label">{t('rate.yourRating')}</div>
+        <div className="rate-score-row">
+          <StarPicker value={val} onChange={setRatingValue} />
+          {val > 0 && <span className="rate-score-num">{val.toFixed(1)}</span>}
+        </div>
+        <div className="rate-hint">{label}</div>
       </div>
-      <div className="vu-label">{label}</div>
-      <textarea
-        className="review-box"
-        placeholder={t('rate.reviewPlaceholder')}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
+
+      <div className="review-compose-card">
+        <div className="review-compose-head">
+          <span className="review-compose-label">{t('rate.reviewLabel')}</span>
+          <span className="review-compose-count">{text.length} / 2000</span>
+        </div>
+        <textarea
+          className="review-textarea"
+          placeholder={t('rate.reviewPlaceholder')}
+          value={text}
+          maxLength={2000}
+          onChange={(e) => setText(e.target.value)}
+        />
+      </div>
+
       <button
         className="btn-primary"
         style={device === 'desktop' ? { width: '100%' } : undefined}

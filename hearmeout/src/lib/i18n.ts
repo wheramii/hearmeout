@@ -53,6 +53,8 @@ const ru = {
   'album.ratingOne': 'оценка',
   'album.ratingFew': 'оценки',
   'album.ratingMany': 'оценок',
+  'album.openInSpotify': 'Открыть в Spotify',
+  'album.preview30s': 'превью\n30 сек',
 
   'reviews.loading': 'Загружаю рецензии…',
   'reviews.empty': 'Пока нет рецензий',
@@ -66,6 +68,8 @@ const ru = {
   'rate.publish': 'Опубликовать',
   'rate.back': '← Назад',
   'rate.needStars': 'Сначала выберите оценку',
+  'rate.yourRating': 'Ваша оценка',
+  'rate.reviewLabel': 'Рецензия — необязательно',
 
   'history.eyebrow': 'История оценок',
   'history.title': 'Ваши оценки',
@@ -320,6 +324,8 @@ const en: Dict = {
   'album.ratingOne': 'rating',
   'album.ratingFew': 'ratings',
   'album.ratingMany': 'ratings',
+  'album.openInSpotify': 'Open in Spotify',
+  'album.preview30s': 'preview\n30 sec',
 
   'reviews.loading': 'Loading reviews…',
   'reviews.empty': 'No reviews yet',
@@ -333,6 +339,8 @@ const en: Dict = {
   'rate.publish': 'Publish',
   'rate.back': '← Back',
   'rate.needStars': 'Pick a rating first',
+  'rate.yourRating': 'Your rating',
+  'rate.reviewLabel': 'Review — optional',
 
   'history.eyebrow': 'Rating history',
   'history.title': 'Your ratings',
@@ -584,6 +592,8 @@ const fr: Dict = {
   'album.ratingOne': 'note',
   'album.ratingFew': 'notes',
   'album.ratingMany': 'notes',
+  'album.openInSpotify': 'Ouvrir dans Spotify',
+  'album.preview30s': 'aperçu\n30 sec',
 
   'reviews.loading': 'Chargement des avis…',
   'reviews.empty': "Aucun avis pour l'instant",
@@ -597,6 +607,8 @@ const fr: Dict = {
   'rate.publish': 'Publier',
   'rate.back': '← Retour',
   'rate.needStars': "Choisissez d'abord une note",
+  'rate.yourRating': 'Votre note',
+  'rate.reviewLabel': 'Avis — facultatif',
 
   'history.eyebrow': 'Historique des notes',
   'history.title': 'Vos notes',
@@ -848,6 +860,8 @@ const es: Dict = {
   'album.ratingOne': 'valoración',
   'album.ratingFew': 'valoraciones',
   'album.ratingMany': 'valoraciones',
+  'album.openInSpotify': 'Abrir en Spotify',
+  'album.preview30s': 'vista previa\n30 seg',
 
   'reviews.loading': 'Cargando reseñas…',
   'reviews.empty': 'Aún no hay reseñas',
@@ -861,6 +875,8 @@ const es: Dict = {
   'rate.publish': 'Publicar',
   'rate.back': '← Volver',
   'rate.needStars': 'Primero elige una valoración',
+  'rate.yourRating': 'Tu valoración',
+  'rate.reviewLabel': 'Reseña — opcional',
 
   'history.eyebrow': 'Historial de valoraciones',
   'history.title': 'Tus valoraciones',
@@ -1112,6 +1128,8 @@ const de: Dict = {
   'album.ratingOne': 'Bewertung',
   'album.ratingFew': 'Bewertungen',
   'album.ratingMany': 'Bewertungen',
+  'album.openInSpotify': 'In Spotify öffnen',
+  'album.preview30s': 'vorschau\n30 sek',
 
   'reviews.loading': 'Rezensionen werden geladen…',
   'reviews.empty': 'Noch keine Rezensionen',
@@ -1125,6 +1143,8 @@ const de: Dict = {
   'rate.publish': 'Veröffentlichen',
   'rate.back': '← Zurück',
   'rate.needStars': 'Wähle zuerst eine Bewertung',
+  'rate.yourRating': 'Deine Bewertung',
+  'rate.reviewLabel': 'Rezension — optional',
 
   'history.eyebrow': 'Bewertungsverlauf',
   'history.title': 'Deine Bewertungen',
