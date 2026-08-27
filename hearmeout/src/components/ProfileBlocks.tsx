@@ -112,7 +112,7 @@ export function ImportHistoryBlock() {
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ imported: number } | null>(null);
+  const [result, setResult] = useState<{ imported: number; errors: string[] } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const submit = async () => {
@@ -122,7 +122,7 @@ export function ImportHistoryBlock() {
     const res = await importStreamingHistory(files);
     setBusy(false);
     if (res) {
-      setResult({ imported: res.imported });
+      setResult({ imported: res.imported, errors: res.errors || [] });
       setFiles([]);
       if (inputRef.current) inputRef.current.value = '';
     }
@@ -160,6 +160,11 @@ export function ImportHistoryBlock() {
           {result && (
             <div className="import-history-result">
               {result.imported > 0 ? t('profile.importResult', { count: result.imported }) : t('profile.importResultEmpty')}
+              {result.errors.length > 0 && (
+                <ul style={{ marginTop: 8, paddingLeft: 18, color: 'var(--muted)' }}>
+                  {result.errors.map((e, i) => <li key={i}>{e}</li>)}
+                </ul>
+              )}
             </div>
           )}
         </div>

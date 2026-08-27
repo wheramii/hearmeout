@@ -4,7 +4,10 @@ import { getCurrentUserId } from '@/lib/identity';
 import { importStreamingHistory } from '@/lib/streamingHistoryImport';
 
 const MAX_FILES = 50;
-const MAX_FILE_BYTES = 6 * 1024 * 1024;
+// Spotify's real "Extended streaming history" export splits into files by
+// year/volume, not by size — a single file for an active multi-year
+// listener regularly runs past 6MB. 6MB was rejecting genuine exports.
+const MAX_FILE_BYTES = 40 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   const userId = await getCurrentUserId();

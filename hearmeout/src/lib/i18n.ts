@@ -398,6 +398,8 @@ const ru = {
   'toast.syncFailed': 'Не удалось синхронизировать Spotify',
   'toast.albumOpenFailed': 'Не удалось найти этот альбом на Spotify',
   'toast.importFailed': 'Не удалось загрузить историю',
+  'toast.importFileTooLarge': 'Файл {file} слишком большой (максимум 40 МБ) — раздели его на части поменьше',
+  'toast.importTooManyFiles': 'Слишком много файлов за раз (максимум 50)',
   'toast.importedTracks': 'Импортировано {count} прослушиваний',
   'toast.importNoNew': 'Новых прослушиваний не найдено',
 
@@ -803,6 +805,8 @@ const en: Dict = {
   'toast.syncFailed': "Couldn't sync Spotify",
   'toast.albumOpenFailed': "Couldn't find this album on Spotify",
   'toast.importFailed': "Couldn't upload history",
+  'toast.importFileTooLarge': 'File {file} is too large (40MB max) — split it into smaller parts',
+  'toast.importTooManyFiles': 'Too many files at once (50 max)',
   'toast.importedTracks': 'Imported {count} plays',
   'toast.importNoNew': 'No new plays found',
 
@@ -1205,6 +1209,8 @@ const fr: Dict = {
   'toast.syncFailed': 'Impossible de synchroniser Spotify',
   'toast.albumOpenFailed': 'Impossible de trouver cet album sur Spotify',
   'toast.importFailed': "Impossible d'importer l'historique",
+  'toast.importFileTooLarge': 'Le fichier {file} est trop volumineux (40 Mo max) — divisez-le en parties plus petites',
+  'toast.importTooManyFiles': 'Trop de fichiers à la fois (50 max)',
   'toast.importedTracks': '{count} écoutes importées',
   'toast.importNoNew': 'Aucune nouvelle écoute',
 
@@ -1607,6 +1613,8 @@ const es: Dict = {
   'toast.syncFailed': 'No se pudo sincronizar Spotify',
   'toast.albumOpenFailed': 'No se pudo encontrar este álbum en Spotify',
   'toast.importFailed': 'No se pudo subir el historial',
+  'toast.importFileTooLarge': 'El archivo {file} es demasiado grande (máx. 40 MB) — divídelo en partes más pequeñas',
+  'toast.importTooManyFiles': 'Demasiados archivos a la vez (máx. 50)',
   'toast.importedTracks': '{count} reproducciones importadas',
   'toast.importNoNew': 'No se encontraron reproducciones nuevas',
 
@@ -2009,6 +2017,8 @@ const de: Dict = {
   'toast.syncFailed': 'Spotify konnte nicht synchronisiert werden',
   'toast.albumOpenFailed': 'Dieses Album konnte auf Spotify nicht gefunden werden',
   'toast.importFailed': 'Verlauf konnte nicht hochgeladen werden',
+  'toast.importFileTooLarge': 'Datei {file} ist zu groß (max. 40 MB) — in kleinere Teile aufteilen',
+  'toast.importTooManyFiles': 'Zu viele Dateien auf einmal (max. 50)',
   'toast.importedTracks': '{count} Wiedergaben importiert',
   'toast.importNoNew': 'Keine neuen Wiedergaben gefunden',
 

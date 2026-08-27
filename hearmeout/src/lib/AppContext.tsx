@@ -460,7 +460,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     for (const f of files) form.append('files', f);
     const res = await fetch('/api/spotify/import', { method: 'POST', body: form });
     if (!res.ok) {
-      showToast(t('toast.importFailed'));
+      const data = await res.json().catch(() => ({}));
+      if (data.error === 'file_too_large') showToast(t('toast.importFileTooLarge', { file: data.file || '' }));
+      else if (data.error === 'too_many_files') showToast(t('toast.importTooManyFiles'));
+      else showToast(t('toast.importFailed'));
       return null;
     }
     const result = await res.json();
