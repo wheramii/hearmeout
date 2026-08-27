@@ -8,6 +8,7 @@ import { starsText } from '@/lib/format';
 import { toLocale } from '@/lib/i18n';
 import { SearchIcon } from './CatalogScreen';
 import { PremiumLock } from '../ui/PremiumLock';
+import { accentMix } from '@/lib/accentGradient';
 
 type Filter = 'all' | 'high' | 'low' | 'reviewed';
 type Sort = 'newest' | 'oldest';
@@ -148,7 +149,7 @@ export function HistoryScreen({ device }: { device: Device }) {
             <p className="history-chart-caption">{t('history.scoreDistCaption')}</p>
             <div className="rating-dist-chart" style={{ height: 60 }}>
               {scoreBuckets.map((n, i) => (
-                <div key={i} className="rating-dist-bar" style={{ height: `${n ? Math.max(6, (n / maxBucket) * 100) : 0}%` }} title={`${((i + 1) / 10).toFixed(1)} ★ · ${n}`} />
+                <div key={i} className="rating-dist-bar" style={{ height: `${n ? Math.max(6, (n / maxBucket) * 100) : 0}%`, background: accentMix((i + 1) / 50) }} title={`${((i + 1) / 10).toFixed(1)} ★ · ${n}`} />
               ))}
             </div>
             <div className="rating-dist-axis"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
@@ -162,7 +163,7 @@ export function HistoryScreen({ device }: { device: Device }) {
             <p className="history-chart-caption">{t('history.monthlySparkCaption')}</p>
             <div className="history-sparkline">
               {monthlyAvg.map((m, i) => (
-                <div key={i} className="bar" style={{ height: `${Math.max(4, (m.avg / maxMonthlyAvg) * 100)}%` }} title={`${m.label}: ${m.avg.toFixed(1)} (${m.count})`} />
+                <div key={i} className="bar" style={{ height: `${Math.max(4, (m.avg / maxMonthlyAvg) * 100)}%`, background: accentMix(m.avg / 5) }} title={`${m.label}: ${m.avg.toFixed(1)} (${m.count})`} />
               ))}
             </div>
             <div className="history-sparkline-labels">{monthlyAvg.map((m, i) => <span key={i}>{m.label}</span>)}</div>

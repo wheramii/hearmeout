@@ -11,6 +11,7 @@ import { usePlayer } from '@/lib/PlayerContext';
 import { TransportRing } from '../DockedPlayer';
 import { PremiumLock } from '../ui/PremiumLock';
 import { drawRecapPoster } from '@/lib/posterCanvas';
+import { accentMix } from '@/lib/accentGradient';
 
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', month: 'recap.month', season: 'recap.season' };
 
@@ -122,10 +123,10 @@ export function RecapScreen(_props: { device: Device }) {
       ) : (
         <>
           <div className="recap-stats-row">
-            <div className="recap-stat"><div className="rv">{r.minutes.toLocaleString(toLocale(language))}</div><div className="rl">{t('recap.minutes')}</div></div>
-            <div className="recap-stat"><div className="rv">{r.uniqueArtists}</div><div className="rl">{t('recap.artists')}</div></div>
-            <div className="recap-stat"><div className="rv">{r.topGenres.length}</div><div className="rl">{t('recap.genresCount')}</div></div>
-            <div className="recap-stat"><div className="rv">{r.trackCount}</div><div className="rl">{t('recap.plays')}</div></div>
+            <div className="recap-stat"><div className="rv" style={{ color: accentMix(0) }}>{r.minutes.toLocaleString(toLocale(language))}</div><div className="rl">{t('recap.minutes')}</div></div>
+            <div className="recap-stat"><div className="rv" style={{ color: accentMix(1 / 3) }}>{r.uniqueArtists}</div><div className="rl">{t('recap.artists')}</div></div>
+            <div className="recap-stat"><div className="rv" style={{ color: accentMix(2 / 3) }}>{r.topGenres.length}</div><div className="rl">{t('recap.genresCount')}</div></div>
+            <div className="recap-stat"><div className="rv" style={{ color: accentMix(1) }}>{r.trackCount}</div><div className="rl">{t('recap.plays')}</div></div>
           </div>
           {r.topSongs[0] && (
             <div className="recap-song-card" onClick={() => trackRowClick(r.topSongs[0].albumId)}>

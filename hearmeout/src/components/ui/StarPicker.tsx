@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, type PointerEvent } from 'react';
+import { accentMix } from '@/lib/accentGradient';
 
 export function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -26,7 +27,7 @@ export function StarPicker({ value, onChange }: { value: number; onChange: (v: n
       onPointerUp={() => { dragging.current = false; }}
     >
       <div className="layer base">★★★★★</div>
-      <div className="layer fill" style={{ width: `${(value / 5) * 100}%` }}>★★★★★</div>
+      <div className="layer fill" style={{ width: `${(value / 5) * 100}%`, color: accentMix(value / 5) }}>★★★★★</div>
     </div>
   );
 }

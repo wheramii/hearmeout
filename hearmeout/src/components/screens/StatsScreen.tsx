@@ -6,6 +6,7 @@ import type { Device, StatsData, StatsRange } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { HeartIcon } from '../ui/Icons';
 import { PremiumLock } from '../ui/PremiumLock';
+import { accentMix } from '@/lib/accentGradient';
 import { toLocale, type Language } from '@/lib/i18n';
 
 const RANGES: StatsRange[] = ['4w', '6m', 'year', 'all'];
@@ -58,8 +59,7 @@ function CalendarHeatmap() {
                 title={`${new Date(c.day).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short', year: 'numeric' })}: ${c.minutes} ${t('recap.minutes')}`}
                 style={{
                   width: 10, height: 10, borderRadius: 2,
-                  background: c.minutes ? 'var(--lime)' : 'var(--surface-2)',
-                  opacity: c.minutes ? Math.min(1, 0.25 + (c.minutes / maxMinutes) * 0.75) : 1,
+                  background: c.minutes ? accentMix(c.minutes / maxMinutes) : 'var(--surface-2)',
                 }}
               />
             ))}
@@ -67,8 +67,8 @@ function CalendarHeatmap() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 10.5, color: 'var(--muted)' }}>
           <span>{t('stats.calendarLess')}</span>
-          {[0.2, 0.4, 0.6, 0.8, 1].map((op) => (
-            <span key={op} style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--lime)', opacity: op, display: 'inline-block' }} />
+          {[0, 0.25, 0.5, 0.75, 1].map((r) => (
+            <span key={r} style={{ width: 10, height: 10, borderRadius: 2, background: accentMix(r), display: 'inline-block' }} />
           ))}
           <span>{t('stats.calendarMore')}</span>
         </div>
@@ -113,12 +113,12 @@ export function StatsScreen(_props: { device: Device }) {
       ) : (
         <>
           <div className="recap-stats-row" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(90px,1fr))' }}>
-            <div className="recap-stat"><div className="rv">{data.hours}</div><div className="rl">{t('stats.hours')}</div></div>
-            <div className="recap-stat"><div className="rv">{data.trackCount.toLocaleString(toLocale(language))}</div><div className="rl">{t('stats.tracks')}</div></div>
-            <div className="recap-stat"><div className="rv">{data.artistCount}</div><div className="rl">{t('stats.artists')}</div></div>
-            <div className="recap-stat"><div className="rv">{data.avgRating || '—'}</div><div className="rl">{t('history.avg')}</div></div>
+            <div className="recap-stat"><div className="rv" style={{ color: accentMix(0) }}>{data.hours}</div><div className="rl">{t('stats.hours')}</div></div>
+            <div className="recap-stat"><div className="rv" style={{ color: accentMix(0.25) }}>{data.trackCount.toLocaleString(toLocale(language))}</div><div className="rl">{t('stats.tracks')}</div></div>
+            <div className="recap-stat"><div className="rv" style={{ color: accentMix(0.5) }}>{data.artistCount}</div><div className="rl">{t('stats.artists')}</div></div>
+            <div className="recap-stat"><div className="rv" style={{ color: accentMix(0.75) }}>{data.avgRating || '—'}</div><div className="rl">{t('history.avg')}</div></div>
             <div className="recap-stat" style={{ background: 'var(--accent-bg)', borderColor: 'var(--accent-border)' }}>
-              <div className="rv">{data.peakHour != null ? `${String(data.peakHour).padStart(2, '0')}:00` : '—'}</div>
+              <div className="rv" style={{ color: accentMix(1) }}>{data.peakHour != null ? `${String(data.peakHour).padStart(2, '0')}:00` : '—'}</div>
               <div className="rl">{t('stats.peakHour')}</div>
             </div>
           </div>
@@ -129,7 +129,7 @@ export function StatsScreen(_props: { device: Device }) {
               <p className="history-chart-caption">{t('stats.hoursPerWeekCaption')}</p>
               <div className="rating-dist-chart" style={{ height: 90, marginBottom: 6 }}>
                 {data.hoursPerWeek.map((w, i) => (
-                  <div key={i} className="rating-dist-bar" style={{ height: `${w.hours ? Math.max(6, (w.hours / maxWeek) * 100) : 0}%` }} title={`${weekLabelText(w.weekLabel, language)}: ${w.hours}h`} />
+                  <div key={i} className="rating-dist-bar" style={{ height: `${w.hours ? Math.max(6, (w.hours / maxWeek) * 100) : 0}%`, background: accentMix(w.hours / maxWeek) }} title={`${weekLabelText(w.weekLabel, language)}: ${w.hours}h`} />
                 ))}
               </div>
               <div className="rating-dist-axis" style={{ marginBottom: 26 }}>
@@ -152,7 +152,7 @@ export function StatsScreen(_props: { device: Device }) {
               <CoverArt url={a.cover ?? undefined} fallbackLetter={a.name[0] || '?'} className="cover-thumb-sm" />
               <div className="info" style={{ flex: 1 }}>
                 <div className="t">{a.name}</div>
-                <div className="track" style={{ height: 5, marginTop: 4 }}><div className="fill" style={{ width: `${(a.hours / maxArtistHours) * 100}%` }} /></div>
+                <div className="track" style={{ height: 5, marginTop: 4 }}><div className="fill" style={{ width: `${(a.hours / maxArtistHours) * 100}%`, background: accentMix(a.hours / maxArtistHours) }} /></div>
               </div>
               <span className="history-badge" style={{ background: 'none', border: 'none', color: 'var(--muted)' }}>{t('stats.playsCount', { count: a.plays })}</span>
             </div>
@@ -161,7 +161,7 @@ export function StatsScreen(_props: { device: Device }) {
           <div className="section-head" style={{ marginTop: 22 }}><h2>{t('stats.whenYouListen')}</h2></div>
           <div className="stats-heatmap">
             {data.heatmap.map((n, h) => (
-              <div key={h} className="stats-heat-cell" style={{ opacity: 0.15 + (n / maxHeat) * 0.85 }} title={`${h}:00 — ${n}`} />
+              <div key={h} className="stats-heat-cell" style={{ background: accentMix(n / maxHeat), opacity: n ? 1 : 0.15 }} title={`${h}:00 — ${n}`} />
             ))}
           </div>
           <div className="stats-heatmap-axis"><span>00</span><span>08</span><span>16</span><span>23</span></div>
@@ -173,12 +173,12 @@ export function StatsScreen(_props: { device: Device }) {
               <div className="section-head" style={{ marginTop: 22 }}><h2>{t('stats.genreSplit')}</h2></div>
               <div className="stats-genre-bar">
                 {data.genreSplit.map((g, i) => (
-                  <div key={g.genre} className="stats-genre-seg" style={{ width: `${g.pct}%`, opacity: 1 - i * 0.13 }} />
+                  <div key={g.genre} className="stats-genre-seg" style={{ width: `${g.pct}%`, background: accentMix(i / Math.max(1, data.genreSplit.length - 1)) }} />
                 ))}
               </div>
               <div className="stats-genre-legend">
                 {data.genreSplit.map((g, i) => (
-                  <span key={g.genre}><i style={{ opacity: 1 - i * 0.13 }} />{g.genre} · {g.pct}%</span>
+                  <span key={g.genre}><i style={{ background: accentMix(i / Math.max(1, data.genreSplit.length - 1)) }} />{g.genre} · {g.pct}%</span>
                 ))}
               </div>
             </>

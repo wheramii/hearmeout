@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { supabase } from '@/lib/supabaseClient';
+import { accentMix } from '@/lib/accentGradient';
 
 // Ratings are stored in 0.1 steps (see StarPicker), so the real possible
 // values are 0.1..5.0 — one bucket per exact value, 50 in total.
@@ -51,7 +52,7 @@ export function AlbumRatingDistribution({ albumId, refreshToken }: { albumId: st
             <div
               key={i}
               className="rating-dist-bar"
-              style={{ height: `${pct}%` }}
+              style={{ height: `${pct}%`, background: accentMix((i + 1) / 50) }}
               title={n ? `${value.toFixed(1)} ★ · ${n}` : undefined}
             />
           );

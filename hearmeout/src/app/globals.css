@@ -204,6 +204,15 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 .recap-stats-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(84px,1fr)); gap:8px; margin-bottom:22px; }
 .recap-stat{ text-align:center; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 8px; }
 .recap-stat .rv{ font-family:var(--font-space-grotesk),sans-serif; font-size:26px; font-weight:600; letter-spacing:-.02em; color:var(--lime); }
+/* Both accent colors, not just --lime — alternated by position so a row of
+   stat tiles reads as a spread across the palette instead of one flat
+   color repeated. Components that compute a real data-based ratio (Stats,
+   Recap) set color inline, which wins over this; everywhere else (Profile,
+   Groups leaderboard, ...) gets this automatically with no per-file change. */
+.recap-stat:nth-of-type(5n+2) .rv, .stat-grid .box:nth-of-type(5n+2) .v{ color:color-mix(in srgb, var(--coral) 25%, var(--lime)); }
+.recap-stat:nth-of-type(5n+3) .rv, .stat-grid .box:nth-of-type(5n+3) .v{ color:color-mix(in srgb, var(--coral) 50%, var(--lime)); }
+.recap-stat:nth-of-type(5n+4) .rv, .stat-grid .box:nth-of-type(5n+4) .v{ color:color-mix(in srgb, var(--coral) 75%, var(--lime)); }
+.recap-stat:nth-of-type(5n+5) .rv, .stat-grid .box:nth-of-type(5n+5) .v{ color:var(--coral); }
 .recap-stat .rl{ font-family:var(--font-ibm-plex-mono),monospace; font-size:9.5px; color:var(--muted); margin-top:3px; text-transform:uppercase; }
 .recap-section{ background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:16px; margin-bottom:14px; }
 .recap-section-label{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:10px; }
