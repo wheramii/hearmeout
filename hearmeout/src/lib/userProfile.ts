@@ -14,7 +14,7 @@ export async function getUserProfile(
   startOfDay.setHours(0, 0, 0, 0);
 
   const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }] = await Promise.all([
-    admin.from('users').select('id, name, handle, avatar_url').eq('id', userId).maybeSingle(),
+    admin.from('users').select('id, name, handle, avatar_url, created_at').eq('id', userId).maybeSingle(),
     admin.from('ratings').select('album_id, stars, review, created_at').eq('user_id', userId).order('created_at', { ascending: false }),
     admin.from('listening_events').select('genre').eq('user_id', userId).not('genre', 'is', null).limit(5000),
     admin.from('listening_events').select('duration_ms').eq('user_id', userId).gte('played_at', startOfDay.toISOString()),
@@ -50,6 +50,7 @@ export async function getUserProfile(
     genres,
     top4Albums,
     minutesToday,
+    joinedAt: user.created_at as string,
   };
 
   const isSelf = !!viewerId && viewerId === userId;

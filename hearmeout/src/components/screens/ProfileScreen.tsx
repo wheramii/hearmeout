@@ -3,9 +3,9 @@
 import { useMemo, useRef } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
-import { userAvatarStyle } from '@/lib/format';
-import { LANGUAGES, LANGUAGE_LABEL, getRegionCodes, regionDisplayName } from '@/lib/i18n';
-import { AccountBlock, ConnectBlock, ImportHistoryBlock, GenresBlock, Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
+import { userAvatarStyle, formatJoinDate } from '@/lib/format';
+import { LANGUAGES, LANGUAGE_LABEL, getRegionCodes, regionDisplayName, pluralForKey } from '@/lib/i18n';
+import { AccountBlock, ConnectBlock, ImportHistoryBlock, GenresBlock, TasteFingerprint, RecentRatingsGrid, Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
 
 function AvatarPicker({ size }: { size?: number }) {
   const { t, me, updateAvatar } = useApp();
@@ -78,8 +78,27 @@ function LanguageRegionSection() {
 }
 
 export function ProfileScreen({ device }: { device: Device }) {
-  const { t, me, syncSpotify, updateProfileName, updateProfileHandle } = useApp();
+  const { t, language, me, myRatings, albums, liveAlbums, syncSpotify, updateProfileName, updateProfileHandle } = useApp();
+
+  const tasteFingerprint = useMemo(() => {
+    const sums = new Map<string, { sum: number; count: number }>();
+    for (const r of myRatings) {
+      const a = liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId);
+      if (!a?.genreBucket) continue;
+      const cur = sums.get(a.genreBucket) || { sum: 0, count: 0 };
+      cur.sum += r.stars;
+      cur.count += 1;
+      sums.set(a.genreBucket, cur);
+    }
+    return [...sums.entries()]
+      .map(([g, { sum, count }]) => ({ g, avg: sum / count }))
+      .sort((a, b) => b.avg - a.avg)
+      .slice(0, 4);
+  }, [myRatings, albums, liveAlbums]);
+
   if (!me) return null;
+
+  const friendsSuffix = pluralForKey(language, me.friends.length, 'profile.friendOne', 'profile.friendFew', 'profile.friendMany');
 
   const statGrid = (
     <div className="stat-grid">
@@ -118,12 +137,19 @@ export function ProfileScreen({ device }: { device: Device }) {
           <div style={{ flex: 1 }}>
             <input className="name-input" defaultValue={me.name} onBlur={(e) => updateProfileName(e.target.value)} />
             <input className="handle-input" defaultValue={me.handle} onBlur={(e) => updateProfileHandle(e.target.value)} />
+            <div className="profile-joined">{me.friends.length} {friendsSuffix} · {t('profile.joined')} {formatJoinDate(me.joinedAt, language)}</div>
           </div>
         </div>
         {statGrid}
 
         {accountSection}
         {connectionSection}
+
+        <div className="section-head"><h2>{t('profile.taste')}</h2></div>
+        <TasteFingerprint entries={tasteFingerprint} />
+
+        <div className="section-head"><h2>{t('profile.recentRatings')}</h2></div>
+        <div style={{ marginBottom: 24 }}><RecentRatingsGrid ratings={(me.recentRatings || []).slice(0, 6)} /></div>
 
         <div className="section-head"><h2>{t('profile.favoriteGenres')}</h2><span>{t('profile.allTime')}</span></div>
         <div style={{ marginBottom: 24 }}><GenresBlock genres={me.genres} /></div>
@@ -149,10 +175,12 @@ export function ProfileScreen({ device }: { device: Device }) {
         <AvatarPicker size={120} />
         <input className="name-input" defaultValue={me.name} style={{ fontSize: 22, marginTop: 14 }} onBlur={(e) => updateProfileName(e.target.value)} />
         <input className="handle-input" defaultValue={me.handle} style={{ fontSize: 13 }} onBlur={(e) => updateProfileHandle(e.target.value)} />
-        <div className="stat-grid" style={{ gridTemplateColumns: '1fr', marginTop: 22 }}>
+        <div className="profile-joined">{t('profile.joined')} {formatJoinDate(me.joinedAt, language)}</div>
+        <div className="stat-grid cols-2" style={{ marginTop: 22 }}>
           <div className="box"><div className="v">{me.stats.ratings}</div><div className="l">{t('profile.ratings')}</div></div>
-          <div className="box"><div className="v">{me.stats.avg || '—'}</div><div className="l">{t('profile.avg')}</div></div>
           <div className="box"><div className="v">{me.stats.reviews}</div><div className="l">{t('profile.reviews')}</div></div>
+          <div className="box"><div className="v">{me.stats.avg || '—'}</div><div className="l">{t('profile.avg')}</div></div>
+          <div className="box"><div className="v">{me.friends.length}</div><div className="l">{friendsSuffix}</div></div>
         </div>
         <FriendRequestsBlock />
         <div className="section-head" style={{ marginTop: 22 }}><h2>{t('profile.friends')}</h2><span>{me.friends.length}</span></div>
@@ -161,6 +189,10 @@ export function ProfileScreen({ device }: { device: Device }) {
       <div className="main">
         {accountSection}
         {connectionSection}
+        <div className="section-head"><h2>{t('profile.taste')}</h2></div>
+        <div style={{ maxWidth: 520, marginBottom: 24 }}><TasteFingerprint entries={tasteFingerprint} /></div>
+        <div className="section-head"><h2>{t('profile.recentRatings')}</h2></div>
+        <div style={{ maxWidth: 640, marginBottom: 30 }}><RecentRatingsGrid ratings={(me.recentRatings || []).slice(0, 6)} /></div>
         <div className="section-head"><h2>{t('profile.favoriteGenres')}</h2><span>{t('profile.allTime')}</span></div>
         <div style={{ marginBottom: 30, maxWidth: 420 }}><GenresBlock genres={me.genres} /></div>
         <div className="section-head"><h2>{t('profile.top4')}</h2><span>{t('profile.byYourRatings')}</span></div>

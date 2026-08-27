@@ -10,6 +10,10 @@ export function userAvatarStyle(u: { avatarUrl: string | null }): CSSProperties 
   return u.avatarUrl ? { backgroundImage: `url('${u.avatarUrl}')` } : {};
 }
 
+export function formatJoinDate(iso: string, language: Language): string {
+  return new Intl.DateTimeFormat(language, { month: 'short', year: 'numeric' }).format(new Date(iso));
+}
+
 export function formatRelative(iso: string, language: Language): string {
   const then = new Date(iso).getTime();
   const diffMs = Date.now() - then;

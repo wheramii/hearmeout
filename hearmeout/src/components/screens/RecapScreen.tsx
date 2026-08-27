@@ -58,9 +58,6 @@ export function RecapScreen(_props: { device: Device }) {
         <div className="recap-hero-name">{name}</div>
         <div className="recap-hero-period-row">
           <div className="recap-hero-period">{t(PERIOD_KEY[state.recapPeriod])} {t('recap.periodLabel')}</div>
-          {r && r.topSongs[0] && (
-            <CirclePlayer artist={r.topSongs[0].artist} title={r.topSongs[0].title} size={28} />
-          )}
         </div>
         {r && (r.trackCount > 0 ? <div className="recap-hero-vibe">«{vibe}»</div> : <div className="recap-hero-vibe">{t('recap.vibeEmpty')}</div>)}
       </div>
@@ -72,7 +69,19 @@ export function RecapScreen(_props: { device: Device }) {
             <div className="recap-stat"><div className="rv">{r.minutes.toLocaleString(toLocale(language))}</div><div className="rl">{t('recap.minutes')}</div></div>
             <div className="recap-stat"><div className="rv">{r.uniqueArtists}</div><div className="rl">{t('recap.artists')}</div></div>
             <div className="recap-stat"><div className="rv">{r.topGenres.length}</div><div className="rl">{t('recap.genresCount')}</div></div>
+            <div className="recap-stat"><div className="rv">{r.trackCount}</div><div className="rl">{t('recap.plays')}</div></div>
           </div>
+          {r.topSongs[0] && (
+            <div className="recap-song-card" onClick={() => trackRowClick(r.topSongs[0].albumId)}>
+              <div className="art-md" style={r.topSongs[0].cover ? { backgroundImage: `url('${r.topSongs[0].cover}')` } : undefined} />
+              <div className="info">
+                <div className="rsc-label">{t('recap.songOfWeek')}</div>
+                <div className="rsc-title">{r.topSongs[0].title}</div>
+                <div className="rsc-artist">{r.topSongs[0].artist}</div>
+              </div>
+              <CirclePlayer artist={r.topSongs[0].artist} title={r.topSongs[0].title} size={44} />
+            </div>
+          )}
           <div className="recap-section">
             <div className="recap-section-label">{t('recap.topArtists')}</div>
             {r.topArtists.length ? r.topArtists.map((a, i) => (

@@ -44,6 +44,7 @@ export type PublicProfile = ApiUser & {
   genres: { g: string; pct: number }[];
   top4Albums: string[];
   minutesToday: number;
+  joinedAt: string;
   // Only populated for the viewer's own profile, or when the viewer is
   // already an accepted friend of this person — lets friends discover
   // mutual connections without exposing a stranger's whole friend graph.

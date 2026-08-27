@@ -5,6 +5,8 @@ import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle } from '@/lib/format';
 import { toLocale } from '@/lib/i18n';
 import { CoverArt } from './ui/CoverArt';
+import { StarsAvg } from './ui/StarsAvg';
+import type { RatingRecord } from '@/lib/types';
 
 export function AccountBlock() {
   const { t, me, claimAccount, logout, showToast } = useApp();
@@ -183,6 +185,46 @@ export function GenresBlock({ genres }: { genres: { g: string; pct: number }[] }
         </div>
       ))}
     </>
+  );
+}
+
+// Real per-genre average of the user's own ratings (not the listening-time
+// split used by GenresBlock/"favorite genres") — resolves each rating's
+// album genre from the catalog or the live-enriched copy, same lookup the
+// rest of the app uses.
+export function TasteFingerprint({ entries }: { entries: { g: string; avg: number }[] }) {
+  const { t } = useApp();
+  if (!entries.length) return <div className="empty-state">{t('profile.notEnoughData')}</div>;
+  return (
+    <div className="taste-tiles">
+      {entries.map((e) => (
+        <div className="taste-tile" key={e.g}>
+          <div className="taste-tile-top"><span className="taste-tile-num">{e.avg.toFixed(1)}</span><span className="taste-tile-g">{e.g}</span></div>
+          <div className="track"><div className="fill" style={{ width: `${(e.avg / 5) * 100}%` }} /></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function RecentRatingsGrid({ ratings }: { ratings: RatingRecord[] }) {
+  const { t, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
+  if (!ratings.length) return <div className="empty-state">{t('profile.noRatedAlbums')}</div>;
+  return (
+    <div className="recent-ratings-grid">
+      {ratings.map((r) => {
+        const a = liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId);
+        if (!a) return null;
+        const cover = spotifyCovers[a.id] || a.cover;
+        return (
+          <div className="recent-rating-item" key={r.albumId} onClick={() => openAlbum(a.id)}>
+            <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="art" />
+            <div className="t">{a.title}</div>
+            <div className="rr-stars"><StarsAvg rating={r.stars} /><span>{r.stars.toFixed(1)}</span></div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
