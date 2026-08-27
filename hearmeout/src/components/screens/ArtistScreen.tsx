@@ -29,7 +29,7 @@ function SpotifyAlbumCard({ album, fallbackLetter, onOpen, unreleasedLabel, scor
 }
 
 export function ArtistScreen({ device }: { device: Device }) {
-  const { t, state, language, albumRatings, myRatings, showScreen, openAlbum, showToast } = useApp();
+  const { t, state, language, albumRatings, myRatings, showScreen, openAlbum, showToast, lovedItems, toggleLoved } = useApp();
   const art = state.currentArtist;
   const gridClass = device === 'mobile' ? 'grid-cards' : 'd-grid';
   const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
@@ -133,6 +133,13 @@ export function ArtistScreen({ device }: { device: Device }) {
               <div><span className="v">{art.followers != null ? art.followers.toLocaleString(toLocale(language)) : '—'}</span><span className="l">{t('artist.followers')}</span></div>
               <div><span className="v">{art.popularity != null ? art.popularity : '—'}</span><span className="l">{t('artist.popularity')}</span></div>
             </div>
+            <button
+              className={`action-chip ${lovedItems.some((li) => li.type === 'artist' && li.title === art.name) ? 'added' : ''}`}
+              style={{ marginTop: 10 }}
+              onClick={() => toggleLoved('artist', art.name, null, art.id, art.photo ?? null)}
+            >
+              ♥ {lovedItems.some((li) => li.type === 'artist' && li.title === art.name) ? t('artist.loved') : t('artist.love')}
+            </button>
           </div>
           <div className="album-band-score">
             {communityScore ? (
@@ -196,6 +203,13 @@ export function ArtistScreen({ device }: { device: Device }) {
         <ArtistAvatar name={art.name} className="art-lg cover-fallback" fallbackStyle={{ fontSize: 48 }} />
         <h1>{art.name}</h1>
         <div className="sub">{t('artist.subtitle')}</div>
+        <button
+          className={`action-chip ${lovedItems.some((li) => li.type === 'artist' && li.title === art.name) ? 'added' : ''}`}
+          style={{ marginTop: 10 }}
+          onClick={() => toggleLoved('artist', art.name, null, art.id, null)}
+        >
+          ♥ {lovedItems.some((li) => li.type === 'artist' && li.title === art.name) ? t('artist.loved') : t('artist.love')}
+        </button>
       </div>
       {body}
     </>

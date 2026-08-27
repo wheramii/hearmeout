@@ -78,7 +78,7 @@ function CalendarHeatmap() {
 }
 
 export function StatsScreen(_props: { device: Device }) {
-  const { t, language, me, lovedTracks, toggleLoved } = useApp();
+  const { t, language, me, lovedItems, toggleLoved } = useApp();
   const [range, setRange] = useState<StatsRange>('6m');
   const [data, setData] = useState<StatsData | null>(null);
 
@@ -186,7 +186,7 @@ export function StatsScreen(_props: { device: Device }) {
 
           <div className="section-head" style={{ marginTop: 22 }}><h2>{t('stats.recentPlays')}</h2></div>
           {data.recentPlays.map((p, i) => {
-            const loved = lovedTracks.some((lt) => lt.title === p.title && lt.artist === p.artist);
+            const loved = lovedItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
             return (
               <div className="activity-item" key={i} style={{ cursor: 'default' }}>
                 <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="thumb" />
@@ -197,7 +197,7 @@ export function StatsScreen(_props: { device: Device }) {
                 <button
                   className="heart-toggle"
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: loved ? 'var(--coral)' : 'var(--muted)', padding: 6, flexShrink: 0 }}
-                  onClick={() => toggleLoved(p.title, p.artist, p.trackId, p.cover)}
+                  onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)}
                   aria-label={t('stats.loveTrack')}
                 >
                   <span style={{ display: 'block', width: 18, height: 18 }}><HeartIcon filled={loved} /></span>

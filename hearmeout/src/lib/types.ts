@@ -50,7 +50,8 @@ export type ApiUser = { id: string; name: string; handle: string; avatarUrl: str
 
 export type DiscoverMatchPerson = ApiUser & { score: number; sharedAlbums: number };
 
-export type LovedTrack = { id: number; trackId: string | null; title: string; artist: string; cover: string | null; createdAt: string };
+export type LovedItemType = 'track' | 'album' | 'artist';
+export type LovedItem = { id: number; type: LovedItemType; itemId: string | null; title: string; artist: string | null; cover: string | null; createdAt: string };
 
 export type PublicProfile = ApiUser & {
   stats: { ratings: number; avg: number; reviews: number };

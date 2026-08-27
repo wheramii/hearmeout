@@ -234,21 +234,24 @@ export function RecentRatingsGrid({ ratings }: { ratings: RatingRecord[] }) {
   );
 }
 
+const LOVED_TYPE_LABEL: Record<string, string> = { track: 'profile.lovedTypeTrack', album: 'profile.lovedTypeAlbum', artist: 'profile.lovedTypeArtist' };
+
 export function LovedTracksBlock() {
-  const { t, lovedTracks, toggleLoved } = useApp();
-  if (!lovedTracks.length) return <div className="empty-state">{t('profile.noLovedTracks')}</div>;
+  const { t, lovedItems, toggleLoved } = useApp();
+  if (!lovedItems.length) return <div className="empty-state">{t('profile.noLovedTracks')}</div>;
   return (
     <>
-      {lovedTracks.slice(0, 10).map((lt) => (
-        <div className="activity-item" key={lt.id} style={{ cursor: 'default' }}>
-          <CoverArt url={lt.cover ?? undefined} fallbackLetter={lt.artist[0] || '?'} className="thumb" />
+      {lovedItems.slice(0, 10).map((li) => (
+        <div className="activity-item" key={li.id} style={{ cursor: 'default' }}>
+          <CoverArt url={li.cover ?? undefined} fallbackLetter={(li.artist || li.title)[0] || '?'} className="thumb" />
           <div className="body">
-            <div><b>{lt.title}</b> — {lt.artist}</div>
+            <div><b>{li.title}</b>{li.artist ? ` — ${li.artist}` : ''}</div>
+            <div style={{ fontSize: 10.5, color: 'var(--muted)', fontFamily: 'var(--font-ibm-plex-mono),monospace', textTransform: 'uppercase' }}>{t(LOVED_TYPE_LABEL[li.type] as never)}</div>
           </div>
           <button
             className="heart-toggle"
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--coral)', padding: 6, flexShrink: 0 }}
-            onClick={() => toggleLoved(lt.title, lt.artist, lt.trackId, lt.cover)}
+            onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)}
             aria-label={t('stats.loveTrack')}
           >
             ♥

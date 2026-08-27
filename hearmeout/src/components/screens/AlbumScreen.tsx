@@ -13,7 +13,7 @@ import { AlbumReviews } from '../AlbumReviews';
 import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
 
 export function AlbumScreen({ device }: { device: Device }) {
-  const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, spotifyCovers, reviewsVersion, showScreen, openRateFor, openSpotifyArtist, ensureLiveAlbum } = useApp();
+  const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, spotifyCovers, reviewsVersion, showScreen, openRateFor, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved } = useApp();
   const { currentTrack, playQueue } = usePlayer();
   const staticMatch = albums.find((x) => x.id === state.currentAlbumId);
   const enriched = liveAlbums[state.currentAlbumId];
@@ -79,12 +79,19 @@ export function AlbumScreen({ device }: { device: Device }) {
   );
 
   const openSpotifyUrl = a.spotifyId ? `https://open.spotify.com/album/${a.spotifyId}` : null;
+  const albumLoved = lovedItems.some((li) => li.type === 'album' && li.title === a.title && li.artist === a.artist);
 
   const actions = (justify: 'center' | undefined) => (
     <div className={`album-actions ${justify === 'center' ? 'center' : ''}`}>
       <button className="action-chip primary" onClick={() => openRateFor(a.id, 'album')}>{t('album.rateAlbum')}</button>
       <button className={`action-chip ${wishlisted ? 'added' : ''}`} onClick={() => setWishlisted((v) => !v)}>
         {wishlisted ? t('album.inWishlist') : t('album.addWishlist')}
+      </button>
+      <button
+        className={`action-chip ${albumLoved ? 'added' : ''}`}
+        onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}
+      >
+        ♥ {albumLoved ? t('album.loved') : t('album.love')}
       </button>
       {openSpotifyUrl && (
         <a className="action-chip" href={openSpotifyUrl} target="_blank" rel="noreferrer">{t('album.openInSpotify')}</a>
