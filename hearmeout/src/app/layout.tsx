@@ -25,12 +25,24 @@ export const metadata: Metadata = {
   description: "HearMeOut — listen, rate, and compare taste with friends",
 };
 
+const THEME_INIT_SCRIPT = `
+try {
+  var t = localStorage.getItem('hmo-theme');
+  document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
+} catch (e) {}
+`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      data-theme="dark"
+      suppressHydrationWarning
       className={`${spaceGrotesk.variable} ${inter.variable} ${ibmPlexMono.variable}`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body>{children}</body>
     </html>
   );

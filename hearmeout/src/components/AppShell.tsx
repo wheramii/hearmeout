@@ -3,8 +3,10 @@
 import type { ComponentType } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, ScreenName } from '@/lib/types';
+import { userAvatarStyle } from '@/lib/format';
 import { Toast } from './ui/Toast';
-import { HomeIcon, StarIcon, ProfileIcon, LogoMark } from './ui/Icons';
+import { ProfileIcon, LogoMark } from './ui/Icons';
+import { ThemeToggle } from './ThemeToggle';
 import { CatalogScreen, SearchIcon } from './screens/CatalogScreen';
 import { AlbumScreen } from './screens/AlbumScreen';
 import { RateScreen } from './screens/RateScreen';
@@ -75,26 +77,24 @@ function MobileShell({ active }: { active: boolean }) {
 }
 
 function DesktopShell({ active }: { active: boolean }) {
-  const { state, t, showScreen, setSearchQuery } = useApp();
+  const { state, t, me, showScreen, setSearchQuery } = useApp();
   const activeTab = TAB_GROUP[state.activeScreen];
   return (
     <div className={`desktop-shell ${active ? 'show' : ''}`}>
-      <aside className="d-sidebar">
+      <header className="d-topnav">
         <div className="d-logo"><LogoMark />Hear<span>Me</span>Out</div>
         <nav className="d-nav">
           <button className={`d-nav-item ${activeTab === 'catalog' ? 'active' : ''}`} onClick={() => showScreen('catalog')}>
-            <HomeIcon />{t('nav.home')}
+            {t('nav.home')}
           </button>
           <button className={`d-nav-item ${activeTab === 'history' ? 'active' : ''}`} onClick={() => showScreen('history')}>
-            <StarIcon />{t('nav.rate')}
+            {t('nav.rate')}
           </button>
           <button className={`d-nav-item ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => showScreen('profile')}>
-            <ProfileIcon />{t('nav.profile')}
+            {t('nav.profile')}
           </button>
         </nav>
-      </aside>
-      <div className="d-main">
-        <div className="d-topbar">
+        <div className="d-topnav-right">
           <div className="search-bar">
             <SearchIcon />
             <input
@@ -104,13 +104,21 @@ function DesktopShell({ active }: { active: boolean }) {
               onChange={(e) => { setSearchQuery(e.target.value); showScreen('catalog'); }}
             />
           </div>
+          <ThemeToggle />
+          <button className="d-avatar" style={me ? userAvatarStyle(me) : undefined} onClick={() => showScreen('profile')} aria-label={t('nav.profile')}>
+            {!me?.avatarUrl && <ProfileIcon />}
+          </button>
         </div>
+      </header>
+      <div className="d-main">
         <div className="d-content">
-          {SCREENS.map(({ name, Component }) => (
-            <section key={name} className={`d-screen ${state.activeScreen === name ? 'active' : ''}`}>
-              <Component device="desktop" />
-            </section>
-          ))}
+          <div className="d-content-inner">
+            {SCREENS.map(({ name, Component }) => (
+              <section key={name} className={`d-screen ${state.activeScreen === name ? 'active' : ''}`}>
+                <Component device="desktop" />
+              </section>
+            ))}
+          </div>
         </div>
       </div>
     </div>

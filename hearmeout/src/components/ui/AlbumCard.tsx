@@ -12,7 +12,7 @@ export function AlbumCard({ album, rankBadge }: { album: Album; rankBadge?: numb
     <div className="cover" onClick={() => openAlbum(album.id)}>
       <CoverArt url={cover} fallbackLetter={album.artist[0] || '?'} className="art">
         {rankBadge != null && (
-          <span style={{ position: 'absolute', top: 6, left: 6, background: 'var(--lime)', color: '#1F1D1C', fontFamily: 'var(--font-ibm-plex-mono),monospace', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6 }}>
+          <span style={{ position: 'absolute', top: 6, left: 6, background: 'var(--lime)', color: 'var(--on-accent)', fontFamily: 'var(--font-ibm-plex-mono),monospace', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6 }}>
             #{rankBadge}
           </span>
         )}
