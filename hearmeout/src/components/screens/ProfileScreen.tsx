@@ -4,8 +4,8 @@ import { useMemo, useRef } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate } from '@/lib/format';
-import { LANGUAGES, LANGUAGE_LABEL, getRegionCodes, regionDisplayName, pluralForKey } from '@/lib/i18n';
-import { AccountBlock, ConnectBlock, ImportHistoryBlock, GenresBlock, TasteFingerprint, RecentRatingsGrid, Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
+import { LANGUAGE_LABEL, regionDisplayName, pluralForKey } from '@/lib/i18n';
+import { GenresBlock, TasteFingerprint, RecentRatingsGrid, Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
 
 function AvatarPicker({ size }: { size?: number }) {
   const { t, me, updateAvatar } = useApp();
@@ -35,50 +35,21 @@ function AvatarPicker({ size }: { size?: number }) {
   );
 }
 
-function LanguageRegionSection() {
-  const { t, me, language, updateLanguage, updateRegion } = useApp();
-  const regionCodes = useMemo(() => getRegionCodes(), []);
+function SettingsSummary() {
+  const { t, me, language, showScreen } = useApp();
   if (!me) return null;
-
-  const selectStyle = {
-    width: '100%',
-    background: 'var(--surface)',
-    border: '1px solid var(--line)',
-    borderRadius: 12,
-    padding: '12px 14px',
-    color: 'var(--text)',
-    fontFamily: 'var(--font-inter),sans-serif',
-    fontSize: 13.5,
-  };
-
   return (
     <>
-      <div className="section-head"><h2>{t('profile.language')}</h2></div>
-      <div className="chips" style={{ marginBottom: 22 }}>
-        {LANGUAGES.map((l) => (
-          <button key={l} className={`chip ${language === l ? 'on' : ''}`} onClick={() => updateLanguage(l)}>
-            {LANGUAGE_LABEL[l]}
-          </button>
-        ))}
-      </div>
-
-      <div className="section-head"><h2>{t('profile.region')}</h2><span>{t('profile.regionHint')}</span></div>
-      <select
-        style={{ ...selectStyle, marginBottom: 22 }}
-        value={me.region ?? ''}
-        onChange={(e) => updateRegion(e.target.value || null)}
-      >
-        <option value="">{t('profile.regionNone')}</option>
-        {regionCodes.map((code) => (
-          <option key={code} value={code}>{regionDisplayName(code, language)}</option>
-        ))}
-      </select>
+      <div className="section-head"><h2>{t('settings.eyebrow')}</h2></div>
+      <div className="settings-summary-row"><span className="l">{t('profile.language')}</span><span>{LANGUAGE_LABEL[language]}</span></div>
+      <div className="settings-summary-row"><span className="l">{t('profile.region')}</span><span>{me.region ? regionDisplayName(me.region, language) : t('profile.regionNone')}</span></div>
+      <button className="settings-summary-link" onClick={() => showScreen('settings')}>{t('settings.openAll')} →</button>
     </>
   );
 }
 
 export function ProfileScreen({ device }: { device: Device }) {
-  const { t, language, me, myRatings, albums, liveAlbums, syncSpotify, updateProfileName, updateProfileHandle } = useApp();
+  const { t, language, me, myRatings, albums, liveAlbums, updateProfileName, updateProfileHandle } = useApp();
 
   const tasteFingerprint = useMemo(() => {
     const sums = new Map<string, { sum: number; count: number }>();
@@ -108,26 +79,6 @@ export function ProfileScreen({ device }: { device: Device }) {
     </div>
   );
 
-  const accountSection = (
-    <>
-      <div className="section-head"><h2>{t('profile.accountSection')}</h2></div>
-      <div style={{ marginBottom: 22 }}><AccountBlock /></div>
-    </>
-  );
-
-  const connectionSection = (
-    <>
-      <div className="section-head"><h2>{t('profile.connection')}</h2><span>Spotify / Apple Music</span></div>
-      <div style={{ marginBottom: 12 }}><ConnectBlock /></div>
-      {me.connections.spotify && (
-        <button className="btn-ghost" style={{ width: '100%', marginBottom: 12 }} onClick={() => syncSpotify()}>
-          {t('profile.syncNow')}
-        </button>
-      )}
-      <div style={{ marginBottom: 22 }}><ImportHistoryBlock /></div>
-    </>
-  );
-
   if (device === 'mobile') {
     return (
       <>
@@ -141,9 +92,6 @@ export function ProfileScreen({ device }: { device: Device }) {
           </div>
         </div>
         {statGrid}
-
-        {accountSection}
-        {connectionSection}
 
         <div className="section-head"><h2>{t('profile.taste')}</h2></div>
         <TasteFingerprint entries={tasteFingerprint} />
@@ -164,7 +112,7 @@ export function ProfileScreen({ device }: { device: Device }) {
         <div className="section-head"><h2>{t('profile.monthAwards')}</h2><span>{t('profile.amongFriends')}</span></div>
         <div style={{ marginBottom: 24 }}><AwardsBlock /></div>
 
-        <LanguageRegionSection />
+        <SettingsSummary />
       </>
     );
   }
@@ -187,8 +135,6 @@ export function ProfileScreen({ device }: { device: Device }) {
         <FriendsBlock />
       </div>
       <div className="main">
-        {accountSection}
-        {connectionSection}
         <div className="section-head"><h2>{t('profile.taste')}</h2></div>
         <div style={{ maxWidth: 520, marginBottom: 24 }}><TasteFingerprint entries={tasteFingerprint} /></div>
         <div className="section-head"><h2>{t('profile.recentRatings')}</h2></div>
@@ -199,7 +145,7 @@ export function ProfileScreen({ device }: { device: Device }) {
         <div style={{ maxWidth: 520, marginBottom: 30 }}><Top4Grid ids={me.top4Albums} /></div>
         <div className="section-head"><h2>{t('profile.monthAwards')}</h2><span>{t('profile.amongFriends')}</span></div>
         <div style={{ maxWidth: 480, marginBottom: 30 }}><AwardsBlock /></div>
-        <div style={{ maxWidth: 420 }}><LanguageRegionSection /></div>
+        <div style={{ maxWidth: 420 }}><SettingsSummary /></div>
       </div>
     </div>
   );

@@ -56,6 +56,16 @@ export function GroupsScreen({ device }: { device: Device }) {
     }
   };
 
+  const castVote = async (candidateId: string) => {
+    if (!activeId) return;
+    const res = await fetch(`/api/groups/${activeId}/vote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId }) });
+    if (res.ok) {
+      fetch(`/api/groups/${activeId}`).then((r) => (r.ok ? r.json() : null)).then(setDetail);
+    } else {
+      showToast(t('groups.voteFailed'));
+    }
+  };
+
   const invite = async () => {
     if (!activeId || !inviteHandle.trim()) return;
     const res = await fetch(`/api/groups/${activeId}/members`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: inviteHandle.trim() }) });
@@ -142,6 +152,24 @@ export function GroupsScreen({ device }: { device: Device }) {
           ))}
         </>
       )}
+
+      <div className="section-head" style={{ marginTop: 22 }}><h2>{t('groups.voteOpen')}</h2><span>{detail.vote.monthKey}</span></div>
+      <div className="vote-card">
+        <div className="vote-question">{t('groups.voteQuestion')}</div>
+        {detail.vote.counts.map((c) => (
+          <div
+            key={c.user.id}
+            className={`vote-row ${detail.vote.myVote === c.user.id ? 'voted' : ''}`}
+            onClick={() => castVote(c.user.id)}
+          >
+            <div className="avatar-sm" style={{ width: 26, height: 26, ...userAvatarStyle(c.user) }} />
+            <div className="vote-name">{c.user.name}</div>
+            <div className="vote-track"><div className="vote-fill" style={{ width: `${detail.vote.counts[0]?.count ? (c.count / detail.vote.counts[0].count) * 100 : 0}%` }} /></div>
+            <div className="vote-count">{c.count}</div>
+          </div>
+        ))}
+        <div className="vote-hint">{detail.vote.myVote ? t('groups.voteChangeHint') : t('groups.voteHint')}</div>
+      </div>
 
       <div className="section-head" style={{ marginTop: 22 }}><h2>{t('groups.activity')}</h2></div>
       {detail.activity.length ? detail.activity.map((ev, i) => {

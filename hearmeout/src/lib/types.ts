@@ -84,7 +84,8 @@ export type ScreenName =
   | 'match'
   | 'stats'
   | 'groups'
-  | 'discover';
+  | 'discover'
+  | 'settings';
 
 export type StatsRange = '4w' | '6m' | 'year' | 'all';
 
@@ -117,6 +118,12 @@ export type GroupActivityEvent = {
   review: string | null;
   createdAt: string;
 };
+export type GroupVoteState = {
+  monthKey: string;
+  myVote: string | null;
+  counts: { user: ApiUser; count: number }[];
+};
+
 export type GroupDetail = {
   id: string;
   name: string;
@@ -125,6 +132,7 @@ export type GroupDetail = {
   awards: GroupAward[];
   activity: GroupActivityEvent[];
   leaderboard: { user: ApiUser; hours: number }[];
+  vote: GroupVoteState;
 };
 
 export type ArtistRelease = {

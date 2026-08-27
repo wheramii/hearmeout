@@ -3,6 +3,7 @@
 import { useApp } from '@/lib/AppContext';
 import { AppShell } from './AppShell';
 import { RegisterModal } from './RegisterModal';
+import { OnboardingScreen } from './OnboardingScreen';
 
 export function AppGate() {
   const { t, state } = useApp();
@@ -12,5 +13,10 @@ export function AppGate() {
   if (state.authStatus === 'anonymous') {
     return <RegisterModal />;
   }
-  return <AppShell />;
+  return (
+    <>
+      <AppShell />
+      {state.justRegistered && <OnboardingScreen />}
+    </>
+  );
 }

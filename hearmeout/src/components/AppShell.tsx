@@ -1,6 +1,6 @@
 'use client';
 
-import type { ComponentType } from 'react';
+import { useState, type ComponentType } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, ScreenName } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
@@ -20,6 +20,7 @@ import { StatsScreen } from './screens/StatsScreen';
 import { MatchScreen } from './screens/MatchScreen';
 import { GroupsScreen } from './screens/GroupsScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
 
 const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> }[] = [
   { name: 'catalog', Component: CatalogScreen },
@@ -34,6 +35,7 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
   { name: 'match', Component: MatchScreen },
   { name: 'groups', Component: GroupsScreen },
   { name: 'discover', Component: DiscoverScreen },
+  { name: 'settings', Component: SettingsScreen },
 ];
 
 type TabKey = 'catalog' | 'rate' | 'match' | 'stats' | 'groups' | 'discover' | 'profile';
@@ -49,6 +51,7 @@ const TAB_GROUP: Record<ScreenName, TabKey | null> = {
   groups: 'groups',
   discover: 'discover',
   profile: 'profile',
+  settings: null,
 };
 
 export function AppShell() {
@@ -96,8 +99,27 @@ function MobileShell({ active }: { active: boolean }) {
   );
 }
 
+function AvatarMenu() {
+  const { t, me, showScreen, logout } = useApp();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="avatar-menu-wrap">
+      <button className="d-avatar" style={me ? userAvatarStyle(me) : undefined} onClick={() => setOpen((v) => !v)} aria-label={t('nav.profile')}>
+        {!me?.avatarUrl && <ProfileIcon />}
+      </button>
+      {open && (
+        <div className="avatar-menu" onMouseLeave={() => setOpen(false)}>
+          <button onClick={() => { showScreen('profile'); setOpen(false); }}>{t('settings.menuProfile')}</button>
+          <button onClick={() => { showScreen('settings'); setOpen(false); }}>{t('settings.menuSettings')}</button>
+          <button onClick={() => { setOpen(false); logout(); }}>{t('settings.menuSignOut')}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DesktopShell({ active }: { active: boolean }) {
-  const { state, t, me, showScreen, setSearchQuery } = useApp();
+  const { state, t, showScreen, setSearchQuery } = useApp();
   const activeTab = TAB_GROUP[state.activeScreen];
   return (
     <div className={`desktop-shell ${active ? 'show' : ''}`}>
@@ -134,9 +156,7 @@ function DesktopShell({ active }: { active: boolean }) {
             />
           </div>
           <ThemeToggle />
-          <button className="d-avatar" style={me ? userAvatarStyle(me) : undefined} onClick={() => showScreen('profile')} aria-label={t('nav.profile')}>
-            {!me?.avatarUrl && <ProfileIcon />}
-          </button>
+          <AvatarMenu />
         </div>
       </header>
       <div className="d-main">

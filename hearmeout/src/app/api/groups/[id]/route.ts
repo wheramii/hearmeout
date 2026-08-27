@@ -94,6 +94,22 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     if (u) awards.push({ label: 'awardHarshestCritic', winner: u, detail: harshest.avg.toFixed(1) });
   }
 
-  const detail: GroupDetail = { id: group.id, name: group.name, createdBy: group.created_by, members, awards, activity, leaderboard };
+  const monthKey = new Date().toISOString().slice(0, 7);
+  const { data: voteRows } = await admin.from('group_votes').select('voter_id, candidate_id').eq('group_id', id).eq('month_key', monthKey);
+  const voteCounts = new Map<string, number>();
+  for (const v of voteRows || []) {
+    const k = v.candidate_id as string;
+    voteCounts.set(k, (voteCounts.get(k) || 0) + 1);
+  }
+  const myVoteRow = (voteRows || []).find((v) => v.voter_id === userId);
+  const vote = {
+    monthKey,
+    myVote: myVoteRow ? (myVoteRow.candidate_id as string) : null,
+    counts: members
+      .map((m) => ({ user: m, count: voteCounts.get(m.id) || 0 }))
+      .sort((a, b) => b.count - a.count),
+  };
+
+  const detail: GroupDetail = { id: group.id, name: group.name, createdBy: group.created_by, members, awards, activity, leaderboard, vote };
   return NextResponse.json(detail);
 }

@@ -71,6 +71,10 @@ type AppState = {
   rateOrigin: RateOrigin;
   currentArtist: ArtistState | null;
   toast: string | null;
+  // True for the rest of this session right after a fresh signup, so
+  // AppGate can show the onboarding wizard once instead of dropping the
+  // new account straight into an empty catalog. Never persisted.
+  justRegistered: boolean;
 };
 
 type AppContextValue = {
@@ -107,6 +111,7 @@ type AppContextValue = {
   publishRating: (albumId: string, stars: number, review: string) => Promise<void>;
   ensureRecap: (userId: string, period: RecapPeriod) => void;
   registerWithPassword: (name: string, email: string, password: string) => Promise<void>;
+  dismissOnboarding: () => void;
   loginWithPassword: (email: string, password: string) => Promise<void>;
   claimAccount: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -147,6 +152,7 @@ const initialState: AppState = {
   rateOrigin: 'album',
   currentArtist: null,
   toast: null,
+  justRegistered: false,
 };
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -289,7 +295,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       throw new Error(err.error || 'signup_failed');
     }
     await refreshMe();
-  }, [refreshMe]);
+    patch({ justRegistered: true });
+  }, [refreshMe, patch]);
+
+  const dismissOnboarding = useCallback(() => patch({ justRegistered: false }), [patch]);
 
   const loginWithPassword = useCallback(async (email: string, password: string) => {
     const res = await fetch('/api/auth/login', {
@@ -596,14 +605,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showScreen, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, loginWithPassword, claimAccount, logout,
+    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
     updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyNew, spotifyNewRegional, spotifyObscure,
     spotifyGenreArtists, myRatings, friendRequests, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, loginWithPassword, claimAccount, logout,
+    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
     updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
