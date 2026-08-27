@@ -25,11 +25,6 @@ function LanguageRegionSection() {
   const regionCodes = useMemo(() => getRegionCodes(), []);
   if (!me) return null;
 
-  const selectStyle = {
-    width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12,
-    padding: '12px 14px', color: 'var(--text)', fontFamily: 'var(--font-inter),sans-serif', fontSize: 13.5,
-  };
-
   return (
     <>
       <div className="section-head"><h2>{t('profile.language')}</h2></div>
@@ -39,7 +34,7 @@ function LanguageRegionSection() {
         ))}
       </div>
       <div className="section-head"><h2>{t('profile.region')}</h2><span>{t('profile.regionHint')}</span></div>
-      <select style={{ ...selectStyle, marginBottom: 22 }} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
+      <select className="select-field" style={{ marginBottom: 22 }} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
         <option value="">{t('profile.regionNone')}</option>
         {regionCodes.map((code) => <option key={code} value={code}>{regionDisplayName(code, language)}</option>)}
       </select>

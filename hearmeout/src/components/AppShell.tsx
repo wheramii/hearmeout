@@ -74,7 +74,9 @@ function MobileShell({ active }: { active: boolean }) {
         <div className="m-screens">
           {SCREENS.map(({ name, Component }) => (
             <section key={name} className={`m-screen ${state.activeScreen === name ? 'active' : ''}`}>
-              <Component device="mobile" />
+              <div className="m-screen-inner">
+                <Component device="mobile" />
+              </div>
             </section>
           ))}
         </div>

@@ -107,6 +107,16 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 .segmented button{ flex:1; font-family:var(--font-ibm-plex-mono),monospace; font-size:11.5px; font-weight:600; padding:9px 4px; border-radius:12px; border:none; background:none; color:var(--muted); cursor:pointer; transition:background .15s ease, color .15s ease; }
 .segmented button.on{ background:var(--lime); color:var(--on-accent); }
 
+.select-field{
+  width:100%; background:var(--surface); border:1px solid var(--line); border-radius:12px;
+  padding:11px 34px 11px 14px; color:var(--text); font-family:var(--font-ibm-plex-mono),monospace;
+  font-size:12px; font-weight:500; cursor:pointer; appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center; background-size:15px;
+  transition:border-color .15s ease;
+}
+.select-field:hover, .select-field:focus{ outline:none; border-color:var(--lime); }
+
 /* Home-screen row: the recap square, one square per friend, and a round
    "add friends" button — all side by side, horizontally scrollable. */
 .friends-row{
@@ -296,9 +306,17 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 .mobile-shell.show{ display:flex; }
 .device{ width:100%; height:100vh; height:100dvh; background:var(--bg); overflow:hidden; position:relative; display:flex; flex-direction:column; }
 .m-screens{ flex:1; position:relative; overflow:hidden; }
-.m-screen{ position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y; overscroll-behavior-y:contain; padding:16px 20px 24px; opacity:0; visibility:hidden; transform:translateY(8px); transition:opacity .28s ease, transform .28s ease; }
-.m-screen.active{ opacity:1; visibility:visible; transform:translateY(0); }
+/* The fade/slide transition used to live on this same element — animating
+   `transform` on the actual overflow:auto scroll container is a known
+   cause of janky/dropped touch-scroll on mobile WebKit and some Android
+   builds (the browser re-evaluates the scroller when the transform changes
+   mid-gesture). Split in two: this stays a plain, unanimated scroll
+   container; .m-screen-inner (below) carries the animation instead. */
+.m-screen{ position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y; overscroll-behavior-y:contain; visibility:hidden; pointer-events:none; }
+.m-screen.active{ visibility:visible; pointer-events:auto; }
 .m-screen::-webkit-scrollbar{ display:none; }
+.m-screen-inner{ padding:16px 20px 24px; opacity:0; transform:translateY(8px); transition:opacity .28s ease, transform .28s ease; }
+.m-screen.active .m-screen-inner{ opacity:1; transform:translateY(0); }
 .row-scroll{ display:flex; gap:12px; overflow-x:auto; margin-bottom:26px; padding-bottom:4px; scrollbar-width:none; -ms-overflow-style:none; touch-action:pan-x; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; }
 .row-scroll::-webkit-scrollbar{ display:none; }
 .mobile-shell .row-scroll .cover{ width:104px; flex-shrink:0; }
