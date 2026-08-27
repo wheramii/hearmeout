@@ -31,6 +31,9 @@ export type AlbumReview = {
 
 export type RecapPeriod = 'day' | 'month' | 'season';
 
+export type SeasonName = 'winter' | 'spring' | 'summer' | 'autumn';
+export type SeasonOption = { key: string; year: number; season: SeasonName };
+
 export type RecapArtistRef = { id: string | null; name: string; cover: string | null };
 export type RecapTrackRef = { title: string; artist: string; albumId: string | null; cover: string | null };
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import type { StatsData, StatsRange } from '@/lib/types';
 
 const RANGE_DAYS: Record<StatsRange, number | null> = { '4w': 28, '6m': 182, year: 365, all: null };
@@ -26,18 +27,23 @@ export async function GET(request: NextRequest) {
   const since = days ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
 
   const admin = supabaseAdmin();
-  const [{ data: events, error }, { data: ratings }] = await Promise.all([
-    admin
-      .from('listening_events')
-      .select('track_id, track_title, artist, artist_id, cover_url, genre, duration_ms, played_at')
-      .eq('user_id', userId)
-      .order('played_at', { ascending: true })
-      .limit(8000),
+  // PostgREST caps every request at its project max-rows setting (1000 by
+  // default) regardless of .limit() — a plain .limit(50000) call silently
+  // came back with only 1000 rows (the oldest, since sorted ascending),
+  // which is why "4 weeks"/"6 months"/"this year" all showed nothing while
+  // "all time" looked fine. Paginating with .range() gets the real count.
+  const [{ rows: all, error }, { data: ratings }] = await Promise.all([
+    fetchAllRows<Row>((from, to) =>
+      admin
+        .from('listening_events')
+        .select('track_id, track_title, artist, artist_id, cover_url, genre, duration_ms, played_at')
+        .eq('user_id', userId)
+        .order('played_at', { ascending: true })
+        .range(from, to)
+    ),
     admin.from('ratings').select('stars').eq('user_id', userId),
   ]);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  const all = (events || []) as Row[];
+  if (error) return NextResponse.json({ error }, { status: 500 });
   const inRange = since ? all.filter((r) => new Date(r.played_at) >= since) : all;
   const artistKey = (r: Row) => r.artist_id || r.artist || '';
 

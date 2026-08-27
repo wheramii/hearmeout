@@ -5,7 +5,7 @@ import { ALBUMS } from './data';
 import { supabase } from './supabaseClient';
 import { translate, type Language, type TranslationKey } from './i18n';
 import type {
-  Album, AlbumRatingInfo, ArtistState, Device, FriendRequest, Me, RatingRecord, RecapData, RecapPeriod, ScreenName,
+  Album, AlbumRatingInfo, ArtistState, Device, FriendRequest, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
 } from './types';
 import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
 
@@ -60,6 +60,7 @@ type AppState = {
   currentAlbumId: string;
   viewingUserId: string;
   recapPeriod: RecapPeriod;
+  recapSeasonKey: string | null;
   recapViewUserId: string;
   recapOrigin: ScreenName;
   searchQuery: string;
@@ -104,10 +105,12 @@ type AppContextValue = {
   setSortBy: (s: SortBy) => void;
   setHistoryQuery: (q: string) => void;
   setRecapPeriod: (p: RecapPeriod) => void;
+  setRecapSeasonKey: (key: string | null) => void;
+  recapSeasons: SeasonOption[] | null;
   setRatingValue: (v: number) => void;
   setRatingDraftText: (t: string) => void;
   publishRating: (albumId: string, stars: number, review: string) => Promise<void>;
-  ensureRecap: (userId: string, period: RecapPeriod) => void;
+  ensureRecap: (userId: string, period: RecapPeriod, seasonKey?: string | null) => void;
   registerWithPassword: (name: string, email: string, password: string) => Promise<void>;
   dismissOnboarding: () => void;
   loginWithPassword: (email: string, password: string) => Promise<void>;
@@ -139,6 +142,7 @@ const initialState: AppState = {
   currentAlbumId: ALBUMS[0]?.id ?? '',
   viewingUserId: '',
   recapPeriod: 'day',
+  recapSeasonKey: null,
   recapViewUserId: 'me',
   recapOrigin: 'catalog',
   searchQuery: '',
@@ -338,17 +342,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setActiveGenre = useCallback((g: string) => patch({ activeGenre: g }), [patch]);
   const setSortBy = useCallback((sVal: SortBy) => patch({ sortBy: sVal }), [patch]);
   const setHistoryQuery = useCallback((q: string) => patch({ historyQuery: q }), [patch]);
-  const setRecapPeriod = useCallback((p: RecapPeriod) => patch({ recapPeriod: p }), [patch]);
+  const setRecapPeriod = useCallback((p: RecapPeriod) => patch({ recapPeriod: p, recapSeasonKey: null }), [patch]);
+  const setRecapSeasonKey = useCallback((key: string | null) => patch({ recapSeasonKey: key }), [patch]);
   const setRatingValue = useCallback((v: number) => patch({ ratingValue: v }), [patch]);
   const setRatingDraftText = useCallback((t: string) => patch({ ratingDraftText: t }), [patch]);
 
-  const ensureRecap = useCallback((userId: string, period: RecapPeriod) => {
+  const ensureRecap = useCallback((userId: string, period: RecapPeriod, seasonKey?: string | null) => {
     const targetId = userId === 'me' ? me?.id : userId;
     if (!targetId) return;
-    const key = `${targetId}:${period}`;
+    const key = `${targetId}:${period}${seasonKey ? ':' + seasonKey : ''}`;
     if (requestedRecapKeys.current.has(key)) return;
     requestedRecapKeys.current.add(key);
-    fetch(`/api/recap?period=${period}&userId=${targetId}`)
+    const seasonQS = seasonKey ? `&season=${encodeURIComponent(seasonKey)}` : '';
+    fetch(`/api/recap?period=${period}&userId=${targetId}${seasonQS}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data: RecapData | null) => {
         if (data) setRecapCache((s) => ({ ...s, [key]: data }));
@@ -356,6 +362,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => requestedRecapKeys.current.delete(key));
   }, [me]);
+
+  const [recapSeasons, setRecapSeasons] = useState<SeasonOption[] | null>(null);
+  useEffect(() => {
+    if (state.activeScreen !== 'recap' || state.recapPeriod !== 'season') return;
+    const targetId = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
+    if (!targetId) return;
+    let cancelled = false;
+    setRecapSeasons(null);
+    fetch(`/api/recap/seasons?userId=${targetId}`)
+      .then((res) => (res.ok ? res.json() : { seasons: [] }))
+      .then((data: { seasons: SeasonOption[] }) => { if (!cancelled) setRecapSeasons(data.seasons); })
+      .catch(() => { if (!cancelled) setRecapSeasons([]); });
+    return () => { cancelled = true; };
+  }, [state.activeScreen, state.recapPeriod, state.recapViewUserId, me]);
 
   const publishRating = useCallback(async (albumId: string, stars: number, review: string) => {
     const isEditing = myRatings.some((r) => r.albumId === albumId);
@@ -577,13 +597,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     spotifyObscure, spotifyGenreArtists, myRatings, friendRequests, recapCache, reviewsVersion,
     showScreen, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
-    setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod,
+    setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
     updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
     spotifyGenreArtists, myRatings, friendRequests, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
+    setRecapSeasonKey, recapSeasons,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,

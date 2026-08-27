@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import type { RecapData, RecapPeriod } from '@/lib/types';
+import { parseSeasonKey, seasonBounds } from '@/lib/seasons';
 
 const PERIOD_DAYS: Record<RecapPeriod, number> = { day: 1, month: 30, season: 90 };
+
+type Row = { track_id: string | null; track_title: string | null; artist: string | null; artist_id: string | null; album_id: string | null; cover_url: string | null; genre: string | null; duration_ms: number | null };
 
 export async function GET(request: NextRequest) {
   const viewerId = await getCurrentUserId();
@@ -12,19 +16,40 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const period = (url.searchParams.get('period') as RecapPeriod) || 'day';
   const targetUserId = url.searchParams.get('userId') || viewerId;
-  const days = PERIOD_DAYS[period] ?? 1;
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  // An explicit ?season=2025-summer picks a real historical window instead
+  // of "the last 90 days from now" — parsed to real calendar-month bounds.
+  const seasonParam = url.searchParams.get('season');
+  const parsedSeason = seasonParam ? parseSeasonKey(seasonParam) : null;
+  let since: string;
+  let until: string | null = null;
+  if (parsedSeason) {
+    const { start, end } = seasonBounds(parsedSeason.year, parsedSeason.season);
+    since = start.toISOString();
+    until = end.toISOString();
+  } else {
+    const days = PERIOD_DAYS[period] ?? 1;
+    since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  }
 
   const admin = supabaseAdmin();
-  const { data: events, error } = await admin
-    .from('listening_events')
-    .select('track_id, track_title, artist, artist_id, album_id, cover_url, genre, duration_ms')
-    .eq('user_id', targetUserId)
-    .gte('played_at', since)
-    .limit(2000);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  const rows = events || [];
+  // Paginated for the same reason as /api/stats: PostgREST caps a single
+  // request at its project max-rows (1000 by default) no matter what
+  // .limit() is requested. That's what made "month" and "season" recaps
+  // look identical — both got silently truncated to the same first 1000
+  // rows once a range held more than that, regardless of period length —
+  // and ordering by recency (added alongside this) makes them genuinely
+  // diverge instead of coincidentally overlapping.
+  const { rows, error } = await fetchAllRows<Row>((from, to) => {
+    let q = admin
+      .from('listening_events')
+      .select('track_id, track_title, artist, artist_id, album_id, cover_url, genre, duration_ms')
+      .eq('user_id', targetUserId)
+      .gte('played_at', since);
+    if (until) q = q.lt('played_at', until);
+    return q.order('played_at', { ascending: false }).range(from, to);
+  }, 8000);
+  if (error) return NextResponse.json({ error }, { status: 500 });
   const minutes = Math.round(rows.reduce((s, r) => s + (r.duration_ms || 0), 0) / 60000);
   const uniqueArtists = new Set(rows.map((r) => r.artist_id || r.artist).filter(Boolean)).size;
 

@@ -13,7 +13,7 @@ import { TransportRing } from '../DockedPlayer';
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', month: 'recap.month', season: 'recap.season' };
 
 export function RecapScreen(_props: { device: Device }) {
-  const { state, t, language, me, ensureRecap, recapCache, closeRecap, setRecapPeriod, openAlbum, openSpotifyArtist } = useApp();
+  const { state, t, language, me, ensureRecap, recapCache, closeRecap, setRecapPeriod, setRecapSeasonKey, recapSeasons, openAlbum, openSpotifyArtist } = useApp();
   const { currentTrack, playQueue } = usePlayer();
   const targetId = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
   const isMe = state.recapViewUserId === 'me';
@@ -21,8 +21,16 @@ export function RecapScreen(_props: { device: Device }) {
 
   useEffect(() => {
     if (!targetId) return;
-    ensureRecap(state.recapViewUserId, state.recapPeriod);
-  }, [state.recapViewUserId, state.recapPeriod, targetId, ensureRecap]);
+    ensureRecap(state.recapViewUserId, state.recapPeriod, state.recapSeasonKey);
+  }, [state.recapViewUserId, state.recapPeriod, state.recapSeasonKey, targetId, ensureRecap]);
+
+  // Once the real available seasons load, default to the most recent one
+  // instead of leaving the picker on "no season selected".
+  useEffect(() => {
+    if (state.recapPeriod === 'season' && !state.recapSeasonKey && recapSeasons?.length) {
+      setRecapSeasonKey(recapSeasons[0].key);
+    }
+  }, [state.recapPeriod, state.recapSeasonKey, recapSeasons, setRecapSeasonKey]);
 
   useEffect(() => {
     if (isMe || !targetId) { setProfile(null); return; }
@@ -34,7 +42,9 @@ export function RecapScreen(_props: { device: Device }) {
   }, [isMe, targetId]);
 
   if (!targetId) return <div className="empty-state">{t('app.loading')}</div>;
-  const r = recapCache[`${targetId}:${state.recapPeriod}`];
+  const isSeason = state.recapPeriod === 'season';
+  const cacheKey = `${targetId}:${state.recapPeriod}${isSeason && state.recapSeasonKey ? ':' + state.recapSeasonKey : ''}`;
+  const r = isSeason && !state.recapSeasonKey ? undefined : recapCache[cacheKey];
   const name = isMe ? me?.name : profile?.name;
   const avatarUrl = isMe ? me?.avatarUrl ?? null : profile?.avatarUrl ?? null;
   const vibe = r
@@ -55,6 +65,24 @@ export function RecapScreen(_props: { device: Device }) {
             </button>
           ))}
         </div>
+        {isSeason && (
+          recapSeasons === null ? (
+            <div className="archive-loading" style={{ marginTop: 10 }}>{t('recap.loading')}</div>
+          ) : recapSeasons.length ? (
+            <select
+              className="season-select"
+              style={{ marginTop: 10, width: '100%', padding: '9px 10px', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--text)' }}
+              value={state.recapSeasonKey ?? ''}
+              onChange={(e) => setRecapSeasonKey(e.target.value)}
+            >
+              {recapSeasons.map((s) => (
+                <option key={s.key} value={s.key}>{t(`season.${s.season}` as TranslationKey)} {s.year}</option>
+              ))}
+            </select>
+          ) : (
+            <div className="empty-state" style={{ marginTop: 10 }}>{t('recap.noData')}</div>
+          )
+        )}
       </div>
       <div className="recap-hero">
         <div className="recap-hero-avatar" style={userAvatarStyle({ avatarUrl })} />
