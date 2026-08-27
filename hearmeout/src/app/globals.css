@@ -345,6 +345,14 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 .album-band-score .num{ font-family:var(--font-space-grotesk),sans-serif; font-size:44px; font-weight:600; letter-spacing:-.03em; color:var(--lime); line-height:1; }
 .album-band-score .rd{ font-size:11.5px; color:var(--muted); }
 
+.rating-dist{ display:flex; flex-direction:column; gap:6px; margin-top:14px; }
+.rating-dist-row{ display:flex; align-items:center; gap:8px; font-family:var(--font-ibm-plex-mono),monospace; font-size:10.5px; color:var(--muted); }
+.rating-dist-label{ width:9px; flex-shrink:0; text-align:right; }
+.rating-dist-track{ flex:1; height:6px; border-radius:3px; background:var(--track); overflow:hidden; }
+.rating-dist-fill{ height:100%; border-radius:3px; background:var(--lime); }
+.rating-dist-pct{ width:30px; flex-shrink:0; text-align:right; }
+.rating-dist-empty{ font-family:var(--font-ibm-plex-mono),monospace; font-size:11px; color:var(--muted); margin-top:12px; }
+
 /* Circular preview player: a progress ring that lengthens as the 30s clip
    plays, with the HearMeOut mark centered in it (bars bounce while playing). */
 .circle-player{ position:relative; cursor:pointer; flex-shrink:0; }

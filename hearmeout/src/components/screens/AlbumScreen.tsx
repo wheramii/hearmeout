@@ -8,6 +8,7 @@ import { StarsAvg } from '../ui/StarsAvg';
 import { pluralForKey, toLocale } from '@/lib/i18n';
 import { CirclePlayer } from '../CirclePlayer';
 import { AlbumReviews } from '../AlbumReviews';
+import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
 
 export function AlbumScreen({ device }: { device: Device }) {
   const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, spotifyCovers, reviewsVersion, showScreen, openRateFor, openSpotifyArtist, ensureLiveAlbum } = useApp();
@@ -103,6 +104,7 @@ export function AlbumScreen({ device }: { device: Device }) {
             <div className="rd">{t('album.noRatings')}</div>
           )}
         </div>
+        {ratingInfo && <AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} />}
         {actions('center')}
         <div className="section-head" style={{ marginTop: 22 }}><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>
         <div style={{ marginBottom: 22 }}>{tracklist}</div>
@@ -133,6 +135,7 @@ export function AlbumScreen({ device }: { device: Device }) {
               <div className="num">{ratingInfo.avg.toFixed(1)}</div>
               <StarsAvg rating={ratingInfo.avg} />
               <div className="rd">{ratingInfo.count.toLocaleString(toLocale(language))} {pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}</div>
+              <AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} />
             </>
           ) : (
             <div className="rd">{t('album.noRatings')}</div>
