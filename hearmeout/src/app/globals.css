@@ -403,6 +403,67 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 .list-row.playing{ background:var(--accent-bg); border-radius:10px; padding-left:8px; padding-right:8px; border-bottom-color:transparent; }
 .list-row.playing .n, .list-row.playing .t{ color:var(--lime); }
 
+/* Ratings history */
+.history-summary{ font-family:var(--font-ibm-plex-mono),monospace; font-size:11.5px; color:var(--muted); margin-bottom:16px; margin-top:-8px; }
+.history-toolbar{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; flex-wrap:wrap; }
+.history-sort{ font-family:var(--font-ibm-plex-mono),monospace; font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; flex-shrink:0; white-space:nowrap; }
+.history-layout{ display:flex; gap:32px; align-items:flex-start; }
+.history-main{ flex:1; min-width:0; }
+.history-rail{ width:280px; flex-shrink:0; }
+.history-month{ display:flex; justify-content:space-between; align-items:baseline; margin:22px 0 8px; font-family:var(--font-ibm-plex-mono),monospace; font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; border-bottom:1px solid var(--line); padding-bottom:6px; }
+.history-row{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--divider); cursor:pointer; }
+.history-row .hr-date{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10.5px; color:var(--muted); width:44px; flex-shrink:0; text-transform:lowercase; }
+.history-row .art-sm{ width:44px; height:44px; border-radius:10px; flex-shrink:0; background-size:cover; background-position:center; border:1px solid var(--line); }
+.history-row .hr-info{ flex:1; min-width:0; }
+.history-row .hr-title{ font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.history-row .hr-artist{ font-size:11.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.history-badge{ font-family:var(--font-ibm-plex-mono),monospace; font-size:9.5px; padding:3px 9px; border-radius:999px; border:1px solid var(--accent-border); color:var(--accent-text); background:var(--accent-bg); flex-shrink:0; white-space:nowrap; }
+.history-score{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.history-score .stars-dot{ font-size:12px; }
+.history-score .num{ font-family:var(--font-space-grotesk),sans-serif; font-weight:600; color:var(--lime); font-size:14px; }
+
+.history-side-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px; }
+.history-side-card h3{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; font-weight:500; }
+.history-hist-chart{ display:flex; align-items:flex-end; gap:6px; height:70px; margin-bottom:8px; }
+.history-hist-bar{ flex:1; border-radius:3px 3px 0 0; background:var(--lime); }
+.history-hist-labels{ display:flex; justify-content:space-between; font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; color:var(--muted-2); }
+.history-sparkline{ display:flex; align-items:flex-end; gap:5px; height:56px; margin-bottom:8px; }
+.history-sparkline .bar{ flex:1; border-radius:2px 2px 0 0; background:var(--lime); }
+.history-sparkline-labels{ display:flex; justify-content:space-between; font-family:var(--font-ibm-plex-mono),monospace; font-size:9.5px; color:var(--muted-2); }
+
+/* Friend profile */
+.friend-band{ display:flex; gap:22px; background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:22px; margin-bottom:18px; flex-wrap:wrap; }
+.friend-band-avatar{ width:96px; height:96px; border-radius:50%; flex-shrink:0; background-size:cover; background-position:center; background-color:var(--surface); border:1px solid var(--line); }
+.friend-band-mid{ flex:1; min-width:200px; }
+.friend-band-mid h1{ font-family:var(--font-space-grotesk),sans-serif; font-size:26px; font-weight:600; letter-spacing:-.02em; }
+.friend-band-meta{ font-family:var(--font-ibm-plex-mono),monospace; font-size:11px; color:var(--muted); margin:4px 0 14px; }
+.friend-band-score{
+  flex-shrink:0; width:170px; border-left:1px solid var(--line); padding-left:22px;
+  display:flex; flex-direction:column; justify-content:center; gap:4px;
+}
+.friend-band-score .num{ font-family:var(--font-space-grotesk),sans-serif; font-size:40px; font-weight:600; letter-spacing:-.03em; color:var(--lime); line-height:1; }
+.friend-band-score .rd{ font-size:11px; color:var(--muted); font-family:var(--font-ibm-plex-mono),monospace; text-transform:uppercase; letter-spacing:.06em; }
+.friend-band-stats{ display:flex; gap:16px; margin-top:12px; }
+.friend-band-stats .v{ display:block; font-family:var(--font-space-grotesk),sans-serif; font-weight:600; font-size:15px; }
+.friend-band-stats .l{ display:block; font-family:var(--font-ibm-plex-mono),monospace; font-size:9px; color:var(--muted); text-transform:uppercase; margin-top:2px; }
+
+.friend-both-band{
+  background:var(--accent-bg); border:1px solid var(--accent-border); border-radius:14px;
+  padding:14px 18px; margin-bottom:22px; font-size:12.5px; color:var(--text);
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.friend-both-label{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--accent-text); font-weight:600; }
+
+.friend-your-score{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10.5px; color:var(--muted); flex-shrink:0; white-space:nowrap; }
+.friend-your-score.disagree{ color:var(--lime); }
+
+/* Artist page */
+.artist-band{ display:flex; gap:22px; background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:22px; margin-bottom:22px; flex-wrap:wrap; }
+.artist-band-photo{ width:120px; height:120px; border-radius:50%; flex-shrink:0; }
+.artist-band-mid{ flex:1; min-width:220px; }
+.artist-band-mid h1{ font-family:var(--font-space-grotesk),sans-serif; font-size:32px; font-weight:600; letter-spacing:-.02em; margin-top:4px; }
+.disco-badge{ position:absolute; top:6px; right:6px; background:var(--lime); color:var(--on-accent); font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; font-weight:700; padding:2px 7px; border-radius:6px; }
+
 .header-play-btn{
   width:52px; height:52px; border-radius:50%; flex-shrink:0; border:none; cursor:pointer;
   background:var(--lime); color:var(--on-accent); display:flex; align-items:center; justify-content:center;

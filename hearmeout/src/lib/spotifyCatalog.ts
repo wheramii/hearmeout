@@ -192,7 +192,11 @@ export type SpotifyArtistAlbumRef = { id: string; title: string; cover: string |
 // has published the listing, with a future release_date.
 export async function fetchArtistAlbumsSplit(id: string): Promise<{ released: SpotifyArtistAlbumRef[]; upcoming: SpotifyArtistAlbumRef[] }> {
   const token = await getSpotifyAppToken();
-  const res = await fetch(`https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single&limit=50`, {
+  // limit is capped at 10 for this app's access tier — anything higher
+  // (up to Spotify's documented max of 50) gets a bare 400 "Invalid limit"
+  // with no other indication why, confirmed by hand against this app's
+  // actual credentials.
+  const res = await fetch(`https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single&limit=10`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 404) return { released: [], upcoming: [] };

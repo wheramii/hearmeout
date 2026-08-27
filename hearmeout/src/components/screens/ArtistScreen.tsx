@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, SpotifyArtistAlbum } from '@/lib/types';
 import { coverArtUrl } from '@/lib/musicbrainz';
@@ -7,30 +8,55 @@ import { CoverArt } from '../ui/CoverArt';
 import { ArtistAvatar } from '../ui/ArtistAvatar';
 import { toLocale } from '@/lib/i18n';
 
-function SpotifyAlbumCard({ album, gridClass, fallbackLetter, onOpen, unreleasedLabel }: {
+function SpotifyAlbumCard({ album, fallbackLetter, onOpen, unreleasedLabel, score }: {
   album: SpotifyArtistAlbum;
-  gridClass: string;
   fallbackLetter: string;
   onOpen: (id: string) => void;
   unreleasedLabel?: string;
+  score?: number;
 }) {
   return (
-    <div className={gridClass === 'd-grid' ? undefined : undefined}>
-      <div className="cover" onClick={() => onOpen(album.id)} style={{ cursor: 'pointer' }}>
-        <CoverArt url={album.cover ?? undefined} fallbackLetter={fallbackLetter} className="art" />
-        <div className="meta">
-          <div className="t">{album.title}</div>
-          <div className="a">{unreleasedLabel ?? (album.year ?? '—')}</div>
-        </div>
+    <div className="cover" onClick={() => onOpen(album.id)} style={{ cursor: 'pointer' }}>
+      <CoverArt url={album.cover ?? undefined} fallbackLetter={fallbackLetter} className="art">
+        {score != null && <span className="disco-badge">{score.toFixed(1)}</span>}
+      </CoverArt>
+      <div className="meta">
+        <div className="t">{album.title}</div>
+        <div className="a">{unreleasedLabel ?? (album.year ?? '—')}</div>
       </div>
     </div>
   );
 }
 
 export function ArtistScreen({ device }: { device: Device }) {
-  const { t, state, language, showScreen, openAlbum } = useApp();
+  const { t, state, language, albumRatings, myRatings, showScreen, openAlbum } = useApp();
   const art = state.currentArtist;
   const gridClass = device === 'mobile' ? 'grid-cards' : 'd-grid';
+
+  const communityScore = useMemo(() => {
+    if (!art?.releasedAlbums) return null;
+    let sum = 0, ratingsCount = 0, albumsWithRatings = 0;
+    for (const al of art.releasedAlbums) {
+      const info = albumRatings[al.id];
+      if (info) { sum += info.avg * info.count; ratingsCount += info.count; albumsWithRatings++; }
+    }
+    if (!ratingsCount) return null;
+    return { avg: sum / ratingsCount, count: ratingsCount, albumsWithRatings };
+  }, [art, albumRatings]);
+
+  const yourStats = useMemo(() => {
+    if (!art?.releasedAlbums) return null;
+    const ids = new Set(art.releasedAlbums.map((al) => al.id));
+    const mine = myRatings.filter((r) => ids.has(r.albumId));
+    if (!mine.length) return null;
+    const top = [...mine].sort((a, b) => b.stars - a.stars)[0];
+    const topAlbum = art.releasedAlbums.find((al) => al.id === top.albumId);
+    return {
+      count: mine.length,
+      avg: mine.reduce((s, r) => s + r.stars, 0) / mine.length,
+      topTitle: topAlbum?.title ?? null,
+    };
+  }, [art, myRatings]);
 
   if (!art) {
     return (
@@ -50,36 +76,21 @@ export function ArtistScreen({ device }: { device: Device }) {
     } else {
       body = (
         <>
-          {!!art.genres?.length && (
-            <div className="tags" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-              {art.genres.map((g) => <span className="chip" key={g}>{g}</span>)}
-            </div>
-          )}
-          <div className="recap-stats-row">
-            <div className="recap-stat">
-              <div className="rv">{art.followers != null ? art.followers.toLocaleString(toLocale(language)) : '—'}</div>
-              <div className="rl">{t('artist.followers')}</div>
-            </div>
-            <div className="recap-stat">
-              <div className="rv">{art.popularity != null ? art.popularity : '—'}</div>
-              <div className="rl">{t('artist.popularity')}</div>
-            </div>
-          </div>
           <div className="section-head"><h2>{t('artist.releasedAlbums')}</h2><span>{art.releasedAlbums?.length ?? 0}</span></div>
           {art.releasedAlbums?.length ? (
             <div className={gridClass}>
               {art.releasedAlbums.map((al) => (
-                <SpotifyAlbumCard key={al.id} album={al} gridClass={gridClass} fallbackLetter={art.name[0] || '?'} onOpen={openAlbum} />
+                <SpotifyAlbumCard key={al.id} album={al} fallbackLetter={art.name[0] || '?'} onOpen={openAlbum} score={albumRatings[al.id]?.avg} />
               ))}
             </div>
           ) : (
             <div className="empty-state">{t('artist.notFound')}</div>
           )}
-          <div className="section-head"><h2>{t('artist.upcomingAlbums')}</h2><span>{art.upcomingAlbums?.length ?? 0}</span></div>
+          <div className="section-head" style={{ marginTop: 26 }}><h2>{t('artist.upcomingAlbums')}</h2><span>{art.upcomingAlbums?.length ?? 0}</span></div>
           {art.upcomingAlbums?.length ? (
             <div className={gridClass}>
               {art.upcomingAlbums.map((al) => (
-                <SpotifyAlbumCard key={al.id} album={al} gridClass={gridClass} fallbackLetter={art.name[0] || '?'} onOpen={openAlbum} unreleasedLabel={t('artist.unreleased')} />
+                <SpotifyAlbumCard key={al.id} album={al} fallbackLetter={art.name[0] || '?'} onOpen={openAlbum} unreleasedLabel={t('artist.unreleased')} />
               ))}
             </div>
           ) : (
@@ -92,11 +103,44 @@ export function ArtistScreen({ device }: { device: Device }) {
     return (
       <>
         <button className="back-btn" onClick={() => showScreen('catalog')}>{t('artist.back')}</button>
-        <div className="album-hero">
-          <CoverArt url={art.photo ?? undefined} fallbackLetter={art.name[0] || '?'} className="art-lg cover-fallback" />
-          <h1>{art.name}</h1>
-          <div className="sub">{t('artist.subtitleSpotify')}</div>
+        <div className="artist-band">
+          <CoverArt url={art.photo ?? undefined} fallbackLetter={art.name[0] || '?'} className="artist-band-photo cover-fallback" />
+          <div className="artist-band-mid">
+            <div className="meta-mono">{t('artist.subtitleSpotify')}</div>
+            <h1>{art.name}</h1>
+            {!!art.genres?.length && (
+              <div className="tags" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '10px 0 4px' }}>
+                {art.genres.map((g) => <span className="chip" key={g}>{g}</span>)}
+              </div>
+            )}
+            <div className="friend-band-stats" style={{ marginTop: 10 }}>
+              <div><span className="v">{art.followers != null ? art.followers.toLocaleString(toLocale(language)) : '—'}</span><span className="l">{t('artist.followers')}</span></div>
+              <div><span className="v">{art.popularity != null ? art.popularity : '—'}</span><span className="l">{t('artist.popularity')}</span></div>
+            </div>
+          </div>
+          <div className="album-band-score">
+            {communityScore ? (
+              <>
+                <div className="num">{communityScore.avg.toFixed(1)}</div>
+                <div className="rd">{t('artist.communityRatings', { count: communityScore.count })}</div>
+              </>
+            ) : (
+              <div className="rd">{t('album.noRatings')}</div>
+            )}
+          </div>
         </div>
+
+        {yourStats && (
+          <div className="rate-card" style={{ marginTop: 0 }}>
+            <div className="rate-card-label">{t('artist.yourAndArtist')}</div>
+            <div className="stat-grid cols-2" style={{ marginBottom: yourStats.topTitle ? 10 : 0 }}>
+              <div className="box"><div className="v">{yourStats.count}</div><div className="l">{t('artist.yourRatedCount')}</div></div>
+              <div className="box"><div className="v">{yourStats.avg.toFixed(1)}</div><div className="l">{t('history.avg')}</div></div>
+            </div>
+            {yourStats.topTitle && <div style={{ fontSize: 12, color: 'var(--muted)' }}>{t('artist.yourTop', { title: yourStats.topTitle })}</div>}
+          </div>
+        )}
+
         {body}
       </>
     );
