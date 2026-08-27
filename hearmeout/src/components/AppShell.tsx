@@ -16,6 +16,10 @@ import { RecapScreen } from './screens/RecapScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { ArtistScreen } from './screens/ArtistScreen';
 import { FriendScreen } from './screens/FriendScreen';
+import { StatsScreen } from './screens/StatsScreen';
+import { MatchScreen } from './screens/MatchScreen';
+import { GroupsScreen } from './screens/GroupsScreen';
+import { DiscoverScreen } from './screens/DiscoverScreen';
 
 const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> }[] = [
   { name: 'catalog', Component: CatalogScreen },
@@ -26,15 +30,25 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
   { name: 'profile', Component: ProfileScreen },
   { name: 'artist', Component: ArtistScreen },
   { name: 'friend', Component: FriendScreen },
+  { name: 'stats', Component: StatsScreen },
+  { name: 'match', Component: MatchScreen },
+  { name: 'groups', Component: GroupsScreen },
+  { name: 'discover', Component: DiscoverScreen },
 ];
 
-// Which bottom-tab/sidebar-nav item lights up for a given screen — matches
-// the prototype's TAB_GROUP (e.g. the album detail screen keeps "Главное" active).
-const TAB_GROUP: Record<ScreenName, 'catalog' | 'history' | 'profile' | null> = {
-  catalog: 'catalog', album: 'catalog', artist: 'catalog',
-  history: 'history', rate: 'history',
-  profile: 'profile', friend: 'profile',
-  recap: null,
+type TabKey = 'catalog' | 'rate' | 'match' | 'stats' | 'groups' | 'discover' | 'profile';
+
+// Which nav item lights up for a given screen. Per the nav map: album,
+// artist, friend profile, the rating form and the preview player all open
+// "from content" and deliberately don't light up any top-level item.
+const TAB_GROUP: Record<ScreenName, TabKey | null> = {
+  catalog: 'catalog', album: null, artist: null,
+  history: 'rate', rate: null,
+  match: 'match', friend: null,
+  stats: 'stats', recap: null,
+  groups: 'groups',
+  discover: 'discover',
+  profile: 'profile',
 };
 
 export function AppShell() {
@@ -64,14 +78,18 @@ function MobileShell({ active }: { active: boolean }) {
         <DockedPlayerMobile />
         <div className="tabbar">
           <button className={`tab ${activeTab === 'catalog' ? 'active' : ''}`} onClick={() => showScreen('catalog')}>
-            <span className="ic num">⌂</span><span className="lbl">{t('nav.home')}</span>
+            <span className="lbl">{t('nav.home')}</span>
           </button>
-          <button className={`tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => showScreen('history')}>
-            <span className="ic num">★</span><span className="lbl">{t('nav.rate')}</span>
+          <button className={`tab ${activeTab === 'match' ? 'active' : ''}`} onClick={() => showScreen('match')}>
+            <span className="lbl">{t('nav.friends')}</span>
+          </button>
+          <button className={`tab ${activeTab === 'discover' ? 'active' : ''}`} onClick={() => showScreen('discover')}>
+            <span className="lbl">{t('nav.find')}</span>
           </button>
           <button className={`tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => showScreen('profile')}>
-            <span className="ic"><ProfileIcon /></span><span className="lbl">{t('nav.profile')}</span>
+            <span className="lbl">{t('nav.profile')}</span>
           </button>
+          <button className="tab-add" onClick={() => showScreen('catalog')} aria-label={t('nav.rate')}>+</button>
         </div>
       </div>
     </div>
@@ -89,11 +107,20 @@ function DesktopShell({ active }: { active: boolean }) {
           <button className={`d-nav-item ${activeTab === 'catalog' ? 'active' : ''}`} onClick={() => showScreen('catalog')}>
             {t('nav.home')}
           </button>
-          <button className={`d-nav-item ${activeTab === 'history' ? 'active' : ''}`} onClick={() => showScreen('history')}>
+          <button className={`d-nav-item ${activeTab === 'rate' ? 'active' : ''}`} onClick={() => showScreen('history')}>
             {t('nav.rate')}
           </button>
-          <button className={`d-nav-item ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => showScreen('profile')}>
-            {t('nav.profile')}
+          <button className={`d-nav-item ${activeTab === 'match' ? 'active' : ''}`} onClick={() => showScreen('match')}>
+            {t('nav.match')}
+          </button>
+          <button className={`d-nav-item ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => showScreen('stats')}>
+            {t('nav.stats')}
+          </button>
+          <button className={`d-nav-item ${activeTab === 'groups' ? 'active' : ''}`} onClick={() => showScreen('groups')}>
+            {t('nav.groups')}
+          </button>
+          <button className={`d-nav-item ${activeTab === 'discover' ? 'active' : ''}`} onClick={() => showScreen('discover')}>
+            {t('nav.discover')}
           </button>
         </nav>
         <div className="d-topnav-right">

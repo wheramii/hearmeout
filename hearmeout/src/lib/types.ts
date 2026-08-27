@@ -80,7 +80,52 @@ export type ScreenName =
   | 'recap'
   | 'profile'
   | 'artist'
-  | 'friend';
+  | 'friend'
+  | 'match'
+  | 'stats'
+  | 'groups'
+  | 'discover';
+
+export type StatsRange = '4w' | '6m' | 'year' | 'all';
+
+export type StatsData = {
+  range: StatsRange;
+  hours: number;
+  trackCount: number;
+  artistCount: number;
+  newArtistCount: number;
+  avgRating: number;
+  peakHour: number | null;
+  hoursPerWeek: { weekLabel: string; hours: number }[];
+  topArtists: { name: string; id: string | null; cover: string | null; hours: number; plays: number }[];
+  heatmap: number[]; // 24 buckets (hour of day), play counts
+  genreSplit: { genre: string; pct: number }[];
+  recentPlays: { title: string; artist: string; cover: string | null; playedAt: string }[];
+};
+
+export type GroupSummary = { id: string; name: string; memberCount: number; newPlays: number };
+export type GroupMember = ApiUser;
+export type GroupAward = { label: string; winner: ApiUser | null; detail: string };
+export type GroupActivityEvent = {
+  type: 'rating' | 'review';
+  user: ApiUser;
+  albumId: string;
+  albumTitle: string;
+  albumArtist: string;
+  cover: string | null;
+  stars: number;
+  review: string | null;
+  createdAt: string;
+};
+export type GroupDetail = {
+  id: string;
+  name: string;
+  createdBy: string;
+  members: GroupMember[];
+  awards: GroupAward[];
+  activity: GroupActivityEvent[];
+  leaderboard: { user: ApiUser; hours: number }[];
+};
 
 export type ArtistRelease = {
   id: string;

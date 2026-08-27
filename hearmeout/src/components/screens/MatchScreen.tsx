@@ -1,0 +1,83 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useApp } from '@/lib/AppContext';
+import type { Device, GroupSummary, PublicProfile } from '@/lib/types';
+import { userAvatarStyle } from '@/lib/format';
+
+function computeMatch(mine: PublicProfile['genres'], theirs: PublicProfile['genres']): number | null {
+  const overlap = mine.map((mg) => ({ me: mg.pct, friend: theirs.find((x) => x.g === mg.g)?.pct ?? 0 }));
+  const denom = overlap.reduce((s, o) => s + Math.max(o.me, o.friend), 0);
+  return denom > 0 ? Math.round((overlap.reduce((s, o) => s + Math.min(o.me, o.friend), 0) / denom) * 100) : null;
+}
+
+export function MatchScreen(_props: { device: Device }) {
+  const { t, me, viewFriend, showScreen } = useApp();
+  const [scores, setScores] = useState<Record<string, number | null>>({});
+  const [groups, setGroups] = useState<GroupSummary[] | null>(null);
+
+  useEffect(() => {
+    if (!me) return;
+    let cancelled = false;
+    Promise.all(
+      me.friends.map(async (f) => {
+        const res = await fetch(`/api/users/${f.id}`);
+        if (!res.ok) return [f.id, null] as const;
+        const profile: PublicProfile = await res.json();
+        return [f.id, computeMatch(me.genres, profile.genres)] as const;
+      })
+    ).then((pairs) => { if (!cancelled) setScores(Object.fromEntries(pairs)); });
+    return () => { cancelled = true; };
+  }, [me]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/groups').then((r) => (r.ok ? r.json() : [])).then((d) => { if (!cancelled) setGroups(d); });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!me) return null;
+
+  const sorted = [...me.friends].sort((a, b) => (scores[b.id] ?? -1) - (scores[a.id] ?? -1));
+
+  return (
+    <>
+      <div className="eyebrow">{t('match.eyebrow')}</div>
+      <h1 className="page-title">{t('match.title')}</h1>
+
+      {!me.friends.length ? (
+        <div className="empty-state">{t('friends.empty')}</div>
+      ) : (
+        sorted.map((f) => (
+          <div className="match-row" key={f.id} onClick={() => viewFriend(f.id)}>
+            <div className="avatar-sm" style={userAvatarStyle(f)} />
+            <div className="info">
+              <div className="n">{f.name}</div>
+              <div className="h">{f.handle}</div>
+            </div>
+            <div className="match-pct">
+              {scores[f.id] != null ? `${scores[f.id]}%` : '—'}
+            </div>
+          </div>
+        ))
+      )}
+
+      <div className="section-head" style={{ marginTop: 26 }}><h2>{t('nav.groups')}</h2><span>{groups?.length ?? ''}</span></div>
+      {groups === null ? (
+        <div className="archive-loading">{t('groups.loading')}</div>
+      ) : !groups.length ? (
+        <div className="empty-state">{t('groups.noneYet')}</div>
+      ) : (
+        groups.slice(0, 3).map((g) => (
+          <div className="friend-row" key={g.id} onClick={() => showScreen('groups')}>
+            <div className="info">
+              <div className="n">{g.name}</div>
+              <div className="h">{t('groups.memberCount', { count: g.memberCount })}</div>
+            </div>
+          </div>
+        ))
+      )}
+      <button className="btn-ghost" style={{ width: '100%', marginTop: 10 }} onClick={() => showScreen('groups')}>{t('groups.openAll')}</button>
+    </>
+  );
+}

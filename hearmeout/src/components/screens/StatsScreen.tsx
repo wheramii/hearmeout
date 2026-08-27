@@ -1,0 +1,118 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useApp } from '@/lib/AppContext';
+import type { Device, StatsData, StatsRange } from '@/lib/types';
+import { CoverArt } from '../ui/CoverArt';
+import { toLocale } from '@/lib/i18n';
+
+const RANGES: StatsRange[] = ['4w', '6m', 'year', 'all'];
+const RANGE_KEY: Record<StatsRange, string> = { '4w': 'stats.range4w', '6m': 'stats.range6m', year: 'stats.rangeYear', all: 'stats.rangeAll' };
+
+export function StatsScreen(_props: { device: Device }) {
+  const { t, language, me } = useApp();
+  const [range, setRange] = useState<StatsRange>('6m');
+  const [data, setData] = useState<StatsData | null>(null);
+
+  useEffect(() => {
+    if (!me) return;
+    let cancelled = false;
+    setData(null);
+    fetch(`/api/stats?range=${range}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (!cancelled) setData(d); });
+    return () => { cancelled = true; };
+  }, [range, me]);
+
+  if (!me) return null;
+
+  const maxWeek = Math.max(1, ...(data?.hoursPerWeek.map((w) => w.hours) ?? [1]));
+  const maxArtistHours = Math.max(1, ...(data?.topArtists.map((a) => a.hours) ?? [1]));
+  const maxHeat = Math.max(1, ...(data?.heatmap ?? [1]));
+
+  return (
+    <>
+      <div className="eyebrow">{t('stats.eyebrow')}</div>
+      <h1 className="page-title">{t('stats.title')}</h1>
+      <div className="chips">
+        {RANGES.map((r) => (
+          <button key={r} className={`chip ${range === r ? 'on' : ''}`} onClick={() => setRange(r)}>{t(RANGE_KEY[r] as never)}</button>
+        ))}
+      </div>
+
+      {!data ? (
+        <div className="archive-loading">{t('stats.loading')}</div>
+      ) : data.trackCount === 0 ? (
+        <div className="empty-state">{t('stats.empty')}</div>
+      ) : (
+        <>
+          <div className="recap-stats-row" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(90px,1fr))' }}>
+            <div className="recap-stat"><div className="rv">{data.hours}</div><div className="rl">{t('stats.hours')}</div></div>
+            <div className="recap-stat"><div className="rv">{data.trackCount.toLocaleString(toLocale(language))}</div><div className="rl">{t('stats.tracks')}</div></div>
+            <div className="recap-stat"><div className="rv">{data.artistCount}</div><div className="rl">{t('stats.artists')}</div></div>
+            <div className="recap-stat"><div className="rv">{data.avgRating || '—'}</div><div className="rl">{t('history.avg')}</div></div>
+            <div className="recap-stat" style={{ background: 'var(--accent-bg)', borderColor: 'var(--accent-border)' }}>
+              <div className="rv">{data.peakHour != null ? `${String(data.peakHour).padStart(2, '0')}:00` : '—'}</div>
+              <div className="rl">{t('stats.peakHour')}</div>
+            </div>
+          </div>
+
+          <div className="section-head" style={{ marginTop: 26 }}><h2>{t('stats.hoursPerWeek')}</h2></div>
+          {data.hoursPerWeek.length ? (
+            <div className="rating-dist-chart" style={{ height: 90, marginBottom: 26 }}>
+              {data.hoursPerWeek.map((w, i) => (
+                <div key={i} className="rating-dist-bar" style={{ height: `${Math.max(4, (w.hours / maxWeek) * 100)}%` }} title={`${w.weekLabel}: ${w.hours}h`} />
+              ))}
+            </div>
+          ) : <div className="empty-state">{t('stats.notEnough')}</div>}
+
+          <div className="section-head"><h2>{t('stats.topArtists')}</h2></div>
+          {data.topArtists.length ? data.topArtists.map((a, i) => (
+            <div className="list-row" key={a.id || a.name}>
+              <span className="n">{String(i + 1).padStart(2, '0')}</span>
+              <CoverArt url={a.cover ?? undefined} fallbackLetter={a.name[0] || '?'} className="cover-thumb-sm" />
+              <div className="info" style={{ flex: 1 }}>
+                <div className="t">{a.name}</div>
+                <div className="track" style={{ height: 5, marginTop: 4 }}><div className="fill" style={{ width: `${(a.hours / maxArtistHours) * 100}%` }} /></div>
+              </div>
+              <span className="history-badge" style={{ background: 'none', border: 'none', color: 'var(--muted)' }}>{t('stats.playsCount', { count: a.plays })}</span>
+            </div>
+          )) : <div className="empty-state">{t('stats.notEnough')}</div>}
+
+          <div className="section-head" style={{ marginTop: 22 }}><h2>{t('stats.whenYouListen')}</h2></div>
+          <div className="stats-heatmap">
+            {data.heatmap.map((n, h) => (
+              <div key={h} className="stats-heat-cell" style={{ opacity: 0.15 + (n / maxHeat) * 0.85 }} title={`${h}:00 — ${n}`} />
+            ))}
+          </div>
+          <div className="stats-heatmap-axis"><span>00</span><span>08</span><span>16</span><span>23</span></div>
+
+          {data.genreSplit.length > 0 && (
+            <>
+              <div className="section-head" style={{ marginTop: 22 }}><h2>{t('stats.genreSplit')}</h2></div>
+              <div className="stats-genre-bar">
+                {data.genreSplit.map((g, i) => (
+                  <div key={g.genre} className="stats-genre-seg" style={{ width: `${g.pct}%`, opacity: 1 - i * 0.13 }} />
+                ))}
+              </div>
+              <div className="stats-genre-legend">
+                {data.genreSplit.map((g, i) => (
+                  <span key={g.genre}><i style={{ opacity: 1 - i * 0.13 }} />{g.genre} · {g.pct}%</span>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div className="section-head" style={{ marginTop: 22 }}><h2>{t('stats.recentPlays')}</h2></div>
+          {data.recentPlays.map((p, i) => (
+            <div className="activity-item" key={i} style={{ cursor: 'default' }}>
+              <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="thumb" />
+              <div className="body">
+                <div><b>{p.title}</b> — {p.artist}</div>
+                <div className="when">{new Date(p.playedAt).toLocaleString(toLocale(language), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+    </>
+  );
+}

@@ -234,6 +234,7 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 .stars-dot{ font-family:var(--font-ibm-plex-mono),monospace; font-size:11px; color:var(--lime); }
 .review-card-time{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; color:var(--muted-2); }
 .review-card p{ font-size:12.5px; color:var(--ink-soft); line-height:1.5; }
+.review-card-album{ font-family:var(--font-ibm-plex-mono),monospace; font-size:10.5px; color:var(--muted); }
 
 .star-rating{ position:relative; display:inline-block; line-height:1; }
 .star-rating .layer{ letter-spacing:4px; white-space:nowrap; user-select:none; }
@@ -313,12 +314,17 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
   border-radius:999px; background:rgba(var(--surface-rgb),.92); backdrop-filter:blur(12px);
   border:1px solid var(--line); box-shadow:0 16px 32px -14px rgba(0,0,0,.4);
 }
-.tab{ flex:1; text-align:center; padding:9px 4px 8px; border-radius:999px; cursor:pointer; color:var(--muted); background:none; border:none; transition:background .15s ease, color .15s ease; min-height:44px; }
+.tab{ flex:1; display:flex; align-items:center; justify-content:center; padding:9px 4px; border-radius:999px; cursor:pointer; color:var(--muted); background:none; border:none; transition:background .15s ease, color .15s ease; min-height:44px; }
 .tab .ic{ display:flex; justify-content:center; margin-bottom:4px; }
 .tab .ic svg{ width:20px; height:20px; }
 .tab .num{ font-size:17px; line-height:1; }
 .tab .lbl{ font-size:10.5px; font-family:var(--font-ibm-plex-mono),monospace; font-weight:500; }
 .tab.active{ color:var(--bg); background:var(--text); border-radius:22px; }
+.tab-add{
+  flex-shrink:0; width:44px; height:44px; border-radius:50%; border:none; cursor:pointer;
+  background:var(--lime); color:var(--on-accent); font-size:22px; font-weight:300;
+  display:flex; align-items:center; justify-content:center; line-height:1;
+}
 
 .back-btn{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-ibm-plex-mono),monospace; font-size:11px; color:var(--muted); margin:14px 0 16px; cursor:pointer; background:none; border:none; }
 .album-hero{ position:relative; text-align:center; margin-bottom:18px; }
@@ -463,6 +469,19 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 .artist-band-mid{ flex:1; min-width:220px; }
 .artist-band-mid h1{ font-family:var(--font-space-grotesk),sans-serif; font-size:32px; font-weight:600; letter-spacing:-.02em; margin-top:4px; }
 .disco-badge{ position:absolute; top:6px; right:6px; background:var(--lime); color:var(--on-accent); font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; font-weight:700; padding:2px 7px; border-radius:6px; }
+
+/* Stats */
+.stats-heatmap{ display:flex; gap:2px; height:28px; margin-bottom:4px; }
+.stats-heat-cell{ flex:1; background:var(--lime); border-radius:2px; }
+.stats-heatmap-axis{ display:flex; justify-content:space-between; font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; color:var(--muted-2); margin-bottom:22px; }
+.stats-genre-bar{ display:flex; height:9px; border-radius:5px; overflow:hidden; margin-bottom:10px; }
+.stats-genre-seg{ background:var(--lime); }
+.stats-genre-legend{ display:flex; flex-wrap:wrap; gap:14px; font-size:11.5px; color:var(--muted); margin-bottom:22px; }
+.stats-genre-legend i{ display:inline-block; width:8px; height:8px; border-radius:2px; background:var(--lime); margin-right:5px; vertical-align:middle; }
+
+.match-row{ display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--divider); cursor:pointer; }
+.match-pct{ font-family:var(--font-space-grotesk),sans-serif; font-weight:600; font-size:17px; color:var(--lime); flex-shrink:0; }
+.group-row-active{ background:var(--accent-bg); border-radius:10px; padding-left:8px; padding-right:8px; border-bottom-color:transparent !important; }
 
 .header-play-btn{
   width:52px; height:52px; border-radius:50%; flex-shrink:0; border:none; cursor:pointer;
