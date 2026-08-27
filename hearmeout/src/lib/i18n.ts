@@ -55,6 +55,7 @@ const ru = {
   'album.ratingMany': 'оценок',
   'album.openInSpotify': 'Открыть в Spotify',
   'album.preview30s': 'превью\n30 сек',
+  'album.ratingDistribution': 'Распределение оценок',
 
   'reviews.loading': 'Загружаю рецензии…',
   'reviews.empty': 'Пока нет рецензий',
@@ -326,6 +327,7 @@ const en: Dict = {
   'album.ratingMany': 'ratings',
   'album.openInSpotify': 'Open in Spotify',
   'album.preview30s': 'preview\n30 sec',
+  'album.ratingDistribution': 'Rating distribution',
 
   'reviews.loading': 'Loading reviews…',
   'reviews.empty': 'No reviews yet',
@@ -594,6 +596,7 @@ const fr: Dict = {
   'album.ratingMany': 'notes',
   'album.openInSpotify': 'Ouvrir dans Spotify',
   'album.preview30s': 'aperçu\n30 sec',
+  'album.ratingDistribution': 'Répartition des notes',
 
   'reviews.loading': 'Chargement des avis…',
   'reviews.empty': "Aucun avis pour l'instant",
@@ -862,6 +865,7 @@ const es: Dict = {
   'album.ratingMany': 'valoraciones',
   'album.openInSpotify': 'Abrir en Spotify',
   'album.preview30s': 'vista previa\n30 seg',
+  'album.ratingDistribution': 'Distribución de valoraciones',
 
   'reviews.loading': 'Cargando reseñas…',
   'reviews.empty': 'Aún no hay reseñas',
@@ -1130,6 +1134,7 @@ const de: Dict = {
   'album.ratingMany': 'Bewertungen',
   'album.openInSpotify': 'In Spotify öffnen',
   'album.preview30s': 'vorschau\n30 sek',
+  'album.ratingDistribution': 'Bewertungsverteilung',
 
   'reviews.loading': 'Rezensionen werden geladen…',
   'reviews.empty': 'Noch keine Rezensionen',

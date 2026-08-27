@@ -77,6 +77,13 @@ export function AlbumScreen({ device }: { device: Device }) {
 
   const metaMono = [a.genre, a.year || null].filter(Boolean).join(' · ');
 
+  const distSection = ratingInfo && (
+    <>
+      <div className="section-head" style={{ marginTop: 22 }}><h2>{t('album.ratingDistribution')}</h2></div>
+      <AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} />
+    </>
+  );
+
   if (device === 'mobile') {
     return (
       <>
@@ -104,8 +111,8 @@ export function AlbumScreen({ device }: { device: Device }) {
             <div className="rd">{t('album.noRatings')}</div>
           )}
         </div>
-        {ratingInfo && <AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} />}
         {actions('center')}
+        {distSection}
         <div className="section-head" style={{ marginTop: 22 }}><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>
         <div style={{ marginBottom: 22 }}>{tracklist}</div>
         <div className="section-head"><h2>{t('album.reviews')}</h2></div>
@@ -135,13 +142,13 @@ export function AlbumScreen({ device }: { device: Device }) {
               <div className="num">{ratingInfo.avg.toFixed(1)}</div>
               <StarsAvg rating={ratingInfo.avg} />
               <div className="rd">{ratingInfo.count.toLocaleString(toLocale(language))} {pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}</div>
-              <AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} />
             </>
           ) : (
             <div className="rd">{t('album.noRatings')}</div>
           )}
         </div>
       </div>
+      {distSection}
       <div className="d-two-col">
         <div>
           <div className="section-head"><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>
