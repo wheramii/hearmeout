@@ -5,7 +5,7 @@ import { ALBUMS } from './data';
 import { supabase } from './supabaseClient';
 import { translate, type Language, type TranslationKey } from './i18n';
 import type {
-  Album, AlbumRatingInfo, ArtistState, Device, FriendRequest, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
+  Album, AlbumRatingInfo, ArtistState, Device, FriendRequest, LovedTrack, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
 } from './types';
 import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
 
@@ -91,6 +91,8 @@ type AppContextValue = {
   spotifyObscure: Record<string, CatalogAlbum[] | 'error'>;
   spotifyGenreArtists: Record<string, CatalogArtist[] | 'error'>;
   myRatings: RatingRecord[];
+  lovedTracks: LovedTrack[];
+  toggleLoved: (title: string, artist: string, trackId?: string | null, cover?: string | null) => Promise<void>;
   friendRequests: { incoming: FriendRequest[]; outgoing: FriendRequest[] };
   recapCache: Record<string, RecapData>;
   reviewsVersion: number;
@@ -165,6 +167,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [spotifyObscure, setSpotifyObscure] = useState<Record<string, CatalogAlbum[] | 'error'>>({});
   const [spotifyGenreArtists, setSpotifyGenreArtists] = useState<Record<string, CatalogArtist[] | 'error'>>({});
   const [myRatings, setMyRatings] = useState<RatingRecord[]>([]);
+  const [lovedTracks, setLovedTracks] = useState<LovedTrack[]>([]);
   const [friendRequests, setFriendRequests] = useState<{ incoming: FriendRequest[]; outgoing: FriendRequest[] }>({ incoming: [], outgoing: [] });
   const [recapCache, setRecapCache] = useState<Record<string, RecapData>>({});
   const [reviewsVersion, setReviewsVersion] = useState(0);
@@ -216,6 +219,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setMyRatings(await res.json());
   }, []);
 
+  const refreshLovedTracks = useCallback(async () => {
+    const res = await fetch('/api/loved');
+    if (!res.ok) return;
+    const data = await res.json();
+    setLovedTracks(data.tracks || []);
+  }, []);
+
+  const toggleLoved = useCallback(async (title: string, artist: string, trackId?: string | null, cover?: string | null) => {
+    const res = await fetch('/api/loved', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, artist, trackId: trackId ?? null, cover: cover ?? null }),
+    });
+    if (!res.ok) return;
+    await refreshLovedTracks();
+  }, [refreshLovedTracks]);
+
   const refreshFriendRequests = useCallback(async () => {
     const res = await fetch('/api/friends/requests');
     if (!res.ok) return;
@@ -263,6 +283,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state.authStatus, me?.region]);
 
   useEffect(() => { if (state.authStatus === 'ready') refreshMyRatings(); }, [state.authStatus, refreshMyRatings]);
+  useEffect(() => { if (state.authStatus === 'ready') refreshLovedTracks(); }, [state.authStatus, refreshLovedTracks]);
   useEffect(() => { if (state.authStatus === 'ready') refreshFriendRequests(); }, [state.authStatus, refreshFriendRequests]);
 
   const registerWithPassword = useCallback(async (name: string, email: string, password: string) => {
@@ -595,7 +616,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
-    spotifyObscure, spotifyGenreArtists, myRatings, friendRequests, recapCache, reviewsVersion,
+    spotifyObscure, spotifyGenreArtists, myRatings, lovedTracks, toggleLoved, friendRequests, recapCache, reviewsVersion,
     showScreen, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
@@ -603,7 +624,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateProfileName, updateProfileHandle, updateAvatar, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
-    spotifyGenreArtists, myRatings, friendRequests, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
+    spotifyGenreArtists, myRatings, lovedTracks, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
     setRecapSeasonKey, recapSeasons,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,

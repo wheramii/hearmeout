@@ -17,8 +17,11 @@ import { getSpotifyAppToken } from './spotifyAppAuth';
 // runs one request at a time with a real delay between them, and — the
 // important part — stops the entire run the moment it sees a 429 instead
 // of ploughing through the rest of the queue and making the penalty worse.
+// Same for every account — the earlier idea of a higher cap for premium
+// users was dropped: capping it for everyone else felt like taking
+// something away rather than a premium perk, so this stays one number.
 const REQUEST_DELAY_MS = 150;
-const MAX_TRACKS_PER_RUN = 150;
+const MAX_TRACKS_PER_RUN = 400;
 
 export async function enrichListeningHistoryCovers(admin: SupabaseClient, userId: string): Promise<void> {
   const { data: rows } = await admin

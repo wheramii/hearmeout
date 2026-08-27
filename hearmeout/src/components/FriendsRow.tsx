@@ -2,6 +2,7 @@
 
 import { useApp } from '@/lib/AppContext';
 import { RecapTeaser } from './screens/RecapTeaser';
+import { OnThisDayTeaser } from './screens/OnThisDayTeaser';
 
 function FriendTile({ friend }: { friend: { id: string; name: string; avatarUrl: string | null } }) {
   const { viewFriend } = useApp();
@@ -25,6 +26,7 @@ export function FriendsRow() {
   return (
     <div className="friends-row">
       <RecapTeaser />
+      <OnThisDayTeaser />
       {me.friends.map((f) => <FriendTile key={f.id} friend={f} />)}
       <button className="add-friend-tile" onClick={() => showScreen('profile')}>
         <span className="aft-btn">+</span>

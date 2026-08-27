@@ -5,7 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate } from '@/lib/format';
 import { LANGUAGE_LABEL, regionDisplayName, pluralForKey } from '@/lib/i18n';
-import { GenresBlock, TasteFingerprint, RecentRatingsGrid, Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock } from '../ProfileBlocks';
+import { GenresBlock, TasteFingerprint, RecentRatingsGrid, Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock, LovedTracksBlock } from '../ProfileBlocks';
 
 function AvatarPicker({ size }: { size?: number }) {
   const { t, me, updateAvatar } = useApp();
@@ -45,6 +45,26 @@ function SettingsSummary() {
       <div className="settings-summary-row"><span className="l">{t('profile.region')}</span><span>{me.region ? regionDisplayName(me.region, language) : t('profile.regionNone')}</span></div>
       <button className="settings-summary-link" onClick={() => showScreen('settings')}>{t('settings.openAll')} →</button>
     </>
+  );
+}
+
+function ShareProfileButton() {
+  const { t, me, showToast } = useApp();
+  if (!me) return null;
+  return (
+    <button
+      className="btn-ghost"
+      style={{ width: '100%', marginBottom: 22 }}
+      onClick={() => {
+        const url = `${window.location.origin}/u/${me.handle.replace(/^@/, '')}`;
+        navigator.clipboard.writeText(url).then(
+          () => showToast(t('profile.shareLinkCopied')),
+          () => showToast(url)
+        );
+      }}
+    >
+      {t('profile.shareProfile')}
+    </button>
   );
 }
 
@@ -92,12 +112,16 @@ export function ProfileScreen({ device }: { device: Device }) {
           </div>
         </div>
         {statGrid}
+        <ShareProfileButton />
 
         <div className="section-head"><h2>{t('profile.taste')}</h2></div>
         <TasteFingerprint entries={tasteFingerprint} />
 
         <div className="section-head"><h2>{t('profile.recentRatings')}</h2></div>
         <div style={{ marginBottom: 24 }}><RecentRatingsGrid ratings={(me.recentRatings || []).slice(0, 6)} /></div>
+
+        <div className="section-head"><h2>{t('profile.lovedTracks')}</h2></div>
+        <div style={{ marginBottom: 24 }}><LovedTracksBlock /></div>
 
         <div className="section-head"><h2>{t('profile.favoriteGenres')}</h2><span>{t('profile.allTime')}</span></div>
         <div style={{ marginBottom: 24 }}><GenresBlock genres={me.genres} /></div>
@@ -130,6 +154,7 @@ export function ProfileScreen({ device }: { device: Device }) {
           <div className="box"><div className="v">{me.stats.avg || '—'}</div><div className="l">{t('profile.avg')}</div></div>
           <div className="box"><div className="v">{me.friends.length}</div><div className="l">{friendsSuffix}</div></div>
         </div>
+        <div style={{ marginTop: 14 }}><ShareProfileButton /></div>
         <FriendRequestsBlock />
         <div className="section-head" style={{ marginTop: 22 }}><h2>{t('profile.friends')}</h2><span>{me.friends.length}</span></div>
         <FriendsBlock />
@@ -139,6 +164,8 @@ export function ProfileScreen({ device }: { device: Device }) {
         <div style={{ maxWidth: 520, marginBottom: 24 }}><TasteFingerprint entries={tasteFingerprint} /></div>
         <div className="section-head"><h2>{t('profile.recentRatings')}</h2></div>
         <div style={{ maxWidth: 640, marginBottom: 30 }}><RecentRatingsGrid ratings={(me.recentRatings || []).slice(0, 6)} /></div>
+        <div className="section-head"><h2>{t('profile.lovedTracks')}</h2></div>
+        <div style={{ maxWidth: 480, marginBottom: 30 }}><LovedTracksBlock /></div>
         <div className="section-head"><h2>{t('profile.favoriteGenres')}</h2><span>{t('profile.allTime')}</span></div>
         <div style={{ marginBottom: 30, maxWidth: 420 }}><GenresBlock genres={me.genres} /></div>
         <div className="section-head"><h2>{t('profile.top4')}</h2><span>{t('profile.byYourRatings')}</span></div>

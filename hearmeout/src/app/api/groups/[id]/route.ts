@@ -22,9 +22,13 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 
   const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const [{ data: ratingsRows }, { data: eventsRows }] = await Promise.all([
+  const [{ data: ratingsRows }, { data: eventsRows }, { data: allRatingsRows }] = await Promise.all([
     admin.from('ratings').select('user_id, album_id, stars, review, created_at').in('user_id', memberIds).order('created_at', { ascending: false }).limit(60),
-    admin.from('listening_events').select('user_id, played_at, duration_ms').in('user_id', memberIds).gte('played_at', monthAgo).limit(6000),
+    admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', memberIds).gte('played_at', monthAgo).limit(6000),
+    // Full rating history per member (not just the last 60 across the whole
+    // group) — needed for a real longest-streak count, which the capped
+    // activity-feed query above isn't enough data for.
+    admin.from('ratings').select('user_id, created_at').in('user_id', memberIds).order('created_at', { ascending: true }).limit(6000),
   ]);
 
   // Activity feed: recent ratings by any member, album title/artist resolved
@@ -92,6 +96,49 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   if (harshest) {
     const u = userById.get(harshest.id);
     if (u) awards.push({ label: 'awardHarshestCritic', winner: u, detail: harshest.avg.toFixed(1) });
+  }
+
+  const genresByUser = new Map<string, Set<string>>();
+  for (const e of eventsRows || []) {
+    if (!e.genre) continue;
+    const k = e.user_id as string;
+    if (!genresByUser.has(k)) genresByUser.set(k, new Set());
+    genresByUser.get(k)!.add(e.genre as string);
+  }
+  let genreExplorer: { id: string; count: number } | null = null;
+  for (const [k, set] of genresByUser.entries()) {
+    if (!genreExplorer || set.size > genreExplorer.count) genreExplorer = { id: k, count: set.size };
+  }
+  if (genreExplorer && genreExplorer.count > 0) {
+    const u = userById.get(genreExplorer.id);
+    if (u) awards.push({ label: 'awardGenreExplorer', winner: u, detail: String(genreExplorer.count) });
+  }
+
+  // Longest streak of consecutive calendar days with at least one rating.
+  const datesByUser = new Map<string, Set<string>>();
+  for (const r of allRatingsRows || []) {
+    const k = r.user_id as string;
+    const day = (r.created_at as string).slice(0, 10);
+    if (!datesByUser.has(k)) datesByUser.set(k, new Set());
+    datesByUser.get(k)!.add(day);
+  }
+  let streak: { id: string; days: number } | null = null;
+  for (const [k, dateSet] of datesByUser.entries()) {
+    const days = [...dateSet].sort();
+    let best = 1;
+    let current = 1;
+    for (let i = 1; i < days.length; i++) {
+      const prev = new Date(days[i - 1]);
+      const cur = new Date(days[i]);
+      const diffDays = Math.round((cur.getTime() - prev.getTime()) / 86400000);
+      current = diffDays === 1 ? current + 1 : 1;
+      if (current > best) best = current;
+    }
+    if (!streak || best > streak.days) streak = { id: k, days: best };
+  }
+  if (streak && streak.days >= 2) {
+    const u = userById.get(streak.id);
+    if (u) awards.push({ label: 'awardStreak', winner: u, detail: `${streak.days}d` });
   }
 
   const monthKey = new Date().toISOString().slice(0, 7);

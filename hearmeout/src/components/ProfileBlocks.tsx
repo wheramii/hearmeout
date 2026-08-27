@@ -233,6 +233,31 @@ export function RecentRatingsGrid({ ratings }: { ratings: RatingRecord[] }) {
   );
 }
 
+export function LovedTracksBlock() {
+  const { t, lovedTracks, toggleLoved } = useApp();
+  if (!lovedTracks.length) return <div className="empty-state">{t('profile.noLovedTracks')}</div>;
+  return (
+    <>
+      {lovedTracks.slice(0, 10).map((lt) => (
+        <div className="activity-item" key={lt.id} style={{ cursor: 'default' }}>
+          <CoverArt url={lt.cover ?? undefined} fallbackLetter={lt.artist[0] || '?'} className="thumb" />
+          <div className="body">
+            <div><b>{lt.title}</b> — {lt.artist}</div>
+          </div>
+          <button
+            className="heart-toggle"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--coral)', padding: 6, flexShrink: 0 }}
+            onClick={() => toggleLoved(lt.title, lt.artist, lt.trackId, lt.cover)}
+            aria-label={t('stats.loveTrack')}
+          >
+            ♥
+          </button>
+        </div>
+      ))}
+    </>
+  );
+}
+
 export function Top4Grid({ ids }: { ids: string[] }) {
   const { t, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
   if (!ids.length) return <div className="empty-state">{t('profile.noRatedAlbums')}</div>;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import type { Device, GroupSummary, PublicProfile } from '@/lib/types';
+import type { Device, DiscoverMatchPerson, GroupSummary, PublicProfile } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 
 function computeMatch(mine: PublicProfile['genres'], theirs: PublicProfile['genres']): number | null {
@@ -12,9 +12,10 @@ function computeMatch(mine: PublicProfile['genres'], theirs: PublicProfile['genr
 }
 
 export function MatchScreen(_props: { device: Device }) {
-  const { t, me, viewFriend, showScreen } = useApp();
+  const { t, me, viewFriend, showScreen, addFriend } = useApp();
   const [scores, setScores] = useState<Record<string, number | null>>({});
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
+  const [discover, setDiscover] = useState<DiscoverMatchPerson[] | null>(null);
 
   useEffect(() => {
     if (!me) return;
@@ -35,6 +36,13 @@ export function MatchScreen(_props: { device: Device }) {
     fetch('/api/groups').then((r) => (r.ok ? r.json() : [])).then((d) => { if (!cancelled) setGroups(d); });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!me) return;
+    let cancelled = false;
+    fetch('/api/match/discover').then((r) => (r.ok ? r.json() : { people: [] })).then((d) => { if (!cancelled) setDiscover(d.people); });
+    return () => { cancelled = true; };
+  }, [me]);
 
   if (!me) return null;
 
@@ -60,6 +68,23 @@ export function MatchScreen(_props: { device: Device }) {
             </div>
           </div>
         ))
+      )}
+
+      {discover !== null && discover.length > 0 && (
+        <>
+          <div className="section-head" style={{ marginTop: 26 }}><h2>{t('match.discoverTitle')}</h2><span>{t('match.discoverSubtitle')}</span></div>
+          {discover.map((p) => (
+            <div className="match-row" key={p.id}>
+              <div className="avatar-sm" style={userAvatarStyle(p)} onClick={() => viewFriend(p.id)} />
+              <div className="info" onClick={() => viewFriend(p.id)}>
+                <div className="n">{p.name}</div>
+                <div className="h">{t('match.sharedAlbums', { count: p.sharedAlbums })}</div>
+              </div>
+              <div className="match-pct">{p.score}%</div>
+              <button className="chip" onClick={() => addFriend(p.handle)}>{t('friend.addThem')}</button>
+            </div>
+          ))}
+        </>
       )}
 
       <div className="section-head" style={{ marginTop: 26 }}><h2>{t('nav.groups')}</h2><span>{groups?.length ?? ''}</span></div>

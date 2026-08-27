@@ -10,6 +10,8 @@ const AWARD_LABEL_KEY: Record<string, string> = {
   awardMostActive: 'groups.awardMostActive',
   awardNightOwl: 'groups.awardNightOwl',
   awardHarshestCritic: 'groups.awardHarshestCritic',
+  awardGenreExplorer: 'groups.awardGenreExplorer',
+  awardStreak: 'groups.awardStreak',
 };
 
 export function GroupsScreen({ device }: { device: Device }) {

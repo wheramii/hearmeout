@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
   const recentPlays = [...inRange]
     .sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime())
     .slice(0, 8)
-    .map((r) => ({ title: r.track_title || '', artist: r.artist || '', cover: r.cover_url, playedAt: r.played_at }));
+    .map((r) => ({ title: r.track_title || '', artist: r.artist || '', cover: r.cover_url, playedAt: r.played_at, trackId: r.track_id }));
 
   const stats: StatsData = {
     range, hours, trackCount, artistCount, newArtistCount, avgRating, peakHour,

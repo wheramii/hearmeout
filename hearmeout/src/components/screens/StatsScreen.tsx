@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, StatsData, StatsRange } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
+import { HeartIcon } from '../ui/Icons';
 import { toLocale, type Language } from '@/lib/i18n';
 
 const RANGES: StatsRange[] = ['4w', '6m', 'year', 'all'];
@@ -16,7 +17,7 @@ function weekLabelText(weekLabel: string, language: Language): string {
 }
 
 export function StatsScreen(_props: { device: Device }) {
-  const { t, language, me } = useApp();
+  const { t, language, me, lovedTracks, toggleLoved } = useApp();
   const [range, setRange] = useState<StatsRange>('6m');
   const [data, setData] = useState<StatsData | null>(null);
 
@@ -121,15 +122,26 @@ export function StatsScreen(_props: { device: Device }) {
           )}
 
           <div className="section-head" style={{ marginTop: 22 }}><h2>{t('stats.recentPlays')}</h2></div>
-          {data.recentPlays.map((p, i) => (
-            <div className="activity-item" key={i} style={{ cursor: 'default' }}>
-              <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="thumb" />
-              <div className="body">
-                <div><b>{p.title}</b> — {p.artist}</div>
-                <div className="when">{new Date(p.playedAt).toLocaleString(toLocale(language), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+          {data.recentPlays.map((p, i) => {
+            const loved = lovedTracks.some((lt) => lt.title === p.title && lt.artist === p.artist);
+            return (
+              <div className="activity-item" key={i} style={{ cursor: 'default' }}>
+                <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="thumb" />
+                <div className="body">
+                  <div><b>{p.title}</b> — {p.artist}</div>
+                  <div className="when">{new Date(p.playedAt).toLocaleString(toLocale(language), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+                <button
+                  className="heart-toggle"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: loved ? 'var(--coral)' : 'var(--muted)', padding: 6, flexShrink: 0 }}
+                  onClick={() => toggleLoved(p.title, p.artist, p.trackId, p.cover)}
+                  aria-label={t('stats.loveTrack')}
+                >
+                  <span style={{ display: 'block', width: 18, height: 18 }}><HeartIcon filled={loved} /></span>
+                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </>
       )}
     </>

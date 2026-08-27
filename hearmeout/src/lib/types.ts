@@ -48,6 +48,10 @@ export type RecapData = {
 
 export type ApiUser = { id: string; name: string; handle: string; avatarUrl: string | null };
 
+export type DiscoverMatchPerson = ApiUser & { score: number; sharedAlbums: number };
+
+export type LovedTrack = { id: number; trackId: string | null; title: string; artist: string; cover: string | null; createdAt: string };
+
 export type PublicProfile = ApiUser & {
   stats: { ratings: number; avg: number; reviews: number };
   genres: { g: string; pct: number }[];
@@ -110,7 +114,7 @@ export type StatsData = {
   topArtists: { name: string; id: string | null; cover: string | null; hours: number; plays: number }[];
   heatmap: number[]; // 24 buckets (hour of day), play counts
   genreSplit: { genre: string; pct: number }[];
-  recentPlays: { title: string; artist: string; cover: string | null; playedAt: string }[];
+  recentPlays: { title: string; artist: string; cover: string | null; playedAt: string; trackId: string | null }[];
 };
 
 export type GroupSummary = { id: string; name: string; memberCount: number; newPlays: number };
