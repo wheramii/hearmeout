@@ -4,6 +4,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
+    rootDir: hearmeout
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
