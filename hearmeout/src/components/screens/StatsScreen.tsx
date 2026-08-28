@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, StatsData, StatsRange } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
@@ -60,16 +60,21 @@ function CalendarHeatmap() {
         <p className="history-chart-caption">{t('stats.calendarCaption')}</p>
         <div style={{ overflowX: 'auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(53,10px)', gridAutoRows: '10px', gap: 3, width: 'max-content' }}>
-            {cells.map((c) => (
-              <div
-                key={c.day}
-                title={`${new Date(c.day).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short', year: 'numeric' })}: ${c.minutes} ${t('recap.minutes')}`}
-                style={{
-                  width: 10, height: 10, borderRadius: 2,
-                  background: c.minutes ? accentMix(c.minutes / maxMinutes) : 'var(--surface-2)',
-                }}
-              />
-            ))}
+            {cells.map((c) => {
+              const color = c.minutes ? accentMix(c.minutes / maxMinutes) : 'var(--surface-2)';
+              const dateLabel = new Date(c.day).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short', year: 'numeric' });
+              return (
+                <div
+                  key={c.day}
+                  className="cal-cell"
+                  data-tooltip={`${dateLabel}: ${c.minutes} ${t('recap.minutes')}`}
+                  style={{
+                    width: 10, height: 10, borderRadius: 2, background: color,
+                    ['--tt-color' as string]: c.minutes ? color : 'var(--muted)',
+                  } as CSSProperties}
+                />
+              );
+            })}
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 10.5, color: 'var(--muted)' }}>
