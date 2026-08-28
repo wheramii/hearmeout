@@ -12,6 +12,13 @@ import { toLocale, type Language } from '@/lib/i18n';
 const RANGES: StatsRange[] = ['4w', '6m', 'year', 'all'];
 const RANGE_KEY: Record<StatsRange, string> = { '4w': 'stats.range4w', '6m': 'stats.range6m', year: 'stats.rangeYear', all: 'stats.rangeAll' };
 
+// Static filler shapes for the blurred locked preview behind PremiumLock —
+// never real data, just something chart-shaped for a non-premium viewer to
+// see dimmed. Real data for both charts never reaches a non-premium request
+// (see /api/stats): this is purely decorative.
+const PLACEHOLDER_WEEK = [3, 5, 4, 7, 4, 6, 3, 8, 5, 6, 4, 5];
+const PLACEHOLDER_HEATMAP = [1, 1, 0, 0, 0, 0, 1, 3, 5, 6, 7, 8, 9, 8, 7, 6, 7, 8, 9, 8, 6, 4, 2, 1];
+
 // weekLabel from the API is the Monday-anchored ISO date of the week —
 // shown as a short local date so "which week is this" is never a mystery.
 function weekLabelText(weekLabel: string, language: Language): string {
@@ -92,9 +99,9 @@ export function StatsScreen(_props: { device: Device }) {
 
   if (!me) return null;
 
-  const maxWeek = Math.max(1, ...(data?.hoursPerWeek.map((w) => w.hours) ?? [1]));
+  const maxWeek = me?.isPremium ? Math.max(1, ...(data?.hoursPerWeek.map((w) => w.hours) ?? [1])) : Math.max(...PLACEHOLDER_WEEK);
   const maxArtistHours = Math.max(1, ...(data?.topArtists.map((a) => a.hours) ?? [1]));
-  const maxHeat = Math.max(1, ...(data?.heatmap ?? [1]));
+  const maxHeat = me?.isPremium ? Math.max(1, ...(data?.heatmap ?? [1])) : Math.max(...PLACEHOLDER_HEATMAP);
 
   return (
     <>
@@ -124,26 +131,34 @@ export function StatsScreen(_props: { device: Device }) {
           </div>
 
           <div className="section-head" style={{ marginTop: 26 }}><h2>{t('stats.hoursPerWeek')}</h2></div>
-          {data.hoursPerWeek.length >= 2 ? (
-            <>
-              <p className="history-chart-caption">{t('stats.hoursPerWeekCaption')}</p>
-              <div className="rating-dist-chart" style={{ height: 90, marginBottom: 6 }}>
-                {data.hoursPerWeek.map((w, i) => (
-                  <div key={i} className="rating-dist-bar" style={{ height: `${w.hours ? Math.max(6, (w.hours / maxWeek) * 100) : 0}%`, background: accentMix(w.hours / maxWeek) }} title={`${weekLabelText(w.weekLabel, language)}: ${w.hours}h`} />
+          <PremiumLock label={t('stats.hoursPerWeekLocked')}>
+            {!me.isPremium ? (
+              <div className="rating-dist-chart" style={{ height: 90, marginBottom: 26 }}>
+                {PLACEHOLDER_WEEK.map((h, i) => (
+                  <div key={i} className="rating-dist-bar" style={{ height: `${Math.max(6, (h / maxWeek) * 100)}%`, background: accentMix(h / maxWeek) }} />
                 ))}
               </div>
-              <div className="rating-dist-axis" style={{ marginBottom: 26 }}>
-                {data.hoursPerWeek.map((w, i) => {
-                  const step = data.hoursPerWeek.length > 8 ? 3 : 1;
-                  return <span key={i}>{i % step === 0 || i === data.hoursPerWeek.length - 1 ? weekLabelText(w.weekLabel, language) : ''}</span>;
-                })}
-              </div>
-            </>
-          ) : data.hoursPerWeek.length === 1 ? (
-            <p className="history-chart-caption" style={{ marginBottom: 26 }}>
-              {t('stats.hoursPerWeekSingle', { label: weekLabelText(data.hoursPerWeek[0].weekLabel, language), hours: data.hoursPerWeek[0].hours })}
-            </p>
-          ) : <div className="empty-state">{t('stats.notEnough')}</div>}
+            ) : data.hoursPerWeek.length >= 2 ? (
+              <>
+                <p className="history-chart-caption">{t('stats.hoursPerWeekCaption')}</p>
+                <div className="rating-dist-chart" style={{ height: 90, marginBottom: 6 }}>
+                  {data.hoursPerWeek.map((w, i) => (
+                    <div key={i} className="rating-dist-bar" style={{ height: `${w.hours ? Math.max(6, (w.hours / maxWeek) * 100) : 0}%`, background: accentMix(w.hours / maxWeek) }} title={`${weekLabelText(w.weekLabel, language)}: ${w.hours}h`} />
+                  ))}
+                </div>
+                <div className="rating-dist-axis" style={{ marginBottom: 26 }}>
+                  {data.hoursPerWeek.map((w, i) => {
+                    const step = data.hoursPerWeek.length > 8 ? 3 : 1;
+                    return <span key={i}>{i % step === 0 || i === data.hoursPerWeek.length - 1 ? weekLabelText(w.weekLabel, language) : ''}</span>;
+                  })}
+                </div>
+              </>
+            ) : data.hoursPerWeek.length === 1 ? (
+              <p className="history-chart-caption" style={{ marginBottom: 26 }}>
+                {t('stats.hoursPerWeekSingle', { label: weekLabelText(data.hoursPerWeek[0].weekLabel, language), hours: data.hoursPerWeek[0].hours })}
+              </p>
+            ) : <div className="empty-state">{t('stats.notEnough')}</div>}
+          </PremiumLock>
 
           <div className="section-head"><h2>{t('stats.topArtists')}</h2></div>
           {data.topArtists.length ? data.topArtists.map((a, i) => (
@@ -159,12 +174,14 @@ export function StatsScreen(_props: { device: Device }) {
           )) : <div className="empty-state">{t('stats.notEnough')}</div>}
 
           <div className="section-head" style={{ marginTop: 22 }}><h2>{t('stats.whenYouListen')}</h2></div>
-          <div className="stats-heatmap">
-            {data.heatmap.map((n, h) => (
-              <div key={h} className="stats-heat-cell" style={{ background: accentMix(n / maxHeat), opacity: n ? 1 : 0.15 }} title={`${h}:00 — ${n}`} />
-            ))}
-          </div>
-          <div className="stats-heatmap-axis"><span>00</span><span>08</span><span>16</span><span>23</span></div>
+          <PremiumLock label={t('stats.whenYouListenLocked')}>
+            <div className="stats-heatmap">
+              {(me.isPremium ? data.heatmap : PLACEHOLDER_HEATMAP).map((n, h) => (
+                <div key={h} className="stats-heat-cell" style={{ background: accentMix(n / maxHeat), opacity: n ? 1 : 0.15 }} title={me.isPremium ? `${h}:00 — ${n}` : undefined} />
+              ))}
+            </div>
+            <div className="stats-heatmap-axis"><span>00</span><span>08</span><span>16</span><span>23</span></div>
+          </PremiumLock>
 
           <CalendarHeatmap />
 

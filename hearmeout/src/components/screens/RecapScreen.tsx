@@ -10,6 +10,7 @@ import { PlayIcon } from '../ui/Icons';
 import { usePlayer } from '@/lib/PlayerContext';
 import { TransportRing } from '../DockedPlayer';
 import { PremiumLock } from '../ui/PremiumLock';
+import { PremiumBadge } from '../ui/PremiumBadge';
 import { drawRecapPoster } from '@/lib/posterCanvas';
 import { accentMix } from '@/lib/accentGradient';
 
@@ -39,7 +40,7 @@ function PosterDownloadButton({ data, name, periodLabel }: { data: RecapData; na
 }
 
 export function RecapScreen(_props: { device: Device }) {
-  const { state, t, language, me, ensureRecap, recapCache, closeRecap, setRecapPeriod, setRecapSeasonKey, recapSeasons, openAlbum, openSpotifyArtist } = useApp();
+  const { state, t, language, me, ensureRecap, recapCache, closeRecap, setRecapPeriod, setRecapSeasonKey, recapSeasons, openAlbum, openSpotifyArtist, showToast } = useApp();
   const { currentTrack, playQueue } = usePlayer();
   const targetId = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
   const isMe = state.recapViewUserId === 'me';
@@ -86,8 +87,15 @@ export function RecapScreen(_props: { device: Device }) {
         <button className="recap-close" onClick={closeRecap}>✕</button>
         <div className="segmented">
           {(['day', 'month', 'season'] as RecapPeriod[]).map((p) => (
-            <button key={p} className={state.recapPeriod === p ? 'on' : ''} onClick={() => setRecapPeriod(p)}>
-              {t(PERIOD_KEY[p])}
+            <button
+              key={p}
+              className={state.recapPeriod === p ? 'on' : ''}
+              onClick={() => {
+                if (p === 'season' && !me?.isPremium) { showToast(t('recap.seasonLocked')); return; }
+                setRecapPeriod(p);
+              }}
+            >
+              {t(PERIOD_KEY[p])}{p === 'season' && !me?.isPremium && <PremiumBadge />}
             </button>
           ))}
         </div>

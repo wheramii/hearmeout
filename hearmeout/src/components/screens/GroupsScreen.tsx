@@ -55,7 +55,8 @@ export function GroupsScreen({ device }: { device: Device }) {
       loadGroups();
       setActiveId(g.id);
     } else {
-      showToast(t('groups.createFailed'));
+      const body = await res.json().catch(() => null);
+      showToast(body?.error === 'group_limit_reached' ? t('groups.limitReached') : t('groups.createFailed'));
     }
   };
 
@@ -79,7 +80,12 @@ export function GroupsScreen({ device }: { device: Device }) {
       showToast(t('groups.inviteSuccess'));
     } else {
       const body = await res.json().catch(() => null);
-      showToast(body?.error === 'not_found' ? t('groups.inviteNotFound') : body?.error === 'already_member' ? t('groups.alreadyMember') : t('groups.inviteFailed'));
+      showToast(
+        body?.error === 'not_found' ? t('groups.inviteNotFound')
+          : body?.error === 'already_member' ? t('groups.alreadyMember')
+          : body?.error === 'group_limit_reached' ? t('groups.inviteeLimitReached')
+          : t('groups.inviteFailed')
+      );
     }
   };
 

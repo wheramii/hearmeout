@@ -17,6 +17,17 @@ export async function GET(request: NextRequest) {
   const period = (url.searchParams.get('period') as RecapPeriod) || 'day';
   const targetUserId = url.searchParams.get('userId') || viewerId;
 
+  const admin = supabaseAdmin();
+
+  // Season recaps are premium-only — gated on the viewer (the one using the
+  // feature), not the target whose data it is, so a premium viewer can still
+  // open a non-premium friend's season recap. Real server-side gate, not
+  // just a hidden UI: a non-premium request never gets the computed data.
+  if (period === 'season') {
+    const { data: viewerPrefs } = await admin.from('users').select('is_premium').eq('id', viewerId).maybeSingle();
+    if (!viewerPrefs?.is_premium) return NextResponse.json({ error: 'premium_required' }, { status: 403 });
+  }
+
   // An explicit ?season=2025-summer picks a real historical window instead
   // of "the last 90 days from now" — parsed to real calendar-month bounds.
   const seasonParam = url.searchParams.get('season');
@@ -32,7 +43,6 @@ export async function GET(request: NextRequest) {
     since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   }
 
-  const admin = supabaseAdmin();
   // Paginated for the same reason as /api/stats: PostgREST caps a single
   // request at its project max-rows (1000 by default) no matter what
   // .limit() is requested. That's what made "month" and "season" recaps
