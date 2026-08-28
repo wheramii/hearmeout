@@ -7,7 +7,7 @@ import { CoverArt } from '../ui/CoverArt';
 import { StarPicker } from '../ui/StarPicker';
 
 export function RateScreen({ device }: { device: Device }) {
-  const { state, t, albums, liveAlbums, failedAlbumIds, myRatings, spotifyCovers, showScreen, setRatingValue, publishRating, showToast, ensureLiveAlbum } = useApp();
+  const { state, t, albums, liveAlbums, failedAlbumIds, myRatings, spotifyCovers, goBack, setRatingValue, publishRating, showToast, ensureLiveAlbum } = useApp();
   const staticMatch = albums.find((x) => x.id === state.currentAlbumId);
   const enriched = liveAlbums[state.currentAlbumId];
   // No `|| albums[0]` fallback: rating whichever album happens to be first
@@ -24,7 +24,7 @@ export function RateScreen({ device }: { device: Device }) {
   useEffect(() => setText(state.ratingDraftText), [state.currentAlbumId, state.ratingDraftText]);
 
   const back = (
-    <button className="back-btn" onClick={() => showScreen(state.rateOrigin === 'history' ? 'history' : 'album')}>
+    <button className="back-btn" onClick={() => goBack(state.rateOrigin === 'history' ? 'history' : 'album')}>
       {t('rate.back')}
     </button>
   );

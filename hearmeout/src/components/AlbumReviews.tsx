@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { supabase } from '@/lib/supabaseClient';
 import { starsText, userAvatarStyle, formatRelative } from '@/lib/format';
+import { accentMix } from '@/lib/accentGradient';
 import type { AlbumReview } from '@/lib/types';
 
 type Row = { stars: number; review: string | null; created_at: string; users: { name: string; handle: string; avatar_url: string | null } | null };
@@ -52,7 +53,7 @@ export function AlbumReviews({ albumId, refreshToken }: { albumId: string; refre
               <div className="uname">{r.user.handle}</div>
             </div>
             <div className="review-card-meta">
-              <span className="stars-dot">{starsText(r.stars)}</span>
+              <span className="stars-dot" style={{ color: accentMix(r.stars / 5) }}>{starsText(r.stars)}</span>
               <span className="review-card-time">{formatRelative(r.createdAt, language)}</span>
             </div>
           </div>

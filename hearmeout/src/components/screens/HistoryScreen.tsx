@@ -34,7 +34,7 @@ function HistoryRow({ rating }: { rating: RatingRecord }) {
       </div>
       {rating.review && <span className="history-badge">{t('history.reviewBadge')}</span>}
       <div className="history-score">
-        <span className="stars-dot">{starsText(rating.stars)}</span>
+        <span className="stars-dot" style={{ color: accentMix(rating.stars / 5) }}>{starsText(rating.stars)}</span>
         <span className="num">{rating.stars.toFixed(1)}</span>
       </div>
     </div>

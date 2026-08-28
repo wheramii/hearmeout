@@ -10,6 +10,7 @@ import { AlbumCard } from '../ui/AlbumCard';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';
 import { SearchIcon } from './CatalogScreen';
+import { accentMix } from '@/lib/accentGradient';
 
 type Filter = 'all' | 'albums' | 'artists' | 'people';
 
@@ -82,7 +83,7 @@ function SiteReviewsBlock() {
               <div className="uname">{r.user.handle}</div>
             </div>
             <div className="review-card-meta">
-              <span className="stars-dot">{starsText(r.stars)}</span>
+              <span className="stars-dot" style={{ color: accentMix(r.stars / 5) }}>{starsText(r.stars)}</span>
               <span className="review-card-time">{formatRelative(r.createdAt, language)}</span>
             </div>
           </div>

@@ -6,6 +6,7 @@ import type { Device, PublicProfile } from '@/lib/types';
 import { userAvatarStyle, starsText } from '@/lib/format';
 import { RecapOpenButton, Top4Grid } from '../ProfileBlocks';
 import { CoverArt } from '../ui/CoverArt';
+import { accentMix } from '@/lib/accentGradient';
 
 function FriendRatingRow({ rating, myScore }: { rating: NonNullable<PublicProfile['recentRatings']>[number]; myScore: number | null }) {
   const { albums, liveAlbums, spotifyCovers, openAlbum, t } = useApp();
@@ -24,7 +25,7 @@ function FriendRatingRow({ rating, myScore }: { rating: NonNullable<PublicProfil
         {myScore != null ? t('friend.yourScoreValue', { value: myScore.toFixed(1) }) : t('friend.notRatedByYou')}
       </span>
       <div className="history-score">
-        <span className="stars-dot">{starsText(rating.stars)}</span>
+        <span className="stars-dot" style={{ color: accentMix(rating.stars / 5) }}>{starsText(rating.stars)}</span>
         <span className="num">{rating.stars.toFixed(1)}</span>
       </div>
     </div>
@@ -71,7 +72,7 @@ function FriendsOfFriendRow({ user }: { user: NonNullable<PublicProfile['friends
 }
 
 export function FriendScreen(_props: { device: Device }) {
-  const { t, state, me, myRatings, friendRequests, addFriend, showScreen } = useApp();
+  const { t, state, me, myRatings, friendRequests, addFriend, goBack } = useApp();
   const [f, setF] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -124,7 +125,7 @@ export function FriendScreen(_props: { device: Device }) {
   if (!f || !me) {
     return (
       <>
-        <button className="back-btn" onClick={() => showScreen('profile')}>{t('friend.back')}</button>
+        <button className="back-btn" onClick={() => goBack('profile')}>{t('friend.back')}</button>
         <div className="empty-state">{t('friend.notFound')}</div>
       </>
     );
@@ -136,7 +137,7 @@ export function FriendScreen(_props: { device: Device }) {
 
   return (
     <>
-      <button className="back-btn" onClick={() => showScreen('profile')}>{t('friend.back')}</button>
+      <button className="back-btn" onClick={() => goBack('profile')}>{t('friend.back')}</button>
 
       <div className="friend-band">
         <div className="friend-band-avatar" style={userAvatarStyle(f)} />

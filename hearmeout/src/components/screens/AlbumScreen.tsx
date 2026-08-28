@@ -13,7 +13,7 @@ import { AlbumReviews } from '../AlbumReviews';
 import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
 
 export function AlbumScreen({ device }: { device: Device }) {
-  const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, spotifyCovers, reviewsVersion, showScreen, openRateFor, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved } = useApp();
+  const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, spotifyCovers, reviewsVersion, goBack, openRateFor, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved } = useApp();
   const { currentTrack, playQueue } = usePlayer();
   const staticMatch = albums.find((x) => x.id === state.currentAlbumId);
   const enriched = liveAlbums[state.currentAlbumId];
@@ -34,7 +34,7 @@ export function AlbumScreen({ device }: { device: Device }) {
     const failed = !!failedAlbumIds[state.currentAlbumId];
     return (
       <>
-        <button className="back-btn" onClick={() => showScreen('catalog')}>{t('album.backToCatalog')}</button>
+        <button className="back-btn" onClick={() => goBack('catalog')}>{t('album.backToCatalog')}</button>
         <div className="empty-state">{failed ? t('album.loadError') : t('album.loading')}</div>
       </>
     );
@@ -111,7 +111,7 @@ export function AlbumScreen({ device }: { device: Device }) {
   if (device === 'mobile') {
     return (
       <>
-        <button className="back-btn" onClick={() => showScreen('catalog')}>{t('album.backToCatalog')}</button>
+        <button className="back-btn" onClick={() => goBack('catalog')}>{t('album.backToCatalog')}</button>
         <div className="album-hero">
           {metaMono && <div className="meta-mono">{metaMono}</div>}
           {heroArt}
@@ -149,7 +149,7 @@ export function AlbumScreen({ device }: { device: Device }) {
 
   return (
     <>
-      <button className="back-btn" onClick={() => showScreen('catalog')}>{t('album.backToCatalog')}</button>
+      <button className="back-btn" onClick={() => goBack('catalog')}>{t('album.backToCatalog')}</button>
       <div className="album-band">
         {heroArt}
         <div className="album-band-mid">

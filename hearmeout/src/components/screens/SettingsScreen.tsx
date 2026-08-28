@@ -116,7 +116,7 @@ function LanguageRegionSection() {
 }
 
 export function SettingsScreen({ device }: { device: Device }) {
-  const { t, me, syncSpotify, showScreen } = useApp();
+  const { t, me, syncSpotify, goBack } = useApp();
   const [section, setSection] = useState<Section>('appearance');
   if (!me) return null;
 
@@ -152,7 +152,7 @@ export function SettingsScreen({ device }: { device: Device }) {
 
   return (
     <>
-      <button className="back-btn" onClick={() => showScreen('profile')}>{t('friend.back')}</button>
+      <button className="back-btn" onClick={() => goBack('profile')}>{t('friend.back')}</button>
       <div className="eyebrow">{t('settings.eyebrow')}</div>
       <h1 className="page-title">{t('settings.title')}</h1>
       {device === 'desktop' ? (

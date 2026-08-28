@@ -57,6 +57,11 @@ type AppState = {
   language: Language;
   view: Device;
   activeScreen: ScreenName;
+  // 'push' (nav tabs, forward links, opening an album/artist/friend/etc.)
+  // always opens the destination at its top. 'pop' (an explicit "← Назад"
+  // button) restores whatever scroll position the destination was left at.
+  // AppShell reads this once per activeScreen change to decide which.
+  navAction: 'push' | 'pop';
   currentAlbumId: string;
   viewingUserId: string;
   recapPeriod: RecapPeriod;
@@ -97,6 +102,7 @@ type AppContextValue = {
   recapCache: Record<string, RecapData>;
   reviewsVersion: number;
   showScreen: (name: ScreenName) => void;
+  goBack: (name: ScreenName) => void;
   openAlbum: (id: string) => void;
   openRateFor: (id: string, origin: RateOrigin) => void;
   viewFriend: (id: string) => void;
@@ -143,6 +149,7 @@ const initialState: AppState = {
   language: 'ru',
   view: 'mobile',
   activeScreen: 'catalog',
+  navAction: 'push',
   currentAlbumId: ALBUMS[0]?.id ?? '',
   viewingUserId: '',
   recapPeriod: 'day',
@@ -344,8 +351,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     patch({ authStatus: 'anonymous' });
   }, [patch]);
 
-  const showScreen = useCallback((name: ScreenName) => patch({ activeScreen: name }), [patch]);
-  const openAlbum = useCallback((id: string) => patch({ currentAlbumId: id, activeScreen: 'album' }), [patch]);
+  const showScreen = useCallback((name: ScreenName) => patch({ activeScreen: name, navAction: 'push' }), [patch]);
+  const goBack = useCallback((name: ScreenName) => patch({ activeScreen: name, navAction: 'pop' }), [patch]);
+  const openAlbum = useCallback((id: string) => patch({ currentAlbumId: id, activeScreen: 'album', navAction: 'push' }), [patch]);
 
   const openRateFor = useCallback((id: string, origin: RateOrigin) => {
     setState((s) => {
@@ -357,16 +365,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ratingValue: existing ? existing.stars : 0,
         ratingDraftText: existing ? existing.review || '' : '',
         activeScreen: 'rate',
+        navAction: 'push',
       };
     });
   }, [myRatings]);
 
-  const viewFriend = useCallback((id: string) => patch({ viewingUserId: id, activeScreen: 'friend' }), [patch]);
+  const viewFriend = useCallback((id: string) => patch({ viewingUserId: id, activeScreen: 'friend', navAction: 'push' }), [patch]);
   const openRecap = useCallback((userId: string) => {
-    setState((s) => ({ ...s, recapViewUserId: userId, recapOrigin: s.activeScreen, activeScreen: 'recap' }));
+    setState((s) => ({ ...s, recapViewUserId: userId, recapOrigin: s.activeScreen, activeScreen: 'recap', navAction: 'push' }));
   }, []);
   const closeRecap = useCallback(() => {
-    setState((s) => ({ ...s, activeScreen: s.recapOrigin || 'catalog' }));
+    setState((s) => ({ ...s, activeScreen: s.recapOrigin || 'catalog', navAction: 'pop' }));
   }, []);
 
   const setSearchQuery = useCallback((q: string) => patch({ searchQuery: q }), [patch]);
@@ -426,6 +435,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ratingValue: 0,
       ratingDraftText: '',
       activeScreen: s.rateOrigin === 'history' ? 'history' : 'album',
+      navAction: 'pop',
     }));
     showToast(isEditing ? t('toast.ratingUpdated') : t('toast.published'));
   }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast, t]);
@@ -564,6 +574,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...s,
       currentArtist: { id, name: s.currentArtist?.id === id ? s.currentArtist.name : '', source: 'spotify', albums: null, loading: true, error: null },
       activeScreen: 'artist',
+      navAction: 'push',
     }));
     try {
       const res = await fetch(`/api/spotify/artist/${id}`);
@@ -601,6 +612,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...s,
       currentArtist: { id: mbid, name, source: 'musicbrainz', albums: null, loading: true, error: null },
       activeScreen: 'artist',
+      navAction: 'push',
     }));
     try {
       const { fetchArtistReleaseGroups } = await import('./musicbrainz');
@@ -637,14 +649,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     spotifyObscure, spotifyGenreArtists, myRatings, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion,
-    showScreen, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
+    showScreen, goBack, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentPalette, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
-    spotifyGenreArtists, myRatings, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, openAlbum, openRateFor,
+    spotifyGenreArtists, myRatings, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, goBack, openAlbum, openRateFor,
     setRecapSeasonKey, recapSeasons,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,

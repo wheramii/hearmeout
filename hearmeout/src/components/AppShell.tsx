@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ComponentType } from 'react';
+import { useLayoutEffect, useRef, useState, type ComponentType } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, ScreenName } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
@@ -68,12 +68,31 @@ export function AppShell() {
 function MobileShell({ active }: { active: boolean }) {
   const { state, t, me, showScreen } = useApp();
   const activeTab = TAB_GROUP[state.activeScreen];
+  const sectionRefs = useRef<Partial<Record<ScreenName, HTMLElement | null>>>({});
+  const scrollPosRef = useRef<Partial<Record<ScreenName, number>>>({});
+
+  useLayoutEffect(() => {
+    const el = sectionRefs.current[state.activeScreen];
+    if (!el) return;
+    if (state.navAction === 'push') {
+      el.scrollTop = 0;
+      scrollPosRef.current[state.activeScreen] = 0;
+    } else {
+      el.scrollTop = scrollPosRef.current[state.activeScreen] ?? 0;
+    }
+  }, [state.activeScreen, state.navAction]);
+
   return (
     <div className={`mobile-shell ${active ? 'show' : ''}`}>
       <div className="device">
         <div className="m-screens">
           {SCREENS.map(({ name, Component }) => (
-            <section key={name} className={`m-screen ${state.activeScreen === name ? 'active' : ''}`}>
+            <section
+              key={name}
+              ref={(el) => { sectionRefs.current[name] = el; }}
+              className={`m-screen ${state.activeScreen === name ? 'active' : ''}`}
+              onScroll={(e) => { scrollPosRef.current[name] = e.currentTarget.scrollTop; }}
+            >
               <div className="m-screen-inner">
                 <Component device="mobile" />
               </div>
@@ -128,6 +147,20 @@ function AvatarMenu() {
 function DesktopShell({ active }: { active: boolean }) {
   const { state, t, showScreen, setSearchQuery } = useApp();
   const activeTab = TAB_GROUP[state.activeScreen];
+  const contentRef = useRef<HTMLDivElement>(null);
+  const scrollPosRef = useRef<Partial<Record<ScreenName, number>>>({});
+
+  useLayoutEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    if (state.navAction === 'push') {
+      el.scrollTop = 0;
+      scrollPosRef.current[state.activeScreen] = 0;
+    } else {
+      el.scrollTop = scrollPosRef.current[state.activeScreen] ?? 0;
+    }
+  }, [state.activeScreen, state.navAction]);
+
   return (
     <div className={`desktop-shell ${active ? 'show' : ''}`}>
       <header className="d-topnav">
@@ -167,7 +200,11 @@ function DesktopShell({ active }: { active: boolean }) {
         </div>
       </header>
       <div className="d-main">
-        <div className="d-content">
+        <div
+          className="d-content"
+          ref={contentRef}
+          onScroll={(e) => { scrollPosRef.current[state.activeScreen] = e.currentTarget.scrollTop; }}
+        >
           <div className="d-content-inner">
             {SCREENS.map(({ name, Component }) => (
               <section key={name} className={`d-screen ${state.activeScreen === name ? 'active' : ''}`}>

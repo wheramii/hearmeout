@@ -29,7 +29,7 @@ function SpotifyAlbumCard({ album, fallbackLetter, onOpen, unreleasedLabel, scor
 }
 
 export function ArtistScreen({ device }: { device: Device }) {
-  const { t, state, language, albumRatings, myRatings, showScreen, openAlbum, showToast, lovedItems, toggleLoved } = useApp();
+  const { t, state, language, albumRatings, myRatings, goBack, openAlbum, showToast, lovedItems, toggleLoved } = useApp();
   const art = state.currentArtist;
   const gridClass = device === 'mobile' ? 'grid-cards' : 'd-grid';
   const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
@@ -77,7 +77,7 @@ export function ArtistScreen({ device }: { device: Device }) {
   if (!art) {
     return (
       <>
-        <button className="back-btn" onClick={() => showScreen('catalog')}>{t('artist.back')}</button>
+        <button className="back-btn" onClick={() => goBack('catalog')}>{t('artist.back')}</button>
         <div className="empty-state">{t('artist.notSelected')}</div>
       </>
     );
@@ -118,7 +118,7 @@ export function ArtistScreen({ device }: { device: Device }) {
 
     return (
       <>
-        <button className="back-btn" onClick={() => showScreen('catalog')}>{t('artist.back')}</button>
+        <button className="back-btn" onClick={() => goBack('catalog')}>{t('artist.back')}</button>
         <div className="artist-band">
           <CoverArt url={art.photo ?? undefined} fallbackLetter={art.name[0] || '?'} className="artist-band-photo cover-fallback" />
           <div className="artist-band-mid">
@@ -198,7 +198,7 @@ export function ArtistScreen({ device }: { device: Device }) {
 
   return (
     <>
-      <button className="back-btn" onClick={() => showScreen('catalog')}>{t('artist.back')}</button>
+      <button className="back-btn" onClick={() => goBack('catalog')}>{t('artist.back')}</button>
       <div className="album-hero">
         <ArtistAvatar name={art.name} className="art-lg cover-fallback" fallbackStyle={{ fontSize: 48 }} />
         <h1>{art.name}</h1>

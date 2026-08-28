@@ -5,6 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import type { Device, GroupDetail, GroupSummary } from '@/lib/types';
 import { userAvatarStyle, starsText } from '@/lib/format';
 import { CoverArt } from '../ui/CoverArt';
+import { accentMix } from '@/lib/accentGradient';
 
 const AWARD_LABEL_KEY: Record<string, string> = {
   awardMostActive: 'groups.awardMostActive',
@@ -184,7 +185,7 @@ export function GroupsScreen({ device }: { device: Device }) {
             <CoverArt url={a?.cover} fallbackLetter={ev.user.name[0] || '?'} className="thumb" />
             <div className="body">
               <div><b>{ev.user.name}</b> {ev.type === 'review' ? t('groups.wroteAbout') : t('groups.rated')} {a ? a.title : '…'}</div>
-              <span className="stars-dot">{starsText(ev.stars)} {ev.stars.toFixed(1)}</span>
+              <span className="stars-dot" style={{ color: accentMix(ev.stars / 5) }}>{starsText(ev.stars)} {ev.stars.toFixed(1)}</span>
             </div>
           </div>
         );
