@@ -60,13 +60,18 @@ function CalendarHeatmap() {
         <p className="history-chart-caption">{t('stats.calendarCaption')}</p>
         <div style={{ overflowX: 'auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(53,10px)', gridAutoRows: '10px', gap: 3, width: 'max-content' }}>
-            {cells.map((c) => {
+            {cells.map((c, i) => {
               const color = c.minutes ? accentMix(c.minutes / maxMinutes) : 'var(--surface-2)';
               const dateLabel = new Date(c.day).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short', year: 'numeric' });
+              // The grid is 53 columns wide, filled row-major — a tooltip
+              // anchored above the cell (the default) would get clipped by
+              // the section above it for the top couple of rows, so those
+              // flip to opening below the cursor instead.
+              const isTopRow = Math.floor(i / 53) < 2;
               return (
                 <div
                   key={c.day}
-                  className="cal-cell"
+                  className={`cal-cell ${isTopRow ? 'cal-cell-below' : ''}`}
                   data-tooltip={`${dateLabel}: ${c.minutes} ${t('recap.minutes')}`}
                   style={{
                     width: 10, height: 10, borderRadius: 2, background: color,

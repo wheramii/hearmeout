@@ -528,6 +528,7 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
   font-family:var(--font-ibm-plex-mono),monospace; font-size:10.5px; white-space:nowrap;
   color:var(--tt-color, var(--text)); box-shadow:0 6px 18px rgba(0,0,0,.28); pointer-events:none; z-index:50;
 }
+.cal-cell-below[data-tooltip]:hover::after{ bottom:auto; top:calc(100% + 7px); }
 .stats-genre-bar{ display:flex; height:9px; border-radius:5px; overflow:hidden; margin-bottom:10px; }
 .stats-genre-seg{ background:var(--lime); }
 .stats-genre-legend{ display:flex; flex-wrap:wrap; gap:14px; font-size:11.5px; color:var(--muted); margin-bottom:22px; }
