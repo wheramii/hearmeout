@@ -67,17 +67,31 @@ export async function GET(request: NextRequest) {
 
     let result: { title: string; preview: string } | null = null;
 
-    if (bestAlbum && bestAlbum.score > 0 && (!bestTrack || bestAlbum.score >= bestTrack.score)) {
+    // `title` here is always a specific track title (every caller passes
+    // one, not an album title) — a direct track match is the accurate one,
+    // so it's tried first. Picking the album match whenever it scored at
+    // least as well as the track match (as this used to) meant every track
+    // in an album resolved to whatever track happened to come first in that
+    // album's listing, regardless of which one was actually requested.
+    if (bestTrack && bestTrack.score > 0 && bestTrack.item.preview) {
+      result = { title: bestTrack.item.title, preview: bestTrack.item.preview };
+    }
+
+    // Fallback for a single that's missing from Deezer's track index but
+    // whose parent album isn't: look for a track inside that album whose
+    // title actually matches what was asked for, only falling back to
+    // "whatever's first" if nothing in the album matches by title either.
+    if (!result && bestAlbum && bestAlbum.score > 0) {
       const albumRes = await fetch(`https://api.deezer.com/album/${bestAlbum.item.id}`);
       if (albumRes.ok) {
         const albumData = await albumRes.json();
-        const firstPreviewable = (albumData.tracks?.data || []).find((t: DeezerTrack) => t.preview);
-        if (firstPreviewable) result = { title: firstPreviewable.title, preview: firstPreviewable.preview };
+        const albumTracks = (albumData.tracks?.data || []) as DeezerTrack[];
+        const wanted = normalize(title);
+        const titleMatch = albumTracks.find((t) => t.preview && normalize(t.title) === wanted)
+          || albumTracks.find((t) => t.preview && wanted && (normalize(t.title).includes(wanted) || wanted.includes(normalize(t.title))));
+        const fallback = titleMatch || albumTracks.find((t) => t.preview);
+        if (fallback) result = { title: fallback.title, preview: fallback.preview };
       }
-    }
-
-    if (!result && bestTrack && bestTrack.score > 0 && bestTrack.item.preview) {
-      result = { title: bestTrack.item.title, preview: bestTrack.item.preview };
     }
 
     if (!result) return NextResponse.json({ error: 'not_found' }, { status: 404 });

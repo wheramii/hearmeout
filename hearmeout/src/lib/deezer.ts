@@ -13,8 +13,8 @@ export async function fetchDeezerArtistPhoto(name: string): Promise<string | nul
   }
 }
 
-export async function fetchTrackPreview(artistName: string, albumTitle: string): Promise<{ title: string; preview: string } | null> {
-  const res = await fetch(`/api/deezer/preview?artist=${encodeURIComponent(artistName)}&title=${encodeURIComponent(albumTitle)}`);
+export async function fetchTrackPreview(artistName: string, trackTitle: string): Promise<{ title: string; preview: string } | null> {
+  const res = await fetch(`/api/deezer/preview?artist=${encodeURIComponent(artistName)}&title=${encodeURIComponent(trackTitle)}`);
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('request failed');
   return res.json();
