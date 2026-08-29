@@ -512,7 +512,7 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 
 /* Artist page */
 .artist-band{ display:flex; gap:22px; background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:22px; margin-bottom:22px; flex-wrap:wrap; }
-.artist-band-photo{ width:120px; height:120px; border-radius:50%; flex-shrink:0; }
+.artist-band-photo{ width:120px; height:120px; border-radius:50%; flex-shrink:0; background-size:cover; background-position:center; }
 .artist-band-mid{ flex:1; min-width:220px; }
 .artist-band-mid h1{ font-family:var(--font-space-grotesk),sans-serif; font-size:32px; font-weight:600; letter-spacing:-.02em; margin-top:4px; }
 .disco-badge{ position:absolute; top:6px; right:6px; background:var(--lime); color:var(--on-accent); font-family:var(--font-ibm-plex-mono),monospace; font-size:10px; font-weight:700; padding:2px 7px; border-radius:6px; }

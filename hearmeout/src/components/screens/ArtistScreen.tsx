@@ -120,7 +120,7 @@ export function ArtistScreen({ device }: { device: Device }) {
       <>
         <button className="back-btn" onClick={() => goBack('catalog')}>{t('artist.back')}</button>
         <div className="artist-band">
-          <CoverArt url={art.photo ?? undefined} fallbackLetter={art.name[0] || '?'} className="artist-band-photo cover-fallback" />
+          <CoverArt url={art.photo ?? undefined} fallbackLetter={art.name[0] || '?'} className="artist-band-photo" />
           <div className="artist-band-mid">
             <div className="meta-mono">{t('artist.subtitleSpotify')}</div>
             <h1>{art.name}</h1>
@@ -200,7 +200,7 @@ export function ArtistScreen({ device }: { device: Device }) {
     <>
       <button className="back-btn" onClick={() => goBack('catalog')}>{t('artist.back')}</button>
       <div className="album-hero">
-        <ArtistAvatar name={art.name} className="art-lg cover-fallback" fallbackStyle={{ fontSize: 48 }} />
+        <ArtistAvatar name={art.name} className="art-lg" fallbackStyle={{ fontSize: 48 }} />
         <h1>{art.name}</h1>
         <div className="sub">{t('artist.subtitle')}</div>
         <button
