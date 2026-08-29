@@ -6,7 +6,6 @@ import type { Device, SpotifyArtistAlbum } from '@/lib/types';
 import { coverArtUrl } from '@/lib/musicbrainz';
 import { CoverArt } from '../ui/CoverArt';
 import { ArtistAvatar } from '../ui/ArtistAvatar';
-import { toLocale } from '@/lib/i18n';
 
 function SpotifyAlbumCard({ album, fallbackLetter, onOpen, unreleasedLabel, score }: {
   album: SpotifyArtistAlbum;
@@ -29,7 +28,7 @@ function SpotifyAlbumCard({ album, fallbackLetter, onOpen, unreleasedLabel, scor
 }
 
 export function ArtistScreen({ device }: { device: Device }) {
-  const { t, state, language, albumRatings, myRatings, goBack, openAlbum, showToast, lovedItems, toggleLoved } = useApp();
+  const { t, state, albumRatings, myRatings, goBack, openAlbum, showToast, lovedItems, toggleLoved } = useApp();
   const art = state.currentArtist;
   const gridClass = device === 'mobile' ? 'grid-cards' : 'd-grid';
   const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
@@ -129,10 +128,6 @@ export function ArtistScreen({ device }: { device: Device }) {
                 {art.genres.map((g) => <span className="chip" key={g}>{g}</span>)}
               </div>
             )}
-            <div className="friend-band-stats" style={{ marginTop: 10 }}>
-              <div><span className="v">{art.followers != null ? art.followers.toLocaleString(toLocale(language)) : '—'}</span><span className="l">{t('artist.followers')}</span></div>
-              <div><span className="v">{art.popularity != null ? art.popularity : '—'}</span><span className="l">{t('artist.popularity')}</span></div>
-            </div>
             <button
               className={`action-chip ${lovedItems.some((li) => li.type === 'artist' && li.title === art.name) ? 'added' : ''}`}
               style={{ marginTop: 10 }}
