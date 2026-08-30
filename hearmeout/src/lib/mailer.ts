@@ -1,10 +1,9 @@
-import nodemailer, { type Transporter } from 'nodemailer';
-import type SMTPTransport from 'nodemailer/lib/smtp-transport';
+import nodemailer from 'nodemailer';
 
 // Generic SMTP sender — works with any provider (Resend, Postmark, Mailgun,
 // a domain's own mail server, ...) via plain SMTP credentials, so switching
 // providers is just an env var change, not a code change.
-let cachedTransport: Transporter<SMTPTransport.SentMessageInfo> | null = null;
+let cachedTransport: ReturnType<typeof nodemailer.createTransport> | null = null;
 
 function getTransport() {
   if (cachedTransport) return cachedTransport;
@@ -19,15 +18,7 @@ function getTransport() {
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
     socketTimeout: 15_000,
-    // Render's outbound network has no IPv6 route — Node's default DNS
-    // resolution still tries smtp.gmail.com's IPv6 address first and fails
-    // with ENETUNREACH before ever falling back to IPv4. Forcing IPv4 here
-    // skips that dead end entirely (confirmed against this app's actual
-    // Render deployment: the IPv6 connect attempt is what was failing).
-    // Not part of @types/nodemailer's Options, but nodemailer forwards
-    // unrecognized options straight through to Node's net/tls connect().
-    family: 4,
-  } as SMTPTransport.Options);
+  });
   return cachedTransport;
 }
 
