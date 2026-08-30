@@ -123,8 +123,6 @@ type AppContextValue = {
   dismissOnboarding: () => void;
   loginWithPassword: (email: string, password: string) => Promise<void>;
   claimAccount: (email: string, password: string) => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
-  resetPasswordWithCode: (email: string, code: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfileName: (name: string) => Promise<void>;
   updateProfileHandle: (handle: string) => Promise<void>;
@@ -343,31 +341,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: null }));
       throw new Error(err.error || 'claim_failed');
-    }
-    await refreshMe();
-  }, [refreshMe]);
-
-  const forgotPassword = useCallback(async (email: string) => {
-    const res = await fetch('/api/auth/forgot-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: null }));
-      throw new Error(err.error || 'forgot_password_failed');
-    }
-  }, []);
-
-  const resetPasswordWithCode = useCallback(async (email: string, code: string, newPassword: string) => {
-    const res = await fetch('/api/auth/reset-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code, newPassword }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: null }));
-      throw new Error(err.error || 'reset_password_failed');
     }
     await refreshMe();
   }, [refreshMe]);
@@ -679,7 +652,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showScreen, goBack, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, forgotPassword, resetPasswordWithCode, logout,
+    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentPalette, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
@@ -687,7 +660,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRecapSeasonKey, recapSeasons,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, forgotPassword, resetPasswordWithCode, logout,
+    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentPalette, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
