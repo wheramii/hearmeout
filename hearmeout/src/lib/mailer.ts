@@ -12,12 +12,6 @@ function getTransport() {
     port: Number(process.env.SMTP_PORT || 587),
     secure: process.env.SMTP_SECURE === 'true',
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    // Nodemailer's defaults (up to a 2-minute connection timeout) turn a
-    // blocked/unreachable SMTP host into a request that just hangs instead
-    // of failing — these fail fast enough to actually surface as an error.
-    connectionTimeout: 10_000,
-    greetingTimeout: 10_000,
-    socketTimeout: 15_000,
   });
   return cachedTransport;
 }

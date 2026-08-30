@@ -29,12 +29,9 @@ export async function POST(request: NextRequest) {
         </div>`
       );
     }
-  } catch (err) {
+  } catch {
     // Swallow: an unknown email or an SMTP hiccup must not leak through the
     // generic response, and must not block the (deliberately uniform) reply.
-    // Logged (not surfaced to the client) so a real delivery problem is
-    // still visible in the server logs instead of silently disappearing.
-    console.error('forgot-password: failed to send code', err);
   }
 
   return NextResponse.json({ ok: true });
