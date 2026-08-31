@@ -53,12 +53,15 @@ export type DiscoverMatchPerson = ApiUser & { score: number; sharedAlbums: numbe
 export type LovedItemType = 'track' | 'album' | 'artist';
 export type LovedItem = { id: number; type: LovedItemType; itemId: string | null; title: string; artist: string | null; cover: string | null; createdAt: string };
 
+export type NowPlaying = { title: string; artist: string; cover: string | null; startedAt: string; durationMs: number | null };
+
 export type PublicProfile = ApiUser & {
   stats: { ratings: number; avg: number; reviews: number };
   genres: { g: string; pct: number }[];
   top4Albums: string[];
   minutesToday: number;
   joinedAt: string;
+  nowPlaying: NowPlaying | null;
   // Only populated for the viewer's own profile, or when the viewer is
   // already an accepted friend of this person — lets friends discover
   // mutual connections without exposing a stranger's whole friend graph.
@@ -85,6 +88,7 @@ export type RatingRecord = {
   albumId: string;
   stars: number;
   review: string | null;
+  tags: string[];
   createdAt: string;
 };
 

@@ -75,6 +75,28 @@ function ShareProfileButton() {
   );
 }
 
+function ShareLovedTracksButton() {
+  const { t, lovedItems, showToast } = useApp();
+  const shareable = lovedItems.filter((li) => li.type === 'track' && li.itemId);
+  if (!shareable.length) return null;
+  return (
+    <button
+      className="btn-ghost"
+      style={{ width: '100%', marginBottom: 24 }}
+      onClick={() => {
+        const lines = shareable.map((li, i) => `${i + 1}. ${li.title} — ${li.artist}\nhttps://open.spotify.com/track/${li.itemId}`);
+        const block = `${t('profile.lovedTracksShareHeader')}\n\n${lines.join('\n\n')}`;
+        navigator.clipboard.writeText(block).then(
+          () => showToast(t('profile.lovedTracksShareCopied')),
+          () => showToast(block)
+        );
+      }}
+    >
+      {t('profile.shareLovedTracks')}
+    </button>
+  );
+}
+
 export function ProfileScreen({ device }: { device: Device }) {
   const { t, language, me, myRatings, albums, liveAlbums, updateProfileName, updateProfileHandle } = useApp();
 
@@ -130,7 +152,8 @@ export function ProfileScreen({ device }: { device: Device }) {
         <div style={{ marginBottom: 24 }}><RecentRatingsGrid ratings={(me.recentRatings || []).slice(0, 6)} /></div>
 
         <div className="section-head"><h2>{t('profile.lovedTracks')}</h2></div>
-        <div style={{ marginBottom: 24 }}><LovedTracksBlock /></div>
+        <div style={{ marginBottom: 12 }}><LovedTracksBlock /></div>
+        <ShareLovedTracksButton />
 
         <div className="section-head"><h2>{t('profile.favoriteGenres')}</h2><span>{t('profile.allTime')}</span></div>
         <div style={{ marginBottom: 24 }}><GenresBlock genres={me.genres} /></div>
@@ -175,8 +198,9 @@ export function ProfileScreen({ device }: { device: Device }) {
         <div className="section-head"><h2>{t('profile.recentRatings')}</h2></div>
         <div style={{ maxWidth: 640, marginBottom: 30 }}><RecentRatingsGrid ratings={(me.recentRatings || []).slice(0, 6)} /></div>
         <div className="section-head"><h2>{t('profile.lovedTracks')}</h2></div>
-        <div style={{ maxWidth: 480, marginBottom: 30 }}><LovedTracksBlock /></div>
-        <div className="section-head"><h2>{t('profile.favoriteGenres')}</h2><span>{t('profile.allTime')}</span></div>
+        <div style={{ maxWidth: 480, marginBottom: 12 }}><LovedTracksBlock /></div>
+        <div style={{ maxWidth: 480 }}><ShareLovedTracksButton /></div>
+        <div className="section-head" style={{ marginTop: 22 }}><h2>{t('profile.favoriteGenres')}</h2><span>{t('profile.allTime')}</span></div>
         <div style={{ marginBottom: 30, maxWidth: 420 }}><GenresBlock genres={me.genres} /></div>
         <div className="section-head"><h2>{t('profile.top4')}</h2><span>{t('profile.byYourRatings')}</span></div>
         <div style={{ maxWidth: 520, marginBottom: 30 }}><Top4Grid ids={me.top4Albums} /></div>

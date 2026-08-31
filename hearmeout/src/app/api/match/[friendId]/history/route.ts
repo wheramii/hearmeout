@@ -2,19 +2,20 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 
-export async function GET() {
+export async function GET(_request: Request, context: { params: Promise<{ friendId: string }> }) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
+  const { friendId } = await context.params;
 
   const admin = supabaseAdmin();
   const { data, error } = await admin
-    .from('ratings')
-    .select('album_id, stars, review, tags, created_at')
+    .from('match_snapshots')
+    .select('pct, snapshot_date')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .eq('friend_id', friendId)
+    .order('snapshot_date', { ascending: true });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json(
-    (data || []).map((r) => ({ albumId: r.album_id, stars: r.stars, review: r.review, tags: r.tags || [], createdAt: r.created_at }))
-  );
+  const history = (data || []).map((r) => ({ pct: r.pct as number, date: r.snapshot_date as string }));
+  return NextResponse.json({ history });
 }

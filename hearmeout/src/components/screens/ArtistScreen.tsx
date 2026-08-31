@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, SpotifyArtistAlbum } from '@/lib/types';
 import { coverArtUrl } from '@/lib/musicbrainz';
@@ -28,7 +28,7 @@ function SpotifyAlbumCard({ album, fallbackLetter, onOpen, unreleasedLabel, scor
 }
 
 export function ArtistScreen({ device }: { device: Device }) {
-  const { t, state, albumRatings, myRatings, goBack, openAlbum, showToast, lovedItems, toggleLoved } = useApp();
+  const { t, state, albumRatings, myRatings, goBack, openAlbum, showToast, lovedItems, toggleLoved, viewFriend } = useApp();
   const art = state.currentArtist;
   const gridClass = device === 'mobile' ? 'grid-cards' : 'd-grid';
   const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
@@ -58,6 +58,18 @@ export function ArtistScreen({ device }: { device: Device }) {
     if (!ratingsCount) return null;
     return { avg: sum / ratingsCount, count: ratingsCount, albumsWithRatings };
   }, [art, albumRatings]);
+
+  const [topFan, setTopFan] = useState<{ id: string; name: string; handle: string; avatarUrl: string | null; hours: number } | null>(null);
+  useEffect(() => {
+    if (!art || art.source !== 'spotify') { setTopFan(null); return; }
+    let cancelled = false;
+    setTopFan(null);
+    fetch(`/api/artist/${art.id}/top-fan?name=${encodeURIComponent(art.name)}`)
+      .then((r) => (r.ok ? r.json() : { topFan: null }))
+      .then((d) => { if (!cancelled) setTopFan(d.topFan); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [art?.id, art?.source]);
 
   const yourStats = useMemo(() => {
     if (!art?.releasedAlbums) return null;
@@ -147,6 +159,16 @@ export function ArtistScreen({ device }: { device: Device }) {
             )}
           </div>
         </div>
+
+        {topFan && (
+          <div className="friend-row" onClick={() => viewFriend(topFan.id)} style={{ cursor: 'pointer', marginBottom: 12 }}>
+            <span style={{ fontSize: 18 }}>🏆</span>
+            <div className="info">
+              <div className="n">{t('artist.topFan', { name: topFan.name })}</div>
+              <div className="h">{t('artist.topFanHours', { hours: topFan.hours })}</div>
+            </div>
+          </div>
+        )}
 
         {yourStats && (
           <div className="rate-card" style={{ marginTop: 0 }}>

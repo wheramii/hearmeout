@@ -1,5 +1,28 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { ApiUser, PublicProfile } from './types';
+import type { ApiUser, NowPlaying, PublicProfile } from './types';
+
+// The sync job polls Spotify's recently-played list periodically rather
+// than instantly, so "still playing" is an approximation, capped at 6
+// minutes even for a genuinely long track — matches the real cadence of
+// how fresh this data actually is instead of implying true real-time.
+const NOW_PLAYING_MAX_AGE_MS = 6 * 60 * 1000;
+
+async function fetchNowPlaying(admin: SupabaseClient, userId: string): Promise<NowPlaying | null> {
+  const { data } = await admin
+    .from('listening_events')
+    .select('track_title, artist, cover_url, played_at, duration_ms')
+    .eq('user_id', userId)
+    .order('played_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data?.track_title || !data.artist) return null;
+  const playedAt = new Date(data.played_at as string).getTime();
+  const age = Date.now() - playedAt;
+  const durationMs = (data.duration_ms as number | null) ?? null;
+  const stillPlayingWindow = Math.min(durationMs ?? NOW_PLAYING_MAX_AGE_MS, NOW_PLAYING_MAX_AGE_MS);
+  if (age < 0 || age > stillPlayingWindow) return null;
+  return { title: data.track_title as string, artist: data.artist as string, cover: (data.cover_url as string | null) ?? null, startedAt: data.played_at as string, durationMs };
+}
 
 // `viewerId` is who's asking — friends-of-friends discovery (showing this
 // person's own friend list) and their recent activity only go out when the
@@ -13,11 +36,12 @@ export async function getUserProfile(
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }] = await Promise.all([
+  const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, nowPlaying] = await Promise.all([
     admin.from('users').select('id, name, handle, avatar_url, created_at').eq('id', userId).maybeSingle(),
-    admin.from('ratings').select('album_id, stars, review, created_at').eq('user_id', userId).order('created_at', { ascending: false }),
+    admin.from('ratings').select('album_id, stars, review, tags, created_at').eq('user_id', userId).order('created_at', { ascending: false }),
     admin.from('listening_events').select('genre').eq('user_id', userId).not('genre', 'is', null).limit(5000),
     admin.from('listening_events').select('duration_ms').eq('user_id', userId).gte('played_at', startOfDay.toISOString()),
+    fetchNowPlaying(admin, userId),
   ]);
 
   if (userErr) throw userErr;
@@ -47,6 +71,7 @@ export async function getUserProfile(
     handle: user.handle,
     avatarUrl: user.avatar_url,
     stats: { ratings: ratingsList.length, avg: Math.round(avg * 10) / 10, reviews: reviewsCount },
+    nowPlaying,
     genres,
     top4Albums,
     minutesToday,
@@ -60,6 +85,7 @@ export async function getUserProfile(
       albumId: r.album_id as string,
       stars: Number(r.stars),
       review: r.review as string | null,
+      tags: (r.tags as string[] | null) || [],
       createdAt: r.created_at as string,
     }));
     const { data: friendRows } = await admin

@@ -5,6 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { StarPicker } from '../ui/StarPicker';
+import { REVIEW_TAG_ORDER, REVIEW_TAG_LABEL_KEY, MAX_REVIEW_TAGS } from '@/lib/reviewTags';
 
 export function RateScreen({ device }: { device: Device }) {
   const { state, t, albums, liveAlbums, failedAlbumIds, myRatings, spotifyCovers, goBack, setRatingValue, publishRating, showToast, ensureLiveAlbum } = useApp();
@@ -22,6 +23,26 @@ export function RateScreen({ device }: { device: Device }) {
 
   const [text, setText] = useState(state.ratingDraftText);
   useEffect(() => setText(state.ratingDraftText), [state.currentAlbumId, state.ratingDraftText]);
+
+  const existing = myRatings.find((r) => r.albumId === state.currentAlbumId);
+  // Every screen stays mounted for the whole session (dual-mount shells),
+  // so this effect can't just depend on currentAlbumId — that value is
+  // often already set (from the album screen) by the time this screen
+  // becomes active, so it never "changes" again even once myRatings
+  // finishes its async load. Depending on the tag content itself (as a
+  // stable joined string, not the array reference, which is a fresh object
+  // on every myRatings refresh) makes it react to the data actually
+  // arriving instead of only to currentAlbumId changing.
+  const existingTagsKey = (existing?.tags ?? []).join(',');
+  const [tags, setTags] = useState<string[]>(existing?.tags ?? []);
+  useEffect(() => setTags(existing?.tags ?? []), [state.currentAlbumId, existingTagsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const toggleTag = (id: string) => {
+    setTags((cur) => {
+      if (cur.includes(id)) return cur.filter((x) => x !== id);
+      if (cur.length >= MAX_REVIEW_TAGS) return cur;
+      return [...cur, id];
+    });
+  };
 
   const back = (
     <button className="back-btn" onClick={() => goBack(state.rateOrigin === 'history' ? 'history' : 'album')}>
@@ -61,6 +82,16 @@ export function RateScreen({ device }: { device: Device }) {
 
       <div className="review-compose-card">
         <div className="review-compose-head">
+          <span className="review-compose-label">{t('rate.tagsLabel')}</span>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+          {REVIEW_TAG_ORDER.map((id) => (
+            <button key={id} className={`chip ${tags.includes(id) ? 'on' : ''}`} onClick={() => toggleTag(id)}>
+              {t(REVIEW_TAG_LABEL_KEY[id])}
+            </button>
+          ))}
+        </div>
+        <div className="review-compose-head">
           <span className="review-compose-label">{t('rate.reviewLabel')}</span>
           <span className="review-compose-count">{text.length} / 2000</span>
         </div>
@@ -78,7 +109,7 @@ export function RateScreen({ device }: { device: Device }) {
         style={device === 'desktop' ? { width: '100%' } : undefined}
         onClick={() => {
           if (val <= 0) { showToast(t('rate.needStars')); return; }
-          publishRating(a.id, val, text.trim());
+          publishRating(a.id, val, text.trim(), tags);
         }}
       >
         {isEditing ? t('rate.save') : t('rate.publish')}

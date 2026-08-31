@@ -18,13 +18,17 @@ function weekStartLabel(d: Date): string {
 type Row = { track_id: string | null; track_title: string | null; artist: string | null; artist_id: string | null; cover_url: string | null; genre: string | null; duration_ms: number | null; played_at: string };
 
 export async function GET(request: NextRequest) {
-  const userId = await getCurrentUserId();
-  if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
+  const viewerId = await getCurrentUserId();
+  if (!viewerId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const url = new URL(request.url);
   const range = ((url.searchParams.get('range') as StatsRange) || '6m') as StatsRange;
   const days = RANGE_DAYS[range];
   const since = days ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+  // Whose data — mirrors /api/recap's viewerId/targetUserId split so a
+  // friend's chart can be fetched for comparison. Premium gating below
+  // still checks the viewer, not the target, same as recap's season gate.
+  const targetUserId = url.searchParams.get('userId') || viewerId;
 
   const admin = supabaseAdmin();
   // PostgREST caps every request at its project max-rows setting (1000 by
@@ -37,12 +41,12 @@ export async function GET(request: NextRequest) {
       admin
         .from('listening_events')
         .select('track_id, track_title, artist, artist_id, cover_url, genre, duration_ms, played_at')
-        .eq('user_id', userId)
+        .eq('user_id', targetUserId)
         .order('played_at', { ascending: true })
         .range(from, to)
     ),
-    admin.from('ratings').select('stars').eq('user_id', userId),
-    admin.from('users').select('is_premium').eq('id', userId).maybeSingle(),
+    admin.from('ratings').select('stars').eq('user_id', targetUserId),
+    admin.from('users').select('is_premium').eq('id', viewerId).maybeSingle(),
   ]);
   const isPremium = !!prefs?.is_premium;
   if (error) return NextResponse.json({ error }, { status: 500 });

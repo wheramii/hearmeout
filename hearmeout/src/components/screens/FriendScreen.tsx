@@ -1,12 +1,46 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import type { Device, PublicProfile } from '@/lib/types';
+import type { Device, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle, starsText } from '@/lib/format';
 import { RecapOpenButton, Top4Grid } from '../ProfileBlocks';
 import { CoverArt } from '../ui/CoverArt';
 import { accentMix } from '@/lib/accentGradient';
+import { toLocale } from '@/lib/i18n';
+import { drawBlendPoster } from '@/lib/posterCanvas';
+
+function BlendButton({ me, friend, friendName, matchPct }: { me: string; friend: string; friendName: string; matchPct: number | null }) {
+  const { t, ensureRecap, recapCache } = useApp();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    ensureRecap('me', 'month');
+    ensureRecap(friend, 'month');
+  }, [friend, ensureRecap]);
+
+  const dataA = recapCache[`${me}:month`];
+  const dataB = recapCache[`${friend}:month`];
+  if (!dataA || !dataB) return null;
+
+  const download = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    drawBlendPoster(canvas, dataA, t('friend.you'), dataB, friendName, matchPct);
+    const url = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'hearmeout-blend.png';
+    link.click();
+  };
+
+  return (
+    <>
+      <button className="btn-ghost" style={{ marginTop: 10 }} onClick={download}>{t('friend.downloadBlend')}</button>
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+    </>
+  );
+}
 
 function FriendRatingRow({ rating, myScore }: { rating: NonNullable<PublicProfile['recentRatings']>[number]; myScore: number | null }) {
   const { albums, liveAlbums, spotifyCovers, openAlbum, t } = useApp();
@@ -71,19 +105,30 @@ function FriendsOfFriendRow({ user }: { user: NonNullable<PublicProfile['friends
   );
 }
 
-export function FriendScreen(_props: { device: Device }) {
-  const { t, state, me, myRatings, friendRequests, addFriend, goBack } = useApp();
+export function FriendScreen({ device }: { device: Device }) {
+  const { t, language, state, me, myRatings, friendRequests, addFriend, goBack } = useApp();
   const [f, setF] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [matchHistory, setMatchHistory] = useState<{ pct: number; date: string }[] | null>(null);
+  const [myStats, setMyStats] = useState<StatsData | null>(null);
+  const [friendStats, setFriendStats] = useState<StatsData | null>(null);
 
   useEffect(() => {
     if (!state.viewingUserId) { setF(null); setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/users/${state.viewingUserId}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => { if (!cancelled) { setF(data); setLoading(false); } });
-    return () => { cancelled = true; };
+    const load = (showSpinner: boolean) => {
+      if (showSpinner) setLoading(true);
+      fetch(`/api/users/${state.viewingUserId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => { if (!cancelled) { setF(data); setLoading(false); } });
+    };
+    load(true);
+    // Only "now playing" actually goes stale on its own — re-fetching the
+    // whole profile every 30s while this screen is open is the simplest way
+    // to keep that one field honest without a dedicated polling endpoint.
+    const interval = setInterval(() => load(false), 30_000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, [state.viewingUserId]);
 
   const myScoreByAlbum = useMemo(() => {
@@ -121,6 +166,33 @@ export function FriendScreen(_props: { device: Device }) {
     return denom > 0 ? Math.round((overlap.reduce((s, o) => s + Math.min(o.me, o.friend), 0) / denom) * 100) : null;
   }, [overlap]);
 
+  // Opportunistic snapshot: no cron/background job exists in this app, so
+  // the "match % over time" trend only ever has real data points — one per
+  // real visit to a friend's profile, recorded here whenever a live score
+  // is actually computed. Fire-and-forget; a failed write just means one
+  // fewer data point, never a crash.
+  useEffect(() => {
+    if (!f || matchScore == null) return;
+    fetch('/api/match/snapshot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ friendId: f.id, pct: matchScore }) }).catch(() => {});
+  }, [f, matchScore]);
+
+  useEffect(() => {
+    if (!f) { setMatchHistory(null); return; }
+    let cancelled = false;
+    fetch(`/api/match/${f.id}/history`).then((r) => (r.ok ? r.json() : { history: [] })).then((d) => { if (!cancelled) setMatchHistory(d.history); });
+    return () => { cancelled = true; };
+  }, [f?.id]);
+
+  useEffect(() => {
+    if (!f) { setMyStats(null); setFriendStats(null); return; }
+    let cancelled = false;
+    Promise.all([
+      fetch('/api/stats?range=6m').then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/stats?range=6m&userId=${f.id}`).then((r) => (r.ok ? r.json() : null)),
+    ]).then(([mine, theirs]) => { if (!cancelled) { setMyStats(mine); setFriendStats(theirs); } });
+    return () => { cancelled = true; };
+  }, [f?.id]);
+
   if (loading) return <div className="archive-loading">{t('friend.loadingProfile')}</div>;
   if (!f || !me) {
     return (
@@ -144,6 +216,11 @@ export function FriendScreen(_props: { device: Device }) {
         <div className="friend-band-mid">
           <h1>{f.name}</h1>
           <div className="friend-band-meta">{f.handle}</div>
+          {f.nowPlaying && (
+            <div style={{ fontSize: 12.5, color: 'var(--lime)', marginTop: 4 }}>
+              🎧 {t('friend.nowPlaying', { title: f.nowPlaying.title, artist: f.nowPlaying.artist })}
+            </div>
+          )}
           <div className="album-actions">
             {isFriend ? (
               <span className="action-chip added">{t('friend.alreadyFriend')}</span>
@@ -169,6 +246,28 @@ export function FriendScreen(_props: { device: Device }) {
           </div>
         </div>
       </div>
+
+      <BlendButton me={me.id} friend={f.id} friendName={f.name.split(' ')[0]} matchPct={matchScore} />
+
+      {matchHistory && matchHistory.length >= 2 && (
+        <>
+          <div className="section-head" style={{ marginTop: 22 }}><h2>{t('friend.matchTrend')}</h2></div>
+          <div className="rating-dist-chart" style={{ marginBottom: 6 }}>
+            {matchHistory.map((h, i) => (
+              <div
+                key={i}
+                className="rating-dist-bar"
+                style={{ height: `${Math.max(6, h.pct)}%`, background: accentMix(h.pct / 100) }}
+                title={`${new Date(h.date).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}: ${h.pct}%`}
+              />
+            ))}
+          </div>
+          <div className="rating-dist-axis" style={{ marginBottom: 22 }}>
+            <span>{new Date(matchHistory[0].date).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</span>
+            <span>{new Date(matchHistory[matchHistory.length - 1].date).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</span>
+          </div>
+        </>
+      )}
 
       {isFullView && shared.length > 0 && (
         <div className="friend-both-band">
@@ -196,6 +295,31 @@ export function FriendScreen(_props: { device: Device }) {
             <span><i style={{ background: 'var(--muted)' }} />{f.name.split(' ')[0]}</span>
           </div>
         </div>
+      )}
+
+      {myStats && friendStats && (myStats.topArtists.length > 0 || friendStats.topArtists.length > 0) && (
+        <>
+          <div className="section-head" style={{ marginTop: 22 }}><h2>{t('friend.chartCompare')}</h2></div>
+          <div style={{ display: 'grid', gridTemplateColumns: device === 'desktop' ? '1fr 1fr' : '1fr', gap: 20, marginBottom: 24 }}>
+            {[{ label: t('friend.you'), stats: myStats }, { label: f.name.split(' ')[0], stats: friendStats }].map(({ label, stats }, side) => {
+              const top = stats.topArtists.slice(0, 5);
+              const max = Math.max(1, ...top.map((a) => a.hours));
+              return (
+                <div key={side}>
+                  <div className="lib-subhead">{label}</div>
+                  {top.length ? top.map((a) => (
+                    <div key={a.id || a.name} style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 12, marginBottom: 3 }}>{a.name}</div>
+                      <div className="track" style={{ height: 5 }}>
+                        <div className="fill" style={{ width: `${(a.hours / max) * 100}%`, background: accentMix(a.hours / max) }} />
+                      </div>
+                    </div>
+                  )) : <div className="empty-state">{t('stats.notEnough')}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <div className="section-head"><h2>{t('friend.recap')}</h2><span>{t('profile.recapPeriods')}</span></div>

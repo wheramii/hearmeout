@@ -11,6 +11,7 @@ import { usePlayer, type QueueTrack } from '@/lib/PlayerContext';
 import { TransportRing } from '../DockedPlayer';
 import { AlbumReviews } from '../AlbumReviews';
 import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
+import { AlbumTagsSummary } from '../AlbumTagsSummary';
 
 export function AlbumScreen({ device }: { device: Device }) {
   const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, spotifyCovers, reviewsVersion, goBack, openRateFor, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved } = useApp();
@@ -105,6 +106,7 @@ export function AlbumScreen({ device }: { device: Device }) {
     <>
       <div className="section-head" style={{ marginTop: 22 }}><h2>{t('album.ratingDistribution')}</h2></div>
       <AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} />
+      <AlbumTagsSummary albumId={a.id} refreshToken={reviewsVersion} />
     </>
   );
 
