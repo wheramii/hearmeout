@@ -8,6 +8,7 @@ import type {
   Album, AlbumRatingInfo, ArtistState, Device, FriendRequest, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
 } from './types';
 import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
+import { THEME_PAIRS, isThemeId, isToxicity, onAccentFor, type Toxicity } from './themes';
 
 const GENRE_BUCKETS = ['Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 
@@ -128,7 +129,8 @@ type AppContextValue = {
   updateProfileHandle: (handle: string) => Promise<void>;
   updateAvatar: (dataUrl: string) => Promise<void>;
   updateBanner: (dataUrl: string) => Promise<void>;
-  updateAccentPalette: (palette: string) => Promise<void>;
+  updateAccentTheme: (theme: string) => Promise<void>;
+  updateAccentToxicity: (toxicity: string) => Promise<void>;
   updateLanguage: (language: Language) => Promise<void>;
   updateRegion: (region: string | null) => Promise<void>;
   addFriend: (handle: string) => Promise<void>;
@@ -294,13 +296,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (state.authStatus === 'ready') refreshMyRatings(); }, [state.authStatus, refreshMyRatings]);
   useEffect(() => { if (state.authStatus === 'ready') refreshLovedItems(); }, [state.authStatus, refreshLovedItems]);
 
-  // Only a premium account's palette choice is ever applied — a non-premium
+  // Only a premium account's theme choice is ever applied — a non-premium
   // account can't reach the picker (server-gated too), but this is a second
-  // real check, not just relying on the UI having stayed locked.
+  // real check, not just relying on the UI having stayed locked. An account
+  // that's never touched the picker (accentTheme unset) gets no override at
+  // all, so the base [data-theme="dark"|"light"] default — including the
+  // light/dark distinction — stands exactly as it does for a free account.
   useEffect(() => {
-    if (me?.isPremium && me.accentPalette) document.documentElement.dataset.accent = me.accentPalette;
-    else delete document.documentElement.dataset.accent;
-  }, [me?.isPremium, me?.accentPalette]);
+    const root = document.documentElement;
+    if (me?.isPremium && isThemeId(me.accentTheme)) {
+      const toxicity: Toxicity = isToxicity(me.accentToxicity) ? me.accentToxicity : 'bright';
+      const pair = THEME_PAIRS[me.accentTheme][toxicity];
+      root.dataset.accent = me.accentTheme;
+      root.dataset.toxicity = toxicity;
+      root.style.setProperty('--lime', pair.lime);
+      root.style.setProperty('--coral', pair.coral);
+      root.style.setProperty('--on-accent', onAccentFor(pair.lime));
+    } else {
+      delete root.dataset.accent;
+      delete root.dataset.toxicity;
+      root.style.removeProperty('--lime');
+      root.style.removeProperty('--coral');
+      root.style.removeProperty('--on-accent');
+    }
+  }, [me?.isPremium, me?.accentTheme, me?.accentToxicity]);
   useEffect(() => { if (state.authStatus === 'ready') refreshFriendRequests(); }, [state.authStatus, refreshFriendRequests]);
 
   const registerWithPassword = useCallback(async (name: string, email: string, password: string) => {
@@ -460,8 +479,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshMe();
   }, [refreshMe]);
 
-  const updateAccentPalette = useCallback(async (palette: string) => {
-    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accentPalette: palette }) });
+  const updateAccentTheme = useCallback(async (theme: string) => {
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accentTheme: theme }) });
+    await refreshMe();
+  }, [refreshMe]);
+
+  const updateAccentToxicity = useCallback(async (toxicity: string) => {
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accentToxicity: toxicity }) });
     await refreshMe();
   }, [refreshMe]);
 
@@ -653,7 +677,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
-    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentPalette, updateLanguage, updateRegion,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
     spotifyGenreArtists, myRatings, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, goBack, openAlbum, openRateFor,
@@ -661,7 +685,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
-    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentPalette, updateLanguage, updateRegion,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

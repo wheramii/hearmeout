@@ -5,9 +5,11 @@
 // and ratings actually use both halves of the palette instead of one.
 // color-mix() reads the CSS variables directly, so it stays correct for
 // every palette (default or premium) with no JS color math involved.
+// Mixed in HSL (shortest hue path), not sRGB — interpolating two hues in
+// RGB drags mid-range values through a muddy gray; HSL keeps them vivid.
 export function accentMix(ratio: number): string {
   const pct = Math.round(Math.max(0, Math.min(1, ratio)) * 100);
-  return `color-mix(in srgb, var(--coral) ${pct}%, var(--lime))`;
+  return `color-mix(in hsl shorter hue, var(--coral) ${pct}%, var(--lime))`;
 }
 
 // For a set of values (e.g. one bar chart) — 0 at the smallest value in the

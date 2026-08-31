@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getUserProfile } from '@/lib/userProfile';
 import { ALBUMS } from '@/lib/data';
+import { accentMix } from '@/lib/accentGradient';
 
 // Plain server component, deliberately outside AppProvider/AppGate — this
 // is the one page in the app reachable without logging in, so a rating
@@ -70,12 +71,15 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           <>
             <div className="section-head"><h2>Любимые жанры</h2></div>
             <div style={{ marginBottom: 26 }}>
-              {profile.genres.map((g) => (
-                <div className="genre-row" key={g.g}>
-                  <div className="name">{g.g}</div>
-                  <div className="track"><div className="fill" style={{ width: `${g.pct}%` }} /></div>
-                </div>
-              ))}
+              {(() => {
+                const maxPct = Math.max(1, ...profile.genres.map((g) => g.pct));
+                return profile.genres.map((g) => (
+                  <div className="genre-row" key={g.g}>
+                    <div className="name">{g.g}</div>
+                    <div className="track"><div className="fill" style={{ width: `${g.pct}%`, background: accentMix(g.pct / maxPct) }} /></div>
+                  </div>
+                ));
+              })()}
             </div>
           </>
         )}

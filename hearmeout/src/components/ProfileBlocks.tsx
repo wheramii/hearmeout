@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle } from '@/lib/format';
 import { toLocale } from '@/lib/i18n';
+import { accentMix } from '@/lib/accentGradient';
 import { CoverArt } from './ui/CoverArt';
 import { StarsAvg } from './ui/StarsAvg';
 import { PremiumBadge } from './ui/PremiumBadge';
@@ -182,12 +183,13 @@ export function RecapOpenButton({ userId, label }: { userId: string; label: stri
 export function GenresBlock({ genres }: { genres: { g: string; pct: number }[] }) {
   const { t } = useApp();
   if (!genres.length) return <div className="empty-state">{t('profile.notEnoughData')}</div>;
+  const maxPct = Math.max(1, ...genres.map((g) => g.pct));
   return (
     <>
       {genres.map((g) => (
         <div className="genre-row" key={g.g}>
           <div className="name">{g.g}</div>
-          <div className="track"><div className="fill" style={{ width: `${g.pct}%` }} /></div>
+          <div className="track"><div className="fill" style={{ width: `${g.pct}%`, background: accentMix(g.pct / maxPct) }} /></div>
         </div>
       ))}
     </>

@@ -4,8 +4,7 @@ import { getCurrentUserId } from '@/lib/identity';
 import { getUserProfile } from '@/lib/userProfile';
 import { slugifyHandle } from '@/lib/slug';
 import type { ApiUser, Me } from '@/lib/types';
-
-const ACCENT_PALETTES = new Set(['calm-1', 'calm-2', 'bright-1', 'bright-2', 'acid-1', 'acid-2']);
+import { isThemeId, isToxicity } from '@/lib/themes';
 
 export async function GET() {
   const userId = await getCurrentUserId();
@@ -14,7 +13,7 @@ export async function GET() {
   const admin = supabaseAdmin();
   const [profile, { data: prefs }, { data: conns }, { data: friendRows }] = await Promise.all([
     getUserProfile(admin, userId, userId),
-    admin.from('users').select('language, region, auth_user_id, is_premium, banner_url, accent_palette').eq('id', userId).maybeSingle(),
+    admin.from('users').select('language, region, auth_user_id, is_premium, banner_url, accent_theme, accent_toxicity').eq('id', userId).maybeSingle(),
     admin.from('connections').select('provider').eq('user_id', userId),
     admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url, is_premium)').eq('user_id', userId),
   ]);
@@ -45,7 +44,8 @@ export async function GET() {
     email,
     isPremium: !!prefs?.is_premium,
     bannerUrl: (prefs?.banner_url as string | null) ?? null,
-    accentPalette: (prefs?.accent_palette as string | null) ?? null,
+    accentTheme: (prefs?.accent_theme as string | null) ?? null,
+    accentToxicity: (prefs?.accent_toxicity as string | null) ?? null,
   };
   return NextResponse.json(me);
 }
@@ -62,14 +62,17 @@ export async function PATCH(request: NextRequest) {
     patch.handle = `@${slugifyHandle(body.handle.replace(/^@/, ''))}`;
   }
   if (typeof body?.avatarUrl === 'string') patch.avatar_url = body.avatarUrl;
-  // Banner + accent palette are premium features — real gate, not just a
-  // hidden button: a direct PATCH from a non-premium account is dropped
-  // silently rather than trusting the client to have hidden the UI for it.
-  if (typeof body?.bannerUrl === 'string' || (typeof body?.accentPalette === 'string' && ACCENT_PALETTES.has(body.accentPalette))) {
+  // Banner + accent theme/toxicity are premium features — real gate, not
+  // just a hidden button: a direct PATCH from a non-premium account is
+  // dropped silently rather than trusting the client to have hidden the UI.
+  const wantsAccentTheme = typeof body?.accentTheme === 'string' && isThemeId(body.accentTheme);
+  const wantsAccentToxicity = typeof body?.accentToxicity === 'string' && isToxicity(body.accentToxicity);
+  if (typeof body?.bannerUrl === 'string' || wantsAccentTheme || wantsAccentToxicity) {
     const { data: prefs } = await admin.from('users').select('is_premium').eq('id', userId).maybeSingle();
     if (prefs?.is_premium) {
       if (typeof body.bannerUrl === 'string') patch.banner_url = body.bannerUrl;
-      if (typeof body.accentPalette === 'string' && ACCENT_PALETTES.has(body.accentPalette)) patch.accent_palette = body.accentPalette;
+      if (wantsAccentTheme) patch.accent_theme = body.accentTheme;
+      if (wantsAccentToxicity) patch.accent_toxicity = body.accentToxicity;
     }
   }
   if (typeof body?.language === 'string' && ['ru', 'en', 'fr', 'es', 'de'].includes(body.language)) patch.language = body.language;

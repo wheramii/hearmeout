@@ -38,17 +38,17 @@
    :root[data-theme=...] blocks above — plain `html[data-accent]` lost that
    specificity fight every time (element+attribute < pseudo-class+attribute)
    and silently never applied, regardless of source order. */
+/* The actual --lime/--coral/--on-accent values for whichever of the 20
+   themes x 3 toxicity levels is active are set directly as inline styles on
+   <html> from AppContext (see src/lib/themes.ts THEME_PAIRS) — 60 static
+   blocks here would just duplicate that data. This block only derives the
+   generic accent-tinted surface tokens, which stay correct for any --lime
+   value regardless of which of the 60 pairs is active. */
 :root[data-accent] {
   --accent-bg: color-mix(in srgb, var(--lime) 15%, var(--surface));
   --accent-text: var(--lime);
   --accent-border: color-mix(in srgb, var(--lime) 35%, transparent);
 }
-:root[data-accent="calm-1"] { --lime: #7a9b8e; --coral: #a67c6d; --on-accent: #16211d; }
-:root[data-accent="calm-2"] { --lime: #8a93c2; --coral: #b891a6; --on-accent: #17182a; }
-:root[data-accent="bright-1"] { --lime: #4d8dff; --coral: #ff5c8a; --on-accent: #ffffff; }
-:root[data-accent="bright-2"] { --lime: #ff8a3d; --coral: #9b5de5; --on-accent: #241505; }
-:root[data-accent="acid-1"] { --lime: #b6ff2e; --coral: #ff2fb0; --on-accent: #12200a; }
-:root[data-accent="acid-2"] { --lime: #f4ff2e; --coral: #00e5ff; --on-accent: #1a1900; }
 
 *{ box-sizing: border-box; }
 html, body { height: 100%; overflow-x: hidden; overscroll-behavior-x: none; }
@@ -107,7 +107,7 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 /* connect / recap / friends / awards */
 .connect-row{ display:flex; flex-direction:column; gap:8px; }
 .connect-btn{ font-family:var(--font-inter),sans-serif; font-weight:600; font-size:13px; padding:13px; border-radius:16px; border:1px solid var(--line); background:var(--surface); color:var(--text); cursor:pointer; text-align:left; }
-.connect-btn.on{ border-color:var(--lime); color:var(--lime); background:rgba(252,123,3,.08); }
+.connect-btn.on{ border-color:var(--lime); color:var(--lime); background:var(--accent-bg); }
 .connect-beta-hint{ font-size:11.5px; color:var(--muted); line-height:1.5; margin-top:8px; }
 
 .account-id-row{ display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:14px; margin-bottom:8px; }
@@ -159,7 +159,7 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
   width:156px; height:156px; flex-shrink:0; padding:14px;
   display:flex; flex-direction:column; justify-content:space-between;
 }
-.recap-teaser::before{ content:''; position:absolute; inset:0; background:linear-gradient(135deg, rgba(252,123,3,.22), transparent 65%); pointer-events:none; }
+.recap-teaser::before{ content:''; position:absolute; inset:0; background:linear-gradient(135deg, color-mix(in srgb, var(--lime) 22%, transparent), transparent 65%); pointer-events:none; }
 .recap-teaser .rt-label{ font-family:var(--font-ibm-plex-mono),monospace; font-size:9.5px; color:var(--lime); text-transform:uppercase; letter-spacing:.1em; position:relative; }
 .recap-teaser h3{
   font-family:var(--font-space-grotesk),sans-serif; font-size:15px; font-weight:800;
@@ -307,7 +307,7 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 .genre-row{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }
 .genre-row .name{ font-size:12px; width:74px; flex-shrink:0; color:var(--muted); }
 .genre-row .track{ flex:1; height:7px; background:var(--surface-2); border-radius:4px; overflow:hidden; }
-.genre-row .fill{ height:100%; background:linear-gradient(90deg,var(--lime),var(--coral)); border-radius:4px; }
+.genre-row .fill{ height:100%; border-radius:4px; }
 
 .top4-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:24px; }
 .top4-grid .art{ width:100%; aspect-ratio:1; border-radius:13px; background-size:cover; background-position:center; border:1px solid var(--line); position:relative; }

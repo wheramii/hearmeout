@@ -3,52 +3,98 @@
 import { useMemo, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
-import { LANGUAGES, LANGUAGE_LABEL, getRegionCodes, regionDisplayName } from '@/lib/i18n';
+import { LANGUAGES, LANGUAGE_LABEL, getRegionCodes, regionDisplayName, type TranslationKey } from '@/lib/i18n';
+import { THEME_ORDER, THEME_PAIRS, TOXICITY_ORDER, isThemeId, isToxicity, type ThemeId, type Toxicity } from '@/lib/themes';
 import { AccountBlock, ConnectBlock, ImportHistoryBlock } from '../ProfileBlocks';
 import { ThemeToggle } from '../ThemeToggle';
 import { PremiumLock } from '../ui/PremiumLock';
 
 type Section = 'appearance' | 'language' | 'account' | 'connections';
 
-const PALETTE_TIERS: { key: string; labelKey: string; options: string[] }[] = [
-  { key: 'calm', labelKey: 'settings.paletteCalm', options: ['calm-1', 'calm-2'] },
-  { key: 'bright', labelKey: 'settings.paletteBright', options: ['bright-1', 'bright-2'] },
-  { key: 'acid', labelKey: 'settings.paletteAcid', options: ['acid-1', 'acid-2'] },
-];
-const PALETTE_SWATCH: Record<string, [string, string]> = {
-  'calm-1': ['#7a9b8e', '#a67c6d'], 'calm-2': ['#8a93c2', '#b891a6'],
-  'bright-1': ['#4d8dff', '#ff5c8a'], 'bright-2': ['#ff8a3d', '#9b5de5'],
-  'acid-1': ['#b6ff2e', '#ff2fb0'], 'acid-2': ['#f4ff2e', '#00e5ff'],
+const TOXICITY_LABEL_KEY: Record<Toxicity, TranslationKey> = {
+  calm: 'settings.paletteCalm',
+  bright: 'settings.paletteBright',
+  acid: 'settings.paletteAcid',
 };
 
-function AccentPaletteSection() {
-  const { t, me, updateAccentPalette } = useApp();
+const THEME_NAME_KEY: Record<ThemeId, TranslationKey> = {
+  'orange-coral': 'theme.orangeCoral',
+  'lime-magenta': 'theme.limeMagenta',
+  'cyan-yellow': 'theme.cyanYellow',
+  'cobalt-pink': 'theme.cobaltPink',
+  'mint-rose': 'theme.mintRose',
+  'teal-amber': 'theme.tealAmber',
+  'purple-lime': 'theme.purpleLime',
+  'scarlet-cyan': 'theme.scarletCyan',
+  'yellow-purple': 'theme.yellowPurple',
+  'green-orange': 'theme.greenOrange',
+  'indigo-peach': 'theme.indigoPeach',
+  'turquoise-coral': 'theme.turquoiseCoral',
+  'chartreuse-cobalt': 'theme.chartreuseCobalt',
+  'pink-mint': 'theme.pinkMint',
+  'sky-tangerine': 'theme.skyTangerine',
+  'emerald-fuchsia': 'theme.emeraldFuchsia',
+  'lavender-chartreuse': 'theme.lavenderChartreuse',
+  'rust-sage': 'theme.rustSage',
+  'ice-crimson': 'theme.iceCrimson',
+  'gold-aqua': 'theme.goldAqua',
+};
+
+function ThemeSection({ device }: { device: Device }) {
+  const { t, me, updateAccentTheme, updateAccentToxicity } = useApp();
+  const activeTheme: ThemeId = isThemeId(me?.accentTheme) ? me.accentTheme : 'orange-coral';
+  const activeToxicity: Toxicity = isToxicity(me?.accentToxicity) ? me.accentToxicity : 'bright';
+
   return (
     <>
-      <div className="section-head" style={{ marginTop: 24 }}><h2>{t('settings.accentPalette')}</h2></div>
+      <div className="section-head" style={{ marginTop: 24 }}><h2>{t('settings.toxicity')}</h2></div>
+      <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 14, lineHeight: 1.5 }}>{t('settings.toxicityHint')}</p>
+      <PremiumLock>
+        <div className="segmented" style={{ marginBottom: 24, maxWidth: 420 }}>
+          {TOXICITY_ORDER.map((level) => (
+            <button key={level} className={activeToxicity === level ? 'on' : ''} onClick={() => updateAccentToxicity(level)}>
+              {t(TOXICITY_LABEL_KEY[level])}
+            </button>
+          ))}
+        </div>
+      </PremiumLock>
+
+      <div className="section-head">
+        <h2>{t('settings.accentPalette')}</h2>
+        <span>{t('settings.colorThemeCount', { name: t(THEME_NAME_KEY[activeTheme]) })}</span>
+      </div>
       <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 14, lineHeight: 1.5 }}>{t('settings.accentPaletteHint')}</p>
       <PremiumLock>
-        {PALETTE_TIERS.map((tier) => (
-          <div key={tier.key} style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6, fontFamily: 'var(--font-ibm-plex-mono),monospace' }}>{t(tier.labelKey as never)}</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {tier.options.map((key) => (
-                <button
-                  key={key}
-                  onClick={() => updateAccentPalette(key)}
-                  style={{
-                    flex: 1, height: 40, borderRadius: 10, cursor: 'pointer', display: 'flex', overflow: 'hidden',
-                    border: me?.accentPalette === key ? '2px solid var(--text)' : '1px solid var(--line)',
-                  }}
-                  aria-label={key}
-                >
-                  <span style={{ flex: 1, background: PALETTE_SWATCH[key][0] }} />
-                  <span style={{ flex: 1, background: PALETTE_SWATCH[key][1] }} />
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+        <div style={{ display: 'grid', gridTemplateColumns: device === 'desktop' ? 'repeat(5,1fr)' : 'repeat(2,1fr)', gap: 12 }}>
+          {THEME_ORDER.map((id) => {
+            const pair = THEME_PAIRS[id][activeToxicity];
+            const selected = activeTheme === id;
+            return (
+              <button
+                key={id}
+                onClick={() => updateAccentTheme(id)}
+                style={{
+                  border: selected ? '1px solid var(--accent-border)' : '1px solid var(--line)',
+                  background: selected ? 'var(--accent-bg)' : 'var(--bg)',
+                  borderRadius: 12, padding: 11, display: 'flex', flexDirection: 'column', gap: 9,
+                  cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <div style={{ height: 42, borderRadius: 8, display: 'flex', overflow: 'hidden' }}>
+                  <span style={{ flex: 1, background: pair.lime }} />
+                  <span style={{ flex: 1, background: pair.coral }} />
+                </div>
+                <div style={{ fontFamily: 'var(--font-space-grotesk),sans-serif', fontWeight: 500, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {selected && <span style={{ color: 'var(--lime)' }}>✓</span>}
+                  {t(THEME_NAME_KEY[id])}
+                </div>
+                <div style={{ fontFamily: 'var(--font-ibm-plex-mono),monospace', fontSize: 9.5, color: 'var(--muted-2)' }}>
+                  {pair.lime} · {pair.coral}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </PremiumLock>
     </>
   );
@@ -80,14 +126,14 @@ function BannerUploadSection() {
   );
 }
 
-function AppearanceSection() {
+function AppearanceSection({ device }: { device: Device }) {
   const { t } = useApp();
   return (
     <>
       <div className="section-head"><h2>{t('settings.appearance')}</h2></div>
       <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 14, lineHeight: 1.5 }}>{t('settings.appearanceHint')}</p>
       <div style={{ marginBottom: 24 }}><ThemeToggle /></div>
-      <AccentPaletteSection />
+      <ThemeSection device={device} />
       <BannerUploadSection />
     </>
   );
@@ -129,7 +175,7 @@ export function SettingsScreen({ device }: { device: Device }) {
 
   const body = (
     <>
-      {section === 'appearance' && <AppearanceSection />}
+      {section === 'appearance' && <AppearanceSection device={device} />}
       {section === 'language' && <LanguageRegionSection />}
       {section === 'account' && (
         <>

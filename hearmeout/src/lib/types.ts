@@ -74,7 +74,8 @@ export type Me = PublicProfile & {
   hasPassword: boolean;
   isPremium: boolean;
   bannerUrl: string | null;
-  accentPalette: string | null;
+  accentTheme: string | null;
+  accentToxicity: string | null;
   email: string | null;
 };
 
