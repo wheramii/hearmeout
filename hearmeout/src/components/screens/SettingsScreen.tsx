@@ -38,6 +38,12 @@ const THEME_NAME_KEY: Record<ThemeId, TranslationKey> = {
   'rust-sage': 'theme.rustSage',
   'ice-crimson': 'theme.iceCrimson',
   'gold-aqua': 'theme.goldAqua',
+  'sage-terracotta': 'theme.sageTerracotta',
+  'periwinkle-mauve': 'theme.periwinkleMauve',
+  'blue-pink': 'theme.bluePink',
+  'orange-violet': 'theme.orangeViolet',
+  'electro-lime-fuchsia': 'theme.electroLimeFuchsia',
+  'neon-yellow-cyan': 'theme.neonYellowCyan',
 };
 
 function ThemeSection({ device }: { device: Device }) {
@@ -61,7 +67,7 @@ function ThemeSection({ device }: { device: Device }) {
 
       <div className="section-head">
         <h2>{t('settings.accentPalette')}</h2>
-        <span>{t('settings.colorThemeCount', { name: t(THEME_NAME_KEY[activeTheme]) })}</span>
+        <span>{t('settings.colorThemeCount', { count: THEME_ORDER.length, name: t(THEME_NAME_KEY[activeTheme]) })}</span>
       </div>
       <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 14, lineHeight: 1.5 }}>{t('settings.accentPaletteHint')}</p>
       <PremiumLock>
