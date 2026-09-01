@@ -1,11 +1,13 @@
-// Wavy "splat star" + pulse line. Star and pulse follow the active accent
-// theme (--lime/--coral) like the rest of the site's data-colored elements;
-// the inner spot deliberately does NOT — it's var(--bg), so it always reads
-// as a cutout of the page itself, matching whichever of the two permanent
-// light/dark themes is active (independent of the accent-color/toxicity
-// choice, which is a separate axis — see globals.css [data-theme] vs
-// [data-accent]). All three paths were generated (not hand-drawn) via a
-// Catmull-Rom-through-jittered-radii script for smooth organic curves.
+// Wavy "splat star" + pulse line, traced from the reference logo the user
+// supplied (6 puffy rounded lobes + a heartbeat-style pulse crossing it).
+// Star and pulse follow the active accent theme (--lime/--coral) like the
+// rest of the site's data-colored elements; the inner spot deliberately
+// does NOT — it's var(--bg), so it always reads as a cutout of the page
+// itself, matching whichever of the two permanent light/dark themes is
+// active (independent of the accent-color/toxicity choice, which is a
+// separate axis — see globals.css [data-theme] vs [data-accent]). The
+// paths are generated via a Catmull-Rom spline script (not hand-drawn) for
+// smooth curves, tuned to match the reference's proportions.
 export function LogoMark({ size = 24, animate = false }: { size?: number; animate?: boolean }) {
   return (
     <svg
@@ -18,7 +20,7 @@ export function LogoMark({ size = 24, animate = false }: { size?: number; animat
       <path
         className="logo-star"
         fill="var(--lime)"
-        d="M 50.00 10.00 C 52.79 9.90 53.04 30.60 58.65 32.86 C 64.25 35.11 81.44 21.56 83.62 23.52 C 85.81 25.48 71.53 38.88 71.74 44.62 C 71.96 50.36 86.16 55.11 84.90 57.97 C 83.64 60.82 66.88 56.90 64.17 61.73 C 61.46 66.57 70.96 85.32 68.64 86.96 C 66.33 88.61 56.13 72.21 50.26 71.60 C 44.40 70.99 35.77 85.06 33.45 83.32 C 31.14 81.57 40.78 64.97 36.37 61.14 C 31.97 57.31 8.14 63.01 7.03 60.36 C 5.93 57.71 27.83 51.10 29.75 45.25 C 31.67 39.40 16.55 27.21 18.57 25.25 C 20.60 23.29 36.68 36.01 41.92 33.47 C 47.15 30.93 47.21 10.10 50.00 10.00 Z"
+        d="M 48.46 6.03 C 53.37 6.19 58.24 23.66 64.38 27.86 C 70.52 32.06 83.12 27.77 85.32 31.22 C 87.52 34.67 77.18 41.95 77.56 48.56 C 77.94 55.16 90.18 66.81 87.61 70.85 C 85.03 74.88 68.74 69.43 62.11 72.78 C 55.49 76.13 52.08 90.59 47.85 90.94 C 43.63 91.30 42.62 77.84 36.76 74.90 C 30.90 71.96 14.88 77.54 12.69 73.32 C 10.49 69.09 23.04 56.96 23.60 49.54 C 24.17 42.12 14.18 32.58 16.08 28.80 C 17.97 25.02 29.57 30.65 34.97 26.85 C 40.37 23.06 43.56 5.86 48.46 6.03 Z"
       />
       <path
         className="logo-spot"
