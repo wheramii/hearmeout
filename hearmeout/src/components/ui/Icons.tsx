@@ -1,24 +1,39 @@
-import { useId } from 'react';
-
+// Wavy "splat star" + pulse line. Star and pulse follow the active accent
+// theme (--lime/--coral) like the rest of the site's data-colored elements;
+// the inner spot deliberately does NOT — it's var(--bg), so it always reads
+// as a cutout of the page itself, matching whichever of the two permanent
+// light/dark themes is active (independent of the accent-color/toxicity
+// choice, which is a separate axis — see globals.css [data-theme] vs
+// [data-accent]). All three paths were generated (not hand-drawn) via a
+// Catmull-Rom-through-jittered-radii script for smooth organic curves.
 export function LogoMark({ size = 24, animate = false }: { size?: number; animate?: boolean }) {
-  const gradientId = useId();
   return (
     <svg
-      viewBox="0 0 64 64"
+      viewBox="0 0 100 100"
       width={size}
       height={size}
       style={{ flexShrink: 0 }}
       className={animate ? 'logo-mark playing' : 'logo-mark'}
     >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="var(--lime)" />
-          <stop offset="1" stopColor="var(--coral)" />
-        </linearGradient>
-      </defs>
-      <rect className="logo-bar logo-bar-1" x="14" y="26" width="8" height="12" rx="4" fill={`url(#${gradientId})`} />
-      <rect className="logo-bar logo-bar-2" x="28" y="16" width="8" height="32" rx="4" fill={`url(#${gradientId})`} />
-      <rect className="logo-bar logo-bar-3" x="42" y="22" width="8" height="20" rx="4" fill={`url(#${gradientId})`} />
+      <path
+        className="logo-star"
+        fill="var(--lime)"
+        d="M 50.00 10.00 C 52.79 9.90 53.04 30.60 58.65 32.86 C 64.25 35.11 81.44 21.56 83.62 23.52 C 85.81 25.48 71.53 38.88 71.74 44.62 C 71.96 50.36 86.16 55.11 84.90 57.97 C 83.64 60.82 66.88 56.90 64.17 61.73 C 61.46 66.57 70.96 85.32 68.64 86.96 C 66.33 88.61 56.13 72.21 50.26 71.60 C 44.40 70.99 35.77 85.06 33.45 83.32 C 31.14 81.57 40.78 64.97 36.37 61.14 C 31.97 57.31 8.14 63.01 7.03 60.36 C 5.93 57.71 27.83 51.10 29.75 45.25 C 31.67 39.40 16.55 27.21 18.57 25.25 C 20.60 23.29 36.68 36.01 41.92 33.47 C 47.15 30.93 47.21 10.10 50.00 10.00 Z"
+      />
+      <path
+        className="logo-spot"
+        fill="var(--bg)"
+        d="M 54.87 50.60 C 54.43 51.90 49.83 50.75 47.82 52.34 C 45.81 53.93 44.10 60.42 42.78 60.15 C 41.47 59.87 41.55 52.62 39.94 50.68 C 38.32 48.75 33.67 49.85 33.09 48.54 C 32.51 47.22 35.80 45.17 36.45 42.81 C 37.10 40.44 35.62 34.98 36.98 34.35 C 38.34 33.72 42.14 38.57 44.60 39.03 C 47.06 39.48 50.76 36.17 51.73 37.08 C 52.70 38.00 49.91 42.25 50.43 44.51 C 50.95 46.76 55.30 49.29 54.87 50.60 Z"
+      />
+      <path
+        className="logo-pulse"
+        fill="none"
+        stroke="var(--coral)"
+        strokeWidth="6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M0 50 L12 50 L18 42 L24 50 L30 50 L38 50 L43 20 L48 80 L53 50 L60 50 L66 50 L72 38 L78 50 L84 50 L100 50"
+      />
     </svg>
   );
 }

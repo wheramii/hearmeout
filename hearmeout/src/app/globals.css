@@ -560,11 +560,9 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
   box-shadow:0 5px 16px -4px rgba(0,0,0,.3);
 }
 
-.logo-mark .logo-bar{ transform-box:fill-box; transform-origin:50% 100%; }
-.logo-mark.playing .logo-bar-1{ animation:logo-eq-bounce .9s ease-in-out infinite; animation-delay:0s; }
-.logo-mark.playing .logo-bar-2{ animation:logo-eq-bounce .9s ease-in-out infinite; animation-delay:.15s; }
-.logo-mark.playing .logo-bar-3{ animation:logo-eq-bounce .9s ease-in-out infinite; animation-delay:.3s; }
-@keyframes logo-eq-bounce{ 0%,100%{ transform:scaleY(.45); } 50%{ transform:scaleY(1); } }
+.logo-mark .logo-pulse{ stroke-dasharray:340; stroke-dashoffset:0; }
+.logo-mark.playing .logo-pulse{ animation:logo-pulse-sweep 1.4s linear infinite; }
+@keyframes logo-pulse-sweep{ from{ stroke-dashoffset:340; } to{ stroke-dashoffset:0; } }
 
 .rate-wrap{ text-align:center; padding-top:6px; }
 .rate-art{ width:150px; height:150px; border-radius:16px; margin:8px auto 18px; background-size:cover; background-position:center; border:1px solid var(--line); }
