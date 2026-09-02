@@ -14,7 +14,7 @@ async function loadProfile(handle: string) {
   const admin = supabaseAdmin();
   const { data: user } = await admin.from('users').select('id').eq('handle', normalized).maybeSingle();
   if (!user) return null;
-  return getUserProfile(admin, user.id, null);
+  return getUserProfile(admin, user.id, null, { publicTeaser: true });
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ handle: string }> }): Promise<Metadata> {

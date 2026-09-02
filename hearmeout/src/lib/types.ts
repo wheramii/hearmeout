@@ -56,6 +56,9 @@ export type LovedItem = { id: number; type: LovedItemType; itemId: string | null
 export type NowPlaying = { title: string; artist: string; cover: string | null; startedAt: string; durationMs: number | null };
 
 export type PublicProfile = ApiUser & {
+  // True when the viewer isn't the account owner or an accepted friend —
+  // every field below is a zeroed/empty stub in that case, not real data.
+  locked?: boolean;
   stats: { ratings: number; avg: number; reviews: number };
   genres: { g: string; pct: number }[];
   top4Albums: string[];

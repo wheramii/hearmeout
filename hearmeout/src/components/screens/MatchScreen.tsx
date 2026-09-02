@@ -54,7 +54,10 @@ export function MatchScreen(_props: { device: Device }) {
       <h1 className="page-title">{t('match.title')}</h1>
 
       {!me.friends.length ? (
-        <div className="empty-state">{t('friends.empty')}</div>
+        <div className="empty-state">
+          {t('friends.empty')}
+          <div style={{ marginTop: 10 }}><button className="btn-primary" style={{ margin: '0 auto' }} onClick={() => showScreen('profile')}>{t('friends.addFriendsTile')}</button></div>
+        </div>
       ) : (
         sorted.map((f) => (
           <div className="match-row" key={f.id} onClick={() => viewFriend(f.id)}>

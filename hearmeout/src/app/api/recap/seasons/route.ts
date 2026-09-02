@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { isFriendOf } from '@/lib/userProfile';
+import { isDemoAccountId } from '@/lib/demoAccounts';
 import { seasonsInRange } from '@/lib/seasons';
 
 export async function GET(request: NextRequest) {
@@ -11,6 +13,9 @@ export async function GET(request: NextRequest) {
   const targetUserId = url.searchParams.get('userId') || viewerId;
 
   const admin = supabaseAdmin();
+  if (targetUserId !== viewerId && !isDemoAccountId(targetUserId) && !(await isFriendOf(admin, targetUserId, viewerId))) {
+    return NextResponse.json({ error: 'not_friends' }, { status: 403 });
+  }
   const [{ data: oldest }, { data: newest }] = await Promise.all([
     admin.from('listening_events').select('played_at').eq('user_id', targetUserId).order('played_at', { ascending: true }).limit(1),
     admin.from('listening_events').select('played_at').eq('user_id', targetUserId).order('played_at', { ascending: false }).limit(1),

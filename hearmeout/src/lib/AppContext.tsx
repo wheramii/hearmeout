@@ -125,6 +125,7 @@ type AppContextValue = {
   loginWithPassword: (email: string, password: string) => Promise<void>;
   claimAccount: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<boolean>;
   updateProfileName: (name: string) => Promise<void>;
   updateProfileHandle: (handle: string) => Promise<void>;
   updateAvatar: (dataUrl: string) => Promise<void>;
@@ -368,6 +369,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await fetch('/api/auth/logout', { method: 'POST' });
     setMe(null);
     patch({ authStatus: 'anonymous' });
+  }, [patch]);
+
+  const deleteAccount = useCallback(async (): Promise<boolean> => {
+    const res = await fetch('/api/me', { method: 'DELETE' });
+    if (!res.ok) return false;
+    setMe(null);
+    patch({ authStatus: 'anonymous' });
+    return true;
   }, [patch]);
 
   const showScreen = useCallback((name: ScreenName) => patch({ activeScreen: name, navAction: 'push' }), [patch]);
@@ -620,8 +629,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
           : s.currentArtist,
       }));
-    } catch (err) {
-      const message = t('artist.loadError', { error: err instanceof Error ? err.message : String(err) });
+    } catch {
+      const message = t('artist.loadError');
       setState((s) => ({
         ...s,
         currentArtist: s.currentArtist && s.currentArtist.id === id
@@ -647,11 +656,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ? { ...s.currentArtist, albums: releaseGroups, loading: false }
           : s.currentArtist,
       }));
-    } catch (err) {
+    } catch {
       const isFileProtocol = typeof location !== 'undefined' && location.protocol === 'file:';
-      const message = isFileProtocol
-        ? t('artist.fileProtocolError')
-        : t('artist.loadError', { error: err instanceof Error ? err.message : String(err) });
+      const message = isFileProtocol ? t('artist.fileProtocolError') : t('artist.loadError');
       setState((s) => ({
         ...s,
         currentArtist: s.currentArtist && s.currentArtist.id === mbid
@@ -676,7 +683,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showScreen, goBack, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
+    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
@@ -684,7 +691,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRecapSeasonKey, recapSeasons,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout,
+    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 

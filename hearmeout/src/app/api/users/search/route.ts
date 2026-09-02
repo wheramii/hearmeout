@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { isDemoAccountId } from '@/lib/demoAccounts';
 
 export async function GET(request: NextRequest) {
   const userId = await getCurrentUserId();
@@ -18,5 +19,9 @@ export async function GET(request: NextRequest) {
     .limit(10);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json((data || []).map((u) => ({ id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url })));
+  return NextResponse.json(
+    (data || [])
+      .filter((u) => !isDemoAccountId(u.id))
+      .map((u) => ({ id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url }))
+  );
 }

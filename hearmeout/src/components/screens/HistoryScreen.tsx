@@ -77,7 +77,7 @@ function exportJson(ratings: RatingRecord[], albums: ReturnType<typeof useApp>['
 }
 
 export function HistoryScreen({ device }: { device: Device }) {
-  const { state, t, language, me, albums, liveAlbums, myRatings, setHistoryQuery } = useApp();
+  const { state, t, language, me, albums, liveAlbums, myRatings, setHistoryQuery, showScreen } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
   const [sort, setSort] = useState<Sort>('newest');
 
@@ -214,9 +214,15 @@ export function HistoryScreen({ device }: { device: Device }) {
           );
         })
       ) : state.historyQuery ? (
-        <div className="empty-state">{t('history.noResults')}</div>
+        <div className="empty-state">
+          {t('history.noResults')}
+          <div style={{ marginTop: 10 }}><button className="btn-ghost" onClick={() => setHistoryQuery('')}>{t('history.clearSearch')}</button></div>
+        </div>
       ) : (
-        <div className="empty-state">{t('history.emptyLine1')}<br />{t('history.emptyLine2')}</div>
+        <div className="empty-state">
+          {t('history.emptyLine1')}<br />{t('history.emptyLine2')}
+          <div style={{ marginTop: 10 }}><button className="btn-primary" style={{ margin: '0 auto' }} onClick={() => showScreen('catalog')}>{t('history.emptyCta')}</button></div>
+        </div>
       )}
     </>
   );

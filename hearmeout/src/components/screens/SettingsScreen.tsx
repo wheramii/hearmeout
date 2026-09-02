@@ -167,6 +167,46 @@ function LanguageRegionSection() {
   );
 }
 
+function DeleteAccountBlock() {
+  const { t, deleteAccount, showToast } = useApp();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  return (
+    <>
+      <div className="section-head" style={{ marginTop: 28 }}><h2>{t('settings.dangerZone')}</h2></div>
+      <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 12, lineHeight: 1.5 }}>{t('settings.deleteAccountHint')}</p>
+      <a href="/privacy" target="_blank" rel="noreferrer" className="settings-summary-link" style={{ display: 'inline-block', marginBottom: 14 }}>
+        {t('settings.whatWeStoreLink')}
+      </a>
+      {!confirming ? (
+        <button className="btn-ghost" style={{ width: '100%', color: 'var(--danger, #d05a4a)' }} onClick={() => setConfirming(true)}>
+          {t('settings.deleteAccountBtn')}
+        </button>
+      ) : (
+        <div style={{ border: '1px solid var(--line)', borderRadius: 14, padding: 14 }}>
+          <p style={{ fontSize: 13, marginBottom: 12 }}>{t('settings.deleteAccountConfirm')}</p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setConfirming(false)} disabled={busy}>{t('settings.deleteAccountCancel')}</button>
+            <button
+              className="btn-primary"
+              style={{ flex: 1, margin: 0 }}
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                const ok = await deleteAccount();
+                if (!ok) { setBusy(false); showToast(t('settings.deleteAccountFailed')); }
+              }}
+            >
+              {t('settings.deleteAccountReallyBtn')}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function SettingsScreen({ device }: { device: Device }) {
   const { t, me, syncSpotify, goBack } = useApp();
   const [section, setSection] = useState<Section>('appearance');
@@ -187,6 +227,7 @@ export function SettingsScreen({ device }: { device: Device }) {
         <>
           <div className="section-head"><h2>{t('profile.accountSection')}</h2></div>
           <div style={{ marginBottom: 22 }}><AccountBlock /></div>
+          <DeleteAccountBlock />
         </>
       )}
       {section === 'connections' && (

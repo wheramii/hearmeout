@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getCurrentUserId } from '@/lib/identity';
+import { getCurrentUserId, IDENTITY_COOKIE } from '@/lib/identity';
 import { getUserProfile } from '@/lib/userProfile';
 import { slugifyHandle } from '@/lib/slug';
 import type { ApiUser, Me } from '@/lib/types';
@@ -84,5 +85,39 @@ export async function PATCH(request: NextRequest) {
     if (error.code === '23505') return NextResponse.json({ error: 'handle_taken' }, { status: 409 });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  return NextResponse.json({ ok: true });
+}
+
+// Deletes the account and every row of personal data tied to it (ratings,
+// listening history, friendships in both directions, connections, etc.) —
+// not just the users row. Groups this person created are left alone (other
+// members' data shouldn't disappear because one member deleted their
+// account); this user is just removed from group_members.
+export async function DELETE() {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
+
+  const admin = supabaseAdmin();
+  const { data: user } = await admin.from('users').select('auth_user_id').eq('id', userId).maybeSingle();
+
+  await Promise.all([
+    admin.from('ratings').delete().eq('user_id', userId),
+    admin.from('listening_events').delete().eq('user_id', userId),
+    admin.from('loved_items').delete().eq('user_id', userId),
+    admin.from('connections').delete().eq('user_id', userId),
+    admin.from('group_members').delete().eq('user_id', userId),
+    admin.from('friendships').delete().eq('user_id', userId),
+    admin.from('friendships').delete().eq('friend_id', userId),
+    admin.from('friend_requests').delete().eq('from_user_id', userId),
+    admin.from('friend_requests').delete().eq('to_user_id', userId),
+    admin.from('match_snapshots').delete().eq('user_id', userId),
+    admin.from('match_snapshots').delete().eq('friend_id', userId),
+  ]);
+
+  await admin.from('users').delete().eq('id', userId);
+  if (user?.auth_user_id) await admin.auth.admin.deleteUser(user.auth_user_id as string);
+
+  const cookieStore = await cookies();
+  cookieStore.delete(IDENTITY_COOKIE);
   return NextResponse.json({ ok: true });
 }

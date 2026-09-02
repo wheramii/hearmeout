@@ -59,7 +59,7 @@ export function RegisterModal() {
         {mode === 'register' && (
           <input
             className="name-input"
-            style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, fontSize: 15, width: '100%' }}
+            style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, fontSize: 16, width: '100%' }}
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t('register.namePlaceholder')}
@@ -69,7 +69,7 @@ export function RegisterModal() {
         <input
           type="email"
           className="name-input"
-          style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, fontSize: 15, width: '100%' }}
+          style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, fontSize: 16, width: '100%' }}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder={t('register.emailPlaceholder')}
@@ -77,7 +77,7 @@ export function RegisterModal() {
         <input
           type="password"
           className="name-input"
-          style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 14, fontSize: 15, width: '100%' }}
+          style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 14, fontSize: 16, width: '100%' }}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder={t('register.passwordPlaceholder')}

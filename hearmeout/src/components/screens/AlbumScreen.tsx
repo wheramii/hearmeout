@@ -14,7 +14,7 @@ import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
 import { AlbumTagsSummary } from '../AlbumTagsSummary';
 
 export function AlbumScreen({ device }: { device: Device }) {
-  const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, spotifyCovers, reviewsVersion, goBack, openRateFor, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved } = useApp();
+  const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers, reviewsVersion, goBack, openRateFor, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved } = useApp();
   const { currentTrack, playQueue } = usePlayer();
   const staticMatch = albums.find((x) => x.id === state.currentAlbumId);
   const enriched = liveAlbums[state.currentAlbumId];
@@ -42,6 +42,7 @@ export function AlbumScreen({ device }: { device: Device }) {
   }
 
   const ratingInfo = albumRatings[a.id];
+  const myStars = myRatings.find((r) => r.albumId === a.id)?.stars ?? null;
   const cover = spotifyCovers[a.id] || a.cover;
 
   const heroArt = (
@@ -139,6 +140,11 @@ export function AlbumScreen({ device }: { device: Device }) {
             <div className="rd">{t('album.noRatings')}</div>
           )}
         </div>
+        {myStars != null && ratingInfo && (
+          <div className="rd" style={{ textAlign: 'center', marginTop: -10, marginBottom: 14 }}>
+            {t('album.yourVsAvg', { mine: myStars.toFixed(1), avg: ratingInfo.avg.toFixed(1) })}
+          </div>
+        )}
         {actions('center')}
         {distSection}
         <div className="section-head" style={{ marginTop: 22 }}><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>
@@ -170,6 +176,9 @@ export function AlbumScreen({ device }: { device: Device }) {
               <div className="num">{ratingInfo.avg.toFixed(1)}</div>
               <StarsAvg rating={ratingInfo.avg} />
               <div className="rd">{ratingInfo.count.toLocaleString(toLocale(language))} {pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}</div>
+              {myStars != null && (
+                <div className="rd" style={{ marginTop: 4 }}>{t('album.yourVsAvg', { mine: myStars.toFixed(1), avg: ratingInfo.avg.toFixed(1) })}</div>
+              )}
             </>
           ) : (
             <div className="rd">{t('album.noRatings')}</div>

@@ -20,19 +20,37 @@ const ibmPlexMono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
 });
 
+// The live URL — used to build absolute Open Graph/Twitter image URLs.
+// hearmeout-7zlh.onrender.com per the current Render service name; update
+// this if the service is ever renamed or moved to a custom domain.
+const SITE_URL = "https://hearmeout-7zlh.onrender.com";
+const SITE_DESCRIPTION = "Оценивай альбомы, сравнивай музыкальный вкус с друзьями и находи, что послушать дальше.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "HearMeOut",
-  description: "HearMeOut — listen, rate, and compare taste with friends",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: "HearMeOut",
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    siteName: "HearMeOut",
+    locale: "ru_RU",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "HearMeOut",
+    description: SITE_DESCRIPTION,
+  },
 };
 
-// The mobile handle input (and others) used to trigger iOS's auto-zoom on
-// focus whenever their font-size was under 16px — maximumScale plus
-// userScalable:false stops that outright, so the layout never rescales.
+// Pinch-zoom must stay available for low-vision users — every text input's
+// font-size is now >=16px (the actual fix for iOS's auto-zoom-on-focus,
+// which was previously worked around by blocking zoom outright).
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 const THEME_INIT_SCRIPT = `
@@ -45,7 +63,7 @@ try {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="ru"
       data-theme="dark"
       suppressHydrationWarning
       className={`${spaceGrotesk.variable} ${inter.variable} ${ibmPlexMono.variable}`}

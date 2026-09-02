@@ -59,7 +59,14 @@ export function CatalogScreen({ device }: { device: Device }) {
         {chips}
         <div className="section-head"><h2>{t('catalog.inCatalog')}</h2><span>{results.length}</span></div>
         <div className={gridClass}>{results.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
-        {!results.length && <div className="empty-state">{t('catalog.noResults')}</div>}
+        {!results.length && (
+          <div className="empty-state">
+            {t('catalog.noResults')}
+            <div style={{ marginTop: 10 }}>
+              <button className="btn-ghost" onClick={() => { setSearchQuery(''); setActiveGenre('Всё'); }}>{t('catalog.resetFilters')}</button>
+            </div>
+          </div>
+        )}
         {showLive && (
           <>
             <div className="section-head" style={{ marginTop: 22 }}><h2>{t('catalog.openLibrary')}</h2><span>MusicBrainz</span></div>

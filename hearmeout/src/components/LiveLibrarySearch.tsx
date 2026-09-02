@@ -35,12 +35,10 @@ export function LiveLibrarySearch({ query }: { query: string }) {
     const timer = setTimeout(() => {
       searchLibrary(query)
         .then((r) => { if (!cancelled) { setResult(r); setLoading(false); } })
-        .catch((err) => {
+        .catch(() => {
           if (cancelled) return;
           const isFileProtocol = typeof location !== 'undefined' && location.protocol === 'file:';
-          setError(isFileProtocol
-            ? t('liveSearch.fileProtocolError')
-            : t('liveSearch.error', { error: err instanceof Error ? err.message : String(err) }));
+          setError(isFileProtocol ? t('liveSearch.fileProtocolError') : t('liveSearch.error'));
           setLoading(false);
         });
     }, 450);

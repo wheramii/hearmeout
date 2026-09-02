@@ -179,7 +179,7 @@ export function ProfileScreen({ device }: { device: Device }) {
       <div className="side">
         <AvatarPicker size={120} />
         <div><input className="name-input" defaultValue={me.name} style={{ fontSize: 22, marginTop: 14 }} onBlur={(e) => updateProfileName(e.target.value)} />{me.isPremium && <PremiumBadge />}</div>
-        <input className="handle-input" defaultValue={me.handle} style={{ fontSize: 13 }} onBlur={(e) => updateProfileHandle(e.target.value)} />
+        <input className="handle-input" defaultValue={me.handle} style={{ fontSize: 16 }} onBlur={(e) => updateProfileHandle(e.target.value)} />
         <div className="profile-joined">{t('profile.joined')} {formatJoinDate(me.joinedAt, language)}</div>
         <div className="stat-grid cols-2" style={{ marginTop: 22 }}>
           <div className="box"><div className="v">{me.stats.ratings}</div><div className="l">{t('profile.ratings')}</div></div>

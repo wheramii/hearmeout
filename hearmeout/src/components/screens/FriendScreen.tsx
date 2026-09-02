@@ -9,6 +9,7 @@ import { CoverArt } from '../ui/CoverArt';
 import { accentMix } from '@/lib/accentGradient';
 import { toLocale } from '@/lib/i18n';
 import { drawBlendPoster } from '@/lib/posterCanvas';
+import { isDemoAccountId } from '@/lib/demoAccounts';
 
 function BlendButton({ me, friend, friendName, matchPct }: { me: string; friend: string; friendName: string; matchPct: number | null }) {
   const { t, ensureRecap, recapCache } = useApp();
@@ -172,19 +173,19 @@ export function FriendScreen({ device }: { device: Device }) {
   // is actually computed. Fire-and-forget; a failed write just means one
   // fewer data point, never a crash.
   useEffect(() => {
-    if (!f || matchScore == null) return;
+    if (!f || f.locked || matchScore == null) return;
     fetch('/api/match/snapshot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ friendId: f.id, pct: matchScore }) }).catch(() => {});
   }, [f, matchScore]);
 
   useEffect(() => {
-    if (!f) { setMatchHistory(null); return; }
+    if (!f || f.locked) { setMatchHistory(null); return; }
     let cancelled = false;
     fetch(`/api/match/${f.id}/history`).then((r) => (r.ok ? r.json() : { history: [] })).then((d) => { if (!cancelled) setMatchHistory(d.history); });
     return () => { cancelled = true; };
-  }, [f?.id]);
+  }, [f?.id, f?.locked]);
 
   useEffect(() => {
-    if (!f) { setMyStats(null); setFriendStats(null); return; }
+    if (!f || f.locked) { setMyStats(null); setFriendStats(null); return; }
     let cancelled = false;
     Promise.all([
       fetch('/api/stats?range=6m').then((r) => (r.ok ? r.json() : null)),
@@ -207,6 +208,29 @@ export function FriendScreen({ device }: { device: Device }) {
   const isPending = friendRequests.outgoing.some((r) => r.user.id === f.id);
   const isFullView = !!f.recentRatings; // server only sends this for self / accepted friends
 
+  if (f.locked) {
+    return (
+      <>
+        <button className="back-btn" onClick={() => goBack('profile')}>{t('friend.back')}</button>
+        <div className="friend-band">
+          <div className="friend-band-avatar" style={userAvatarStyle(f)} />
+          <div className="friend-band-mid">
+            <h1>{f.name}</h1>
+            <div className="friend-band-meta">{f.handle}</div>
+            <div className="album-actions">
+              {isPending ? (
+                <span className="action-chip">{t('friend.requestSent')}</span>
+              ) : (
+                <button className="action-chip primary" onClick={() => addFriend(f.handle)}>{t('friend.addThem')}</button>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="empty-state" style={{ marginTop: 18 }}>{t('friend.lockedHint')}</div>
+      </>
+    );
+  }
+
   return (
     <>
       <button className="back-btn" onClick={() => goBack('profile')}>{t('friend.back')}</button>
@@ -222,7 +246,9 @@ export function FriendScreen({ device }: { device: Device }) {
             </div>
           )}
           <div className="album-actions">
-            {isFriend ? (
+            {isDemoAccountId(f.id) ? (
+              <span className="action-chip">{t('friend.demoLabel')}</span>
+            ) : isFriend ? (
               <span className="action-chip added">{t('friend.alreadyFriend')}</span>
             ) : isPending ? (
               <span className="action-chip">{t('friend.requestSent')}</span>

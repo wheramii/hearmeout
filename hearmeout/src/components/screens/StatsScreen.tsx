@@ -95,7 +95,7 @@ function CalendarHeatmap() {
 }
 
 export function StatsScreen(_props: { device: Device }) {
-  const { t, language, me, lovedItems, toggleLoved } = useApp();
+  const { t, language, me, lovedItems, toggleLoved, showScreen } = useApp();
   const [range, setRange] = useState<StatsRange>('6m');
   const [data, setData] = useState<StatsData | null>(null);
 
@@ -126,7 +126,10 @@ export function StatsScreen(_props: { device: Device }) {
       {!data ? (
         <div className="archive-loading">{t('stats.loading')}</div>
       ) : data.trackCount === 0 ? (
-        <div className="empty-state">{t('stats.empty')}</div>
+        <div className="empty-state">
+          {t('stats.empty')}
+          <div style={{ marginTop: 10 }}><button className="btn-primary" style={{ margin: '0 auto' }} onClick={() => showScreen('settings')}>{t('stats.emptyCta')}</button></div>
+        </div>
       ) : (
         <>
           <div className="recap-stats-row" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(90px,1fr))' }}>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import { acceptFriendRequest } from '@/lib/friendRequests';
+import { isDemoAccountId } from '@/lib/demoAccounts';
 
 // Sends a friend request (pending, needs the other side to accept) rather
 // than adding instantly — replaces the old instant-mutual-add behavior.
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
   if (findErr) return NextResponse.json({ error: findErr.message }, { status: 500 });
   if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   if (target.id === userId) return NextResponse.json({ error: 'self' }, { status: 400 });
+  if (isDemoAccountId(target.id)) return NextResponse.json({ error: 'demo_account' }, { status: 400 });
 
   const { data: existingFriendship } = await admin
     .from('friendships')

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ApiUser, NowPlaying, PublicProfile } from './types';
+import { isDemoAccountId } from './demoAccounts';
 
 // The sync job polls Spotify's recently-played list periodically rather
 // than instantly, so "still playing" is an approximation, capped at 6
@@ -28,10 +29,18 @@ async function fetchNowPlaying(admin: SupabaseClient, userId: string): Promise<N
 // person's own friend list) and their recent activity only go out when the
 // viewer is this person themself or already an accepted friend of theirs,
 // so a stranger's full social graph isn't exposed to anyone who finds a link.
+//
+// `publicTeaser` is for the one deliberate exception: the /u/[handle] share
+// page, which a user hands out themselves as a link. Strangers there get
+// the old teaser tier (stats/genres/top albums, never reviews or the friend
+// graph) instead of the fully-locked stub that in-app browsing-by-search
+// gets — sharing your own link is an opt-in disclosure, being found by a
+// stranger's search inside the app isn't.
 export async function getUserProfile(
   admin: SupabaseClient,
   userId: string,
-  viewerId?: string | null
+  viewerId?: string | null,
+  opts?: { publicTeaser?: boolean }
 ): Promise<PublicProfile | null> {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
@@ -46,6 +55,33 @@ export async function getUserProfile(
 
   if (userErr) throw userErr;
   if (!user) return null;
+
+  const isSelf = !!viewerId && viewerId === userId;
+  const isMutualFriend = !isSelf && !!viewerId && await isFriendOf(admin, userId, viewerId);
+  // Demo fixture accounts (see demoAccounts.ts) are open to everyone — the
+  // whole point is letting a friendless user try the comparison feature.
+  const isOpen = isSelf || isMutualFriend || isDemoAccountId(userId);
+
+  // Full profiles are for the account owner and their accepted friends only
+  // — anyone else (including someone who just found this person by search)
+  // gets a name-card stub, not real stats/history/currently-playing. Search
+  // and sending a friend request still work; *viewing* the profile doesn't
+  // until that request is accepted.
+  if (!isOpen && !opts?.publicTeaser) {
+    return {
+      id: user.id,
+      name: user.name,
+      handle: user.handle,
+      avatarUrl: user.avatar_url,
+      locked: true,
+      stats: { ratings: 0, avg: 0, reviews: 0 },
+      nowPlaying: null,
+      genres: [],
+      top4Albums: [],
+      minutesToday: 0,
+      joinedAt: user.created_at as string,
+    };
+  }
 
   const ratingsList = ratings || [];
   const avg = ratingsList.length ? ratingsList.reduce((s, r) => s + Number(r.stars), 0) / ratingsList.length : 0;
@@ -78,9 +114,7 @@ export async function getUserProfile(
     joinedAt: user.created_at as string,
   };
 
-  const isSelf = !!viewerId && viewerId === userId;
-  const isMutualFriend = !isSelf && !!viewerId && await isFriendOf(admin, userId, viewerId);
-  if (isSelf || isMutualFriend) {
+  if (isOpen) {
     profile.recentRatings = ratingsList.slice(0, 20).map((r) => ({
       albumId: r.album_id as string,
       stars: Number(r.stars),
@@ -103,7 +137,7 @@ export async function getUserProfile(
   return profile;
 }
 
-async function isFriendOf(admin: SupabaseClient, userId: string, viewerId: string): Promise<boolean> {
+export async function isFriendOf(admin: SupabaseClient, userId: string, viewerId: string): Promise<boolean> {
   const { data } = await admin
     .from('friendships')
     .select('user_id')
