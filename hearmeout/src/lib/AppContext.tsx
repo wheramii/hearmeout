@@ -53,13 +53,12 @@ type SortBy = 'year' | 'genre' | 'artist';
 type RateOrigin = 'album' | 'history';
 type AuthStatus = 'loading' | 'anonymous' | 'ready';
 
-// Screens reachable "from content" (an album, an artist, a friend, the
-// rating form, a recap, settings) get a real browser-history entry and URL
-// so the browser's own back/forward buttons work on them, same as any other
-// site. The 7 top-level tab screens (catalog/history/match/stats/groups/
-// discover/profile) deliberately don't — switching tabs replaces the
-// current entry instead of stacking, exactly like a native app's tab bar.
-const DETAIL_SCREENS = new Set<ScreenName>(['album', 'artist', 'friend', 'rate', 'recap', 'settings']);
+// Every screen — the 7 top-level tabs included — gets a real browser-
+// history entry and URL, so the browser's own back/forward buttons work
+// everywhere on the site, not just on "content" pages.
+const ALL_SCREENS = new Set<ScreenName>([
+  'catalog', 'album', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'discover', 'settings',
+]);
 
 // What's stored as `history.state` for one entry — enough to restore that
 // screen on popstate without re-deriving it from the URL. `hmoDepth` is how
@@ -86,30 +85,32 @@ function currentHistoryDepth(): number {
 
 function urlForSnapshot(snap: Omit<ScreenSnapshot, 'hmoDepth'>): string {
   switch (snap.activeScreen) {
+    case 'catalog': return '/';
     case 'album': return `/?screen=album&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
     case 'rate': return `/?screen=rate&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
     case 'friend': return `/?screen=friend&id=${encodeURIComponent(snap.viewingUserId || '')}`;
     case 'recap': return `/?screen=recap&id=${encodeURIComponent(snap.recapViewUserId || '')}`;
     case 'artist': return `/?screen=artist&id=${encodeURIComponent(snap.artistId || '')}&source=${snap.artistSource}&name=${encodeURIComponent(snap.artistName || '')}`;
-    case 'settings': return '/?screen=settings';
-    default: return '/';
+    default: return `/?screen=${snap.activeScreen}`;
   }
 }
 
-// Called right after patching a "detail" screen into view — adds one entry
-// the browser's back button will actually stop on.
+// Called right after patching a screen into view — adds one entry the
+// browser's back button will actually stop on. Every screen goes through
+// this, main tabs included: clicking Home → Match → Stats pushes three
+// stops, same as any other site's navigation.
 function pushScreenHistory(snap: Omit<ScreenSnapshot, 'hmoDepth'>) {
   if (typeof window === 'undefined') return;
   const full: ScreenSnapshot = { ...snap, hmoDepth: currentHistoryDepth() + 1 };
   window.history.pushState(full, '', urlForSnapshot(full));
 }
-// Called for tab switches (URL stays "/", no new stop for back to land on)
-// and to keep an already-pushed entry's stored data fresh in place (e.g.
-// once an artist finishes loading) without adding another one.
+// Keeps an already-pushed entry's stored data fresh in place (e.g. once an
+// artist finishes loading, or seeding the very first entry on mount)
+// without adding a new one.
 function replaceScreenHistory(snap: Omit<ScreenSnapshot, 'hmoDepth'>) {
   if (typeof window === 'undefined') return;
   const full: ScreenSnapshot = { ...snap, hmoDepth: currentHistoryDepth() };
-  window.history.replaceState(full, '', DETAIL_SCREENS.has(snap.activeScreen) ? urlForSnapshot(full) : '/');
+  window.history.replaceState(full, '', urlForSnapshot(full));
 }
 
 type AppState = {
@@ -465,8 +466,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const showScreen = useCallback((name: ScreenName) => {
     patch({ activeScreen: name, navAction: 'push' });
-    if (DETAIL_SCREENS.has(name)) pushScreenHistory({ activeScreen: name });
-    else replaceScreenHistory({ activeScreen: name });
+    // Re-clicking the tab you're already on doesn't push a duplicate stop.
+    if (stateRef.current.activeScreen !== name) pushScreenHistory({ activeScreen: name });
   }, [patch]);
   // Real browser back (when there's an in-app entry to return to) instead
   // of jumping straight to `name` — lets a "← Back" button and the
@@ -787,12 +788,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [t]);
 
-  // Makes the browser's own back/forward buttons work for "content" screens
-  // (album/artist/friend/rate/recap/settings — see DETAIL_SCREENS above):
-  // restores whatever ScreenSnapshot a push/replace call earlier attached
-  // to that history entry. Also handles landing directly on a detail-screen
-  // URL (a shared link, or refreshing the page) by parsing the query string
-  // the same way, since there's no history.state yet in that case.
+  // Makes the browser's own back/forward buttons work everywhere: restores
+  // whatever ScreenSnapshot a push/replace call earlier attached to that
+  // history entry. Also handles landing directly on a screen's URL (a
+  // shared link, or refreshing the page) by parsing the query string the
+  // same way, since there's no history.state yet in that case.
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -829,7 +829,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!(window.history.state as ScreenSnapshot | null)?.activeScreen) {
       const params = new URLSearchParams(window.location.search);
       const screen = params.get('screen') as ScreenName | null;
-      if (screen && DETAIL_SCREENS.has(screen)) {
+      if (screen && ALL_SCREENS.has(screen)) {
         const id = params.get('id') ?? undefined;
         restore({
           activeScreen: screen,
