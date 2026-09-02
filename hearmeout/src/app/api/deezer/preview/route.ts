@@ -95,10 +95,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (!result) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-    // No Cache-Control here: Netlify's edge cache keys this route by path
-    // only, ignoring the artist/title query string — an s-maxage header
-    // was making every album return whatever got cached for the very
-    // first request, regardless of what was actually asked for.
+    // Deliberately no Cache-Control: this route is keyed by artist/title
+    // query params, and an edge cache that only looks at the path (not the
+    // full query string) would serve one album's preview for every request.
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
