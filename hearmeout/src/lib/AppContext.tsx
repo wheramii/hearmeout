@@ -53,6 +53,65 @@ type SortBy = 'year' | 'genre' | 'artist';
 type RateOrigin = 'album' | 'history';
 type AuthStatus = 'loading' | 'anonymous' | 'ready';
 
+// Screens reachable "from content" (an album, an artist, a friend, the
+// rating form, a recap, settings) get a real browser-history entry and URL
+// so the browser's own back/forward buttons work on them, same as any other
+// site. The 7 top-level tab screens (catalog/history/match/stats/groups/
+// discover/profile) deliberately don't — switching tabs replaces the
+// current entry instead of stacking, exactly like a native app's tab bar.
+const DETAIL_SCREENS = new Set<ScreenName>(['album', 'artist', 'friend', 'rate', 'recap', 'settings']);
+
+// What's stored as `history.state` for one entry — enough to restore that
+// screen on popstate without re-deriving it from the URL. `hmoDepth` is how
+// browser back/forward tell whether there's an in-app entry to actually pop
+// to (see goBack/closeRecap below) — it's read back off `history.state`
+// itself (not a ref) so it stays correct even after real back/forward.
+type ScreenSnapshot = {
+  activeScreen: ScreenName;
+  hmoDepth: number;
+  currentAlbumId?: string;
+  viewingUserId?: string;
+  recapViewUserId?: string;
+  recapOrigin?: ScreenName;
+  rateOrigin?: RateOrigin;
+  artistId?: string;
+  artistName?: string;
+  artistSource?: 'spotify' | 'musicbrainz';
+};
+
+function currentHistoryDepth(): number {
+  if (typeof window === 'undefined') return 0;
+  return (window.history.state as ScreenSnapshot | null)?.hmoDepth ?? 0;
+}
+
+function urlForSnapshot(snap: Omit<ScreenSnapshot, 'hmoDepth'>): string {
+  switch (snap.activeScreen) {
+    case 'album': return `/?screen=album&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
+    case 'rate': return `/?screen=rate&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
+    case 'friend': return `/?screen=friend&id=${encodeURIComponent(snap.viewingUserId || '')}`;
+    case 'recap': return `/?screen=recap&id=${encodeURIComponent(snap.recapViewUserId || '')}`;
+    case 'artist': return `/?screen=artist&id=${encodeURIComponent(snap.artistId || '')}&source=${snap.artistSource}&name=${encodeURIComponent(snap.artistName || '')}`;
+    case 'settings': return '/?screen=settings';
+    default: return '/';
+  }
+}
+
+// Called right after patching a "detail" screen into view — adds one entry
+// the browser's back button will actually stop on.
+function pushScreenHistory(snap: Omit<ScreenSnapshot, 'hmoDepth'>) {
+  if (typeof window === 'undefined') return;
+  const full: ScreenSnapshot = { ...snap, hmoDepth: currentHistoryDepth() + 1 };
+  window.history.pushState(full, '', urlForSnapshot(full));
+}
+// Called for tab switches (URL stays "/", no new stop for back to land on)
+// and to keep an already-pushed entry's stored data fresh in place (e.g.
+// once an artist finishes loading) without adding another one.
+function replaceScreenHistory(snap: Omit<ScreenSnapshot, 'hmoDepth'>) {
+  if (typeof window === 'undefined') return;
+  const full: ScreenSnapshot = { ...snap, hmoDepth: currentHistoryDepth() };
+  window.history.replaceState(full, '', DETAIL_SCREENS.has(snap.activeScreen) ? urlForSnapshot(full) : '/');
+}
+
 type AppState = {
   authStatus: AuthStatus;
   language: Language;
@@ -140,8 +199,8 @@ type AppContextValue = {
   syncSpotify: () => Promise<void>;
   onSpotifyConnected: () => Promise<void>;
   importStreamingHistory: (files: File[]) => Promise<{ imported: number; skipped: number; errors: string[] } | null>;
-  openArtist: (mbid: string, name: string) => Promise<void>;
-  openSpotifyArtist: (id: string) => Promise<void>;
+  openArtist: (mbid: string, name: string, fromHistory?: boolean) => Promise<void>;
+  openSpotifyArtist: (id: string, fromHistory?: boolean) => Promise<void>;
   ensureLiveAlbum: (id: string, spotifyId?: string) => void;
   showToast: (msg: string) => void;
 };
@@ -190,6 +249,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const requestedRecapKeys = useRef<Set<string>>(new Set());
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRegionFetched = useRef<string | null | undefined>(undefined);
+  // Mirrors `state` so callbacks that build a history snapshot right after
+  // calling setState can read the just-computed value without needing
+  // `state` itself in their dependency array (which would recreate them,
+  // and every stable-identity callback here is already relied on elsewhere
+  // via useCallback deps).
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
 
   const patch = useCallback((p: Partial<AppState>) => setState((s) => ({ ...s, ...p })), []);
   const t = useCallback((key: TranslationKey, vars?: Record<string, string | number>) => translate(state.language, key, vars), [state.language]);
@@ -397,9 +463,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return true;
   }, [patch]);
 
-  const showScreen = useCallback((name: ScreenName) => patch({ activeScreen: name, navAction: 'push' }), [patch]);
-  const goBack = useCallback((name: ScreenName) => patch({ activeScreen: name, navAction: 'pop' }), [patch]);
-  const openAlbum = useCallback((id: string) => patch({ currentAlbumId: id, activeScreen: 'album', navAction: 'push' }), [patch]);
+  const showScreen = useCallback((name: ScreenName) => {
+    patch({ activeScreen: name, navAction: 'push' });
+    if (DETAIL_SCREENS.has(name)) pushScreenHistory({ activeScreen: name });
+    else replaceScreenHistory({ activeScreen: name });
+  }, [patch]);
+  // Real browser back (when there's an in-app entry to return to) instead
+  // of jumping straight to `name` — lets a "← Back" button and the
+  // browser's own back button land you on exactly the same place, since
+  // they now go through the same popstate path. `name` is only used as a
+  // fallback for a page that was deep-linked straight into a detail screen,
+  // where there's nothing in our own history to pop back through.
+  const goBack = useCallback((name: ScreenName) => {
+    if (currentHistoryDepth() > 0) window.history.back();
+    else patch({ activeScreen: name, navAction: 'pop' });
+  }, [patch]);
+  const openAlbum = useCallback((id: string) => {
+    patch({ currentAlbumId: id, activeScreen: 'album', navAction: 'push' });
+    pushScreenHistory({ activeScreen: 'album', currentAlbumId: id });
+  }, [patch]);
 
   const openRateFor = useCallback((id: string, origin: RateOrigin) => {
     setState((s) => {
@@ -414,13 +496,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
         navAction: 'push',
       };
     });
+    pushScreenHistory({ activeScreen: 'rate', currentAlbumId: id, rateOrigin: origin });
   }, [myRatings]);
 
-  const viewFriend = useCallback((id: string) => patch({ viewingUserId: id, activeScreen: 'friend', navAction: 'push' }), [patch]);
+  const viewFriend = useCallback((id: string) => {
+    patch({ viewingUserId: id, activeScreen: 'friend', navAction: 'push' });
+    pushScreenHistory({ activeScreen: 'friend', viewingUserId: id });
+  }, [patch]);
   const openRecap = useCallback((userId: string) => {
-    setState((s) => ({ ...s, recapViewUserId: userId, recapOrigin: s.activeScreen, activeScreen: 'recap', navAction: 'push' }));
+    const origin = stateRef.current.activeScreen;
+    setState((s) => ({ ...s, recapViewUserId: userId, recapOrigin: origin, activeScreen: 'recap', navAction: 'push' }));
+    pushScreenHistory({ activeScreen: 'recap', recapViewUserId: userId, recapOrigin: origin });
   }, []);
   const closeRecap = useCallback(() => {
+    if (currentHistoryDepth() > 0) { window.history.back(); return; }
     setState((s) => ({ ...s, activeScreen: s.recapOrigin || 'catalog', navAction: 'pop' }));
   }, []);
 
@@ -476,15 +565,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     await Promise.all([refreshMyRatings(), refreshAlbumRatings(), refreshMe()]);
     setReviewsVersion((v) => v + 1);
-    setState((s) => ({
-      ...s,
-      ratingValue: 0,
-      ratingDraftText: '',
-      activeScreen: s.rateOrigin === 'history' ? 'history' : 'album',
-      navAction: 'pop',
-    }));
+    patch({ ratingValue: 0, ratingDraftText: '' });
+    // Saving and returning is the same "go back to where the rate form was
+    // opened from" as the explicit back button — same history.back() path,
+    // so the rate screen's pushed entry doesn't linger as a dead end you'd
+    // otherwise have to click "back" through twice.
+    if (currentHistoryDepth() > 0) window.history.back();
+    else setState((s) => ({ ...s, activeScreen: s.rateOrigin === 'history' ? 'history' : 'album', navAction: 'pop' }));
     showToast(isEditing ? t('toast.ratingUpdated') : t('toast.published'));
-  }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast, t]);
+  }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast, t, patch]);
 
   const updateProfileName = useCallback(async (name: string) => {
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
@@ -625,13 +714,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  const openSpotifyArtist = useCallback(async (id: string) => {
+  // `fromHistory` is set only when the popstate handler below is replaying
+  // a browser back/forward into an artist page — the fetch still needs to
+  // happen (artist detail isn't cached in history.state), but it mustn't
+  // push *another* entry on top of the one the user just navigated to.
+  const openSpotifyArtist = useCallback(async (id: string, fromHistory = false) => {
     setState((s) => ({
       ...s,
       currentArtist: { id, name: s.currentArtist?.id === id ? s.currentArtist.name : '', source: 'spotify', albums: null, loading: true, error: null },
       activeScreen: 'artist',
       navAction: 'push',
     }));
+    if (!fromHistory) pushScreenHistory({ activeScreen: 'artist', artistId: id, artistName: '', artistSource: 'spotify' });
     try {
       const res = await fetch(`/api/spotify/artist/${id}`);
       if (!res.ok) throw new Error(String(res.status));
@@ -652,6 +746,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
           : s.currentArtist,
       }));
+      replaceScreenHistory({ activeScreen: 'artist', artistId: id, artistName: data.name, artistSource: 'spotify' });
     } catch {
       const message = t('artist.loadError');
       setState((s) => ({
@@ -663,13 +758,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [t]);
 
-  const openArtist = useCallback(async (mbid: string, name: string) => {
+  const openArtist = useCallback(async (mbid: string, name: string, fromHistory = false) => {
     setState((s) => ({
       ...s,
       currentArtist: { id: mbid, name, source: 'musicbrainz', albums: null, loading: true, error: null },
       activeScreen: 'artist',
       navAction: 'push',
     }));
+    if (!fromHistory) pushScreenHistory({ activeScreen: 'artist', artistId: mbid, artistName: name, artistSource: 'musicbrainz' });
     try {
       const { fetchArtistReleaseGroups } = await import('./musicbrainz');
       const releaseGroups = await fetchArtistReleaseGroups(mbid);
@@ -690,6 +786,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }));
     }
   }, [t]);
+
+  // Makes the browser's own back/forward buttons work for "content" screens
+  // (album/artist/friend/rate/recap/settings — see DETAIL_SCREENS above):
+  // restores whatever ScreenSnapshot a push/replace call earlier attached
+  // to that history entry. Also handles landing directly on a detail-screen
+  // URL (a shared link, or refreshing the page) by parsing the query string
+  // the same way, since there's no history.state yet in that case.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const restore = (snap: ScreenSnapshot | null) => {
+      // `snap` can be a truthy object with none of our fields — Next.js's
+      // own router patches history.state with its own internal tracking
+      // data, and the very first entry (from before this app ever touched
+      // history) only has that, not a ScreenSnapshot.
+      if (!snap?.activeScreen) { setState((s) => ({ ...s, activeScreen: 'catalog', navAction: 'pop' })); return; }
+      if (snap.activeScreen === 'artist' && snap.artistId) {
+        if (snap.artistSource === 'musicbrainz') openArtist(snap.artistId, snap.artistName || '', true);
+        else openSpotifyArtist(snap.artistId, true);
+        return;
+      }
+      setState((s) => ({
+        ...s,
+        activeScreen: snap.activeScreen,
+        currentAlbumId: snap.currentAlbumId ?? s.currentAlbumId,
+        viewingUserId: snap.viewingUserId ?? s.viewingUserId,
+        recapViewUserId: snap.recapViewUserId ?? s.recapViewUserId,
+        recapOrigin: snap.recapOrigin ?? s.recapOrigin,
+        rateOrigin: snap.rateOrigin ?? s.rateOrigin,
+        navAction: 'pop',
+      }));
+    };
+
+    const onPopState = (e: PopStateEvent) => restore(e.state as ScreenSnapshot | null);
+    window.addEventListener('popstate', onPopState);
+
+    // Next.js's own router already populates history.state with its own
+    // internal tracking object before this effect ever runs (even on a
+    // fresh load), so checking for the absence of history.state entirely
+    // never actually triggers — check for the absence of *our* field.
+    if (!(window.history.state as ScreenSnapshot | null)?.activeScreen) {
+      const params = new URLSearchParams(window.location.search);
+      const screen = params.get('screen') as ScreenName | null;
+      if (screen && DETAIL_SCREENS.has(screen)) {
+        const id = params.get('id') ?? undefined;
+        restore({
+          activeScreen: screen,
+          hmoDepth: 0,
+          currentAlbumId: id,
+          viewingUserId: id,
+          recapViewUserId: id,
+          artistId: id,
+          artistName: params.get('name') ?? undefined,
+          artistSource: (params.get('source') as 'spotify' | 'musicbrainz' | null) ?? undefined,
+        });
+      } else {
+        // No deep link — seed this very first entry with a real snapshot
+        // too, so going back to it later restores 'catalog' the normal way
+        // instead of relying on the no-activeScreen fallback above.
+        replaceScreenHistory({ activeScreen: 'catalog' });
+      }
+    }
+
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [openArtist, openSpotifyArtist]);
 
   const liveAlbums = useMemo(() => {
     const map: Record<string, Album> = {};
