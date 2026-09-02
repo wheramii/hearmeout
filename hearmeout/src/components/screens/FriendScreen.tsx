@@ -226,7 +226,11 @@ export function FriendScreen({ device }: { device: Device }) {
             </div>
           </div>
         </div>
-        <div className="empty-state" style={{ marginTop: 18 }}>{t('friend.lockedHint')}</div>
+        <div className="closed-profile-notice">
+          <span className="closed-profile-lock">🔒</span>
+          <div className="closed-profile-title">{t('friend.closedProfileTitle')}</div>
+          <div className="closed-profile-sub">{t('friend.lockedHint')}</div>
+        </div>
       </>
     );
   }

@@ -324,6 +324,57 @@ export function FriendRequestsBlock() {
   );
 }
 
+function InviteLinkButtons() {
+  const { t, me, showToast } = useApp();
+  const [showQr, setShowQr] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [loadingQr, setLoadingQr] = useState(false);
+  if (!me) return null;
+
+  const inviteUrl = typeof window !== 'undefined' ? `${window.location.origin}/invite/${me.id}` : '';
+
+  const share = async () => {
+    const text = t('friends.inviteLinkMessage', { name: me.name.split(' ')[0] });
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share({ url: inviteUrl, text }); return; } catch { /* user cancelled — fall through to copy */ }
+    }
+    try {
+      await navigator.clipboard.writeText(`${text} ${inviteUrl}`);
+      showToast(t('toast.inviteCopied'));
+    } catch {
+      showToast(inviteUrl);
+    }
+  };
+
+  const toggleQr = async () => {
+    if (showQr) { setShowQr(false); return; }
+    if (!qrDataUrl) {
+      setLoadingQr(true);
+      const QRCode = (await import('qrcode')).default;
+      const url = await QRCode.toDataURL(inviteUrl, { width: 220, margin: 1, color: { dark: '#171410', light: '#ffffff' } });
+      setQrDataUrl(url);
+      setLoadingQr(false);
+    }
+    setShowQr(true);
+  };
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <button className="btn-ghost" style={{ flex: 1 }} onClick={share}>{t('friends.getInviteLink')}</button>
+        <button className="btn-ghost" style={{ flex: 1 }} onClick={toggleQr} disabled={loadingQr}>{t('friends.showQr')}</button>
+      </div>
+      {showQr && qrDataUrl && (
+        <div style={{ textAlign: 'center', marginTop: 12 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- a locally-generated data: URI, not an external/optimizable image */}
+          <img src={qrDataUrl} alt="QR code to add me as a friend" style={{ width: 180, height: 180, borderRadius: 12 }} />
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>{t('friends.qrHint')}</div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function FriendsBlock() {
   const { t, me, viewFriend, addFriend } = useApp();
   const [handle, setHandle] = useState('');
@@ -363,6 +414,7 @@ export function FriendsBlock() {
         />
         <button className="chip" type="submit" disabled={submitting}>{t('friends.add')}</button>
       </form>
+      <InviteLinkButtons />
     </>
   );
 }

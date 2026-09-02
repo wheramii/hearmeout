@@ -4,7 +4,7 @@ import { useMemo, useRef } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate } from '@/lib/format';
-import { LANGUAGE_LABEL, regionDisplayName, pluralForKey } from '@/lib/i18n';
+import { regionDisplayName, pluralForKey } from '@/lib/i18n';
 import { GenresBlock, TasteFingerprint, RecentRatingsGrid, Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock, LovedTracksBlock } from '../ProfileBlocks';
 import { PremiumBadge } from '../ui/PremiumBadge';
 
@@ -48,7 +48,6 @@ function SettingsSummary() {
   return (
     <>
       <div className="section-head"><h2>{t('settings.eyebrow')}</h2></div>
-      <div className="settings-summary-row"><span className="l">{t('profile.language')}</span><span>{LANGUAGE_LABEL[language]}</span></div>
       <div className="settings-summary-row"><span className="l">{t('profile.region')}</span><span>{me.region ? regionDisplayName(me.region, language) : t('profile.regionNone')}</span></div>
       <button className="settings-summary-link" onClick={() => showScreen('settings')}>{t('settings.openAll')} →</button>
     </>

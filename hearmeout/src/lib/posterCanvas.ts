@@ -35,13 +35,13 @@ export function drawRecapPoster(canvas: HTMLCanvasElement, data: RecapData, name
   ctx.fillText(String(data.minutes), 64, 400);
   ctx.fillStyle = '#948b7d';
   ctx.font = '500 28px sans-serif';
-  ctx.fillText('минут прослушано', 64, 440);
+  ctx.fillText('minutes listened', 64, 440);
 
   let y = 540;
   if (data.topArtists.length) {
     ctx.fillStyle = '#948b7d';
     ctx.font = '600 22px sans-serif';
-    ctx.fillText('ТОП АРТИСТЫ', 64, y);
+    ctx.fillText('TOP ARTISTS', 64, y);
     y += 46;
     ctx.fillStyle = '#efe6d9';
     ctx.font = '600 40px sans-serif';
@@ -55,7 +55,7 @@ export function drawRecapPoster(canvas: HTMLCanvasElement, data: RecapData, name
   if (data.topGenres.length) {
     ctx.fillStyle = '#948b7d';
     ctx.font = '600 22px sans-serif';
-    ctx.fillText('ЖАНРЫ', 64, y);
+    ctx.fillText('GENRES', 64, y);
     y += 40;
     ctx.fillStyle = '#c07b52';
     ctx.font = '500 30px sans-serif';
@@ -103,7 +103,7 @@ export function drawBlendPoster(
     ctx.fillText(`${matchPct}%`, W / 2, 190);
     ctx.fillStyle = '#948b7d';
     ctx.font = '500 22px sans-serif';
-    ctx.fillText('СОВПАДЕНИЕ ПО ЖАНРАМ', W / 2, 224);
+    ctx.fillText('GENRE MATCH', W / 2, 224);
     ctx.textAlign = 'left';
   }
 
@@ -122,7 +122,7 @@ export function drawBlendPoster(
     if (data.topArtists.length) {
       ctx.fillStyle = '#948b7d';
       ctx.font = '600 18px sans-serif';
-      ctx.fillText('ТОП АРТИСТЫ', x, y);
+      ctx.fillText('TOP ARTISTS', x, y);
       y += 36;
       ctx.fillStyle = '#efe6d9';
       ctx.font = '500 26px sans-serif';
@@ -136,7 +136,7 @@ export function drawBlendPoster(
     if (data.topGenres.length) {
       ctx.fillStyle = '#948b7d';
       ctx.font = '600 18px sans-serif';
-      ctx.fillText('ЖАНРЫ', x, y);
+      ctx.fillText('GENRES', x, y);
       y += 32;
       for (const g of data.topGenres) {
         ctx.fillStyle = sharedGenres.has(g) ? '#d98a5f' : '#c07b52';

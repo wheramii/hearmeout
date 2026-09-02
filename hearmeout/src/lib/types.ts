@@ -82,6 +82,7 @@ export type Me = PublicProfile & {
   bannerUrl: string | null;
   accentTheme: string | null;
   accentToxicity: string | null;
+  isOpenProfile: boolean;
   email: string | null;
 };
 

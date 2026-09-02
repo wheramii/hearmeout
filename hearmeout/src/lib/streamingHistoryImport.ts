@@ -76,11 +76,11 @@ export async function importStreamingHistory(
     try {
       parsed = JSON.parse(file.text);
     } catch {
-      errors.push(`${file.name}: не похоже на JSON`);
+      errors.push(`${file.name}: doesn't look like JSON`);
       continue;
     }
     if (!Array.isArray(parsed)) {
-      errors.push(`${file.name}: ожидался список записей`);
+      errors.push(`${file.name}: expected a list of entries`);
       continue;
     }
     for (const raw of parsed) {

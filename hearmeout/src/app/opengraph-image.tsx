@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
-export const alt = 'HearMeOut — оценивай музыку и сравнивай вкус с друзьями';
+export const alt = 'HearMeOut — rate music and compare taste with friends';
 
 // Same three paths as LogoMark (src/components/ui/Icons.tsx), traced from
 // the real logo file — kept in sync manually since this runs through
@@ -31,7 +31,7 @@ export default async function OGImage() {
           <span>Out</span>
         </div>
         <div style={{ display: 'flex', fontSize: 30, color: '#a89a89', fontFamily: 'sans-serif' }}>
-          Оценивай музыку и сравнивай вкус с друзьями
+          Rate music and compare taste with friends
         </div>
       </div>
     ),

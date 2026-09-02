@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import { fetchAllRows } from '@/lib/supabasePaginate';
-import { isFriendOf } from '@/lib/userProfile';
-import { isDemoAccountId } from '@/lib/demoAccounts';
+import { canViewProfileData } from '@/lib/userProfile';
 import type { StatsData, StatsRange } from '@/lib/types';
 
 const RANGE_DAYS: Record<StatsRange, number | null> = { '4w': 28, '6m': 182, year: 365, all: null };
@@ -36,7 +35,7 @@ export async function GET(request: NextRequest) {
   // A friend's chart is fetchable for comparison (see the note above); a
   // stranger's isn't — profiles are friends-only, and this endpoint is the
   // one place that data could otherwise leak without ever visiting one.
-  if (targetUserId !== viewerId && !isDemoAccountId(targetUserId) && !(await isFriendOf(admin, targetUserId, viewerId))) {
+  if (!(await canViewProfileData(admin, targetUserId, viewerId))) {
     return NextResponse.json({ error: 'not_friends' }, { status: 403 });
   }
   // PostgREST caps every request at its project max-rows setting (1000 by

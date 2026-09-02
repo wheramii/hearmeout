@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
-import { LANGUAGES, LANGUAGE_LABEL, getRegionCodes, regionDisplayName, type TranslationKey } from '@/lib/i18n';
+import { getRegionCodes, regionDisplayName, type TranslationKey } from '@/lib/i18n';
 import { THEME_ORDER, THEME_PAIRS, TOXICITY_ORDER, isThemeId, isToxicity, type ThemeId, type Toxicity } from '@/lib/themes';
 import { AccountBlock, ConnectBlock, ImportHistoryBlock } from '../ProfileBlocks';
 import { ThemeToggle } from '../ThemeToggle';
@@ -146,23 +146,36 @@ function AppearanceSection({ device }: { device: Device }) {
 }
 
 function LanguageRegionSection() {
-  const { t, me, language, updateLanguage, updateRegion } = useApp();
+  const { t, me, language, updateRegion } = useApp();
   const regionCodes = useMemo(() => getRegionCodes(), []);
   if (!me) return null;
 
   return (
     <>
-      <div className="section-head"><h2>{t('profile.language')}</h2></div>
-      <div className="chips" style={{ marginBottom: 22 }}>
-        {LANGUAGES.map((l) => (
-          <button key={l} className={`chip ${language === l ? 'on' : ''}`} onClick={() => updateLanguage(l)}>{LANGUAGE_LABEL[l]}</button>
-        ))}
-      </div>
       <div className="section-head"><h2>{t('profile.region')}</h2><span>{t('profile.regionHint')}</span></div>
       <select className="select-field" style={{ marginBottom: 22 }} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
         <option value="">{t('profile.regionNone')}</option>
         {regionCodes.map((code) => <option key={code} value={code}>{regionDisplayName(code, language)}</option>)}
       </select>
+    </>
+  );
+}
+
+function ProfileVisibilitySection() {
+  const { t, me, updateOpenProfile } = useApp();
+  if (!me) return null;
+  const isOpen = me.isOpenProfile;
+
+  return (
+    <>
+      <div className="section-head"><h2>{t('settings.profileVisibility')}</h2></div>
+      <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 14, lineHeight: 1.5 }}>
+        {isOpen ? t('settings.profileVisibilityOpenHint') : t('settings.profileVisibilityClosedHint')}
+      </p>
+      <div className="segmented" style={{ marginBottom: 24, maxWidth: 320 }}>
+        <button className={!isOpen ? 'on' : ''} onClick={() => updateOpenProfile(false)}>{t('settings.profileClosed')}</button>
+        <button className={isOpen ? 'on' : ''} onClick={() => updateOpenProfile(true)}>{t('settings.profileOpen')}</button>
+      </div>
     </>
   );
 }
@@ -227,6 +240,7 @@ export function SettingsScreen({ device }: { device: Device }) {
         <>
           <div className="section-head"><h2>{t('profile.accountSection')}</h2></div>
           <div style={{ marginBottom: 22 }}><AccountBlock /></div>
+          <ProfileVisibilitySection />
           <DeleteAccountBlock />
         </>
       )}

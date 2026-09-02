@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import { fetchAllRows } from '@/lib/supabasePaginate';
-import { isFriendOf } from '@/lib/userProfile';
-import { isDemoAccountId } from '@/lib/demoAccounts';
+import { canViewProfileData } from '@/lib/userProfile';
 import type { RecapData, RecapPeriod } from '@/lib/types';
 import { parseSeasonKey, seasonBounds } from '@/lib/seasons';
 
@@ -23,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   // Same friends-only boundary as the profile page itself — a recap is just
   // another view into someone's listening data.
-  if (targetUserId !== viewerId && !isDemoAccountId(targetUserId) && !(await isFriendOf(admin, targetUserId, viewerId))) {
+  if (!(await canViewProfileData(admin, targetUserId, viewerId))) {
     return NextResponse.json({ error: 'not_friends' }, { status: 403 });
   }
 

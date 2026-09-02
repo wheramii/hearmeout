@@ -8,6 +8,19 @@ import { isDemoAccountId } from './demoAccounts';
 // how fresh this data actually is instead of implying true real-time.
 const NOW_PLAYING_MAX_AGE_MS = 6 * 60 * 1000;
 
+// Isolated from the main `users` select on purpose: a combined
+// `.select('a, b, is_open_profile')` fails atomically if any named column
+// is missing, and this column only exists once migration_013 has been run
+// (supabase/migration_013_open_profile.sql) — kept separate so profiles
+// keep working (as "closed", the same default the column will have) before
+// that migration lands, and pick up the real value automatically once it
+// does, no code change needed either way.
+export async function fetchIsOpenProfile(admin: SupabaseClient, userId: string): Promise<boolean> {
+  const { data, error } = await admin.from('users').select('is_open_profile').eq('id', userId).maybeSingle();
+  if (error) return false;
+  return !!data?.is_open_profile;
+}
+
 async function fetchNowPlaying(admin: SupabaseClient, userId: string): Promise<NowPlaying | null> {
   const { data } = await admin
     .from('listening_events')
@@ -30,27 +43,28 @@ async function fetchNowPlaying(admin: SupabaseClient, userId: string): Promise<N
 // viewer is this person themself or already an accepted friend of theirs,
 // so a stranger's full social graph isn't exposed to anyone who finds a link.
 //
-// `publicTeaser` is for the one deliberate exception: the /u/[handle] share
-// page, which a user hands out themselves as a link. Strangers there get
-// the old teaser tier (stats/genres/top albums, never reviews or the friend
-// graph) instead of the fully-locked stub that in-app browsing-by-search
-// gets — sharing your own link is an opt-in disclosure, being found by a
-// stranger's search inside the app isn't.
+// A stranger otherwise gets one of two things, decided purely by the
+// account owner's own `is_open_profile` setting (Settings > Account) — the
+// same setting whether they arrive by in-app search or by the /u/[handle]
+// share link, so going private closes both doors at once:
+//   - open: the teaser tier (stats/genres/top albums, never reviews or the
+//     friend graph)
+//   - closed (the default): a locked name-card stub
 export async function getUserProfile(
   admin: SupabaseClient,
   userId: string,
-  viewerId?: string | null,
-  opts?: { publicTeaser?: boolean }
+  viewerId?: string | null
 ): Promise<PublicProfile | null> {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, nowPlaying] = await Promise.all([
+  const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, nowPlaying, isOpenProfile] = await Promise.all([
     admin.from('users').select('id, name, handle, avatar_url, created_at').eq('id', userId).maybeSingle(),
     admin.from('ratings').select('album_id, stars, review, tags, created_at').eq('user_id', userId).order('created_at', { ascending: false }),
     admin.from('listening_events').select('genre').eq('user_id', userId).not('genre', 'is', null).limit(5000),
     admin.from('listening_events').select('duration_ms').eq('user_id', userId).gte('played_at', startOfDay.toISOString()),
     fetchNowPlaying(admin, userId),
+    fetchIsOpenProfile(admin, userId),
   ]);
 
   if (userErr) throw userErr;
@@ -61,13 +75,14 @@ export async function getUserProfile(
   // Demo fixture accounts (see demoAccounts.ts) are open to everyone — the
   // whole point is letting a friendless user try the comparison feature.
   const isOpen = isSelf || isMutualFriend || isDemoAccountId(userId);
+  const isPublicTeaser = !isOpen && isOpenProfile;
 
   // Full profiles are for the account owner and their accepted friends only
   // — anyone else (including someone who just found this person by search)
-  // gets a name-card stub, not real stats/history/currently-playing. Search
-  // and sending a friend request still work; *viewing* the profile doesn't
-  // until that request is accepted.
-  if (!isOpen && !opts?.publicTeaser) {
+  // gets a name-card stub, not real stats/history/currently-playing, unless
+  // the owner opted their profile open. Search and sending a friend request
+  // still work either way; *viewing* the profile is what's gated.
+  if (!isOpen && !isPublicTeaser) {
     return {
       id: user.id,
       name: user.name,
@@ -145,4 +160,14 @@ export async function isFriendOf(admin: SupabaseClient, userId: string, viewerId
     .eq('friend_id', viewerId)
     .maybeSingle();
   return !!data;
+}
+
+// Same visibility rule as getUserProfile's teaser tier, for the endpoints
+// (stats, recap) that expose the same class of data (listening stats,
+// top artists/genres) outside the profile page itself.
+export async function canViewProfileData(admin: SupabaseClient, targetUserId: string, viewerId: string): Promise<boolean> {
+  if (targetUserId === viewerId) return true;
+  if (isDemoAccountId(targetUserId)) return true;
+  if (await isFriendOf(admin, targetUserId, viewerId)) return true;
+  return fetchIsOpenProfile(admin, targetUserId);
 }

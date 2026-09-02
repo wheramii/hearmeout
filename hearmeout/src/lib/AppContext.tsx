@@ -134,6 +134,7 @@ type AppContextValue = {
   updateAccentToxicity: (toxicity: string) => Promise<void>;
   updateLanguage: (language: Language) => Promise<void>;
   updateRegion: (region: string | null) => Promise<void>;
+  updateOpenProfile: (isOpenProfile: boolean) => Promise<void>;
   addFriend: (handle: string) => Promise<void>;
   respondToFriendRequest: (requestId: number, action: 'accept' | 'decline') => Promise<void>;
   syncSpotify: () => Promise<void>;
@@ -149,7 +150,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 const initialState: AppState = {
   authStatus: 'loading',
-  language: 'ru',
+  language: 'en',
   view: 'mobile',
   activeScreen: 'catalog',
   navAction: 'push',
@@ -203,17 +204,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const res = await fetch('/api/me');
     if (res.status === 401 || res.status === 404) {
       setMe(null);
-      // No account yet — guess a starting language from the browser so the
-      // registration screen itself isn't stuck in Russian for everyone.
-      const browserLang = typeof navigator !== 'undefined' ? navigator.language.slice(0, 2) : 'ru';
-      const guessed = (['ru', 'en', 'fr', 'es', 'de'] as const).includes(browserLang as never) ? (browserLang as Language) : 'en';
-      patch({ authStatus: 'anonymous', language: guessed });
+      patch({ authStatus: 'anonymous', language: 'en' });
       return;
     }
     if (!res.ok) return;
     const data: Me = await res.json();
     setMe(data);
-    patch({ authStatus: 'ready', language: data.language || 'ru' });
+    patch({ authStatus: 'ready', language: 'en' });
   }, [patch]);
 
   const refreshAlbumRatings = useCallback(async () => {
@@ -322,6 +319,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [me?.isPremium, me?.accentTheme, me?.accentToxicity]);
   useEffect(() => { if (state.authStatus === 'ready') refreshFriendRequests(); }, [state.authStatus, refreshFriendRequests]);
+
+  // Completes an invite-link visit (see app/invite/[id]/page.tsx) that
+  // happened while logged out: that page stashes the inviter's id in
+  // localStorage before sending the visitor to "/" to sign up, and once
+  // auth is actually ready here, we finish the friend-add they started.
+  useEffect(() => {
+    if (state.authStatus !== 'ready') return;
+    let pendingId: string | null = null;
+    try { pendingId = localStorage.getItem('hmo_pending_invite'); } catch { /* ignore */ }
+    if (!pendingId) return;
+    try { localStorage.removeItem('hmo_pending_invite'); } catch { /* ignore */ }
+    fetch('/api/friends/accept-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fromUserId: pendingId }) })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.user) {
+          showToast(t('toast.friendAdded'));
+          refreshMe();
+        }
+      })
+      .catch(() => {});
+  }, [state.authStatus, showToast, t, refreshMe]);
 
   const registerWithPassword = useCallback(async (name: string, email: string, password: string) => {
     const res = await fetch('/api/auth/signup', {
@@ -509,6 +527,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ region }) });
   }, []);
 
+  const updateOpenProfile = useCallback(async (isOpenProfile: boolean) => {
+    setMe((prev) => (prev ? { ...prev, isOpenProfile } : prev));
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isOpenProfile }) });
+  }, []);
+
   const addFriend = useCallback(async (handle: string) => {
     const res = await fetch('/api/friends', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
     const data = await res.json().catch(() => ({}));
@@ -684,7 +707,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
-    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion, updateOpenProfile,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
     spotifyGenreArtists, myRatings, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, goBack, openAlbum, openRateFor,
@@ -692,7 +715,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
-    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion, updateOpenProfile,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -24,7 +24,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 // hearmeout-7zlh.onrender.com per the current Render service name; update
 // this if the service is ever renamed or moved to a custom domain.
 const SITE_URL = "https://hearmeout-7zlh.onrender.com";
-const SITE_DESCRIPTION = "Оценивай альбомы, сравнивай музыкальный вкус с друзьями и находи, что послушать дальше.";
+const SITE_DESCRIPTION = "Rate albums, compare music taste with friends, and find what to listen to next.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     siteName: "HearMeOut",
-    locale: "ru_RU",
+    locale: "en_US",
     type: "website",
   },
   twitter: {
@@ -63,7 +63,7 @@ try {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="ru"
+      lang="en"
       data-theme="dark"
       suppressHydrationWarning
       className={`${spaceGrotesk.variable} ${inter.variable} ${ibmPlexMono.variable}`}

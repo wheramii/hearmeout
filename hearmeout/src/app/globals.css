@@ -149,6 +149,12 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
 }
 .app-splash-name{ font-family:var(--font-space-grotesk),sans-serif; font-weight:600; font-size:19px; letter-spacing:-.01em; color:var(--text); }
 .app-splash-name span{ color:var(--lime); }
+.app-splash-phrase{ font-family:var(--font-ibm-plex-mono),monospace; font-size:12px; color:var(--muted); letter-spacing:.04em; }
+
+.closed-profile-notice{ text-align:center; padding:40px 20px; color:var(--muted); }
+.closed-profile-lock{ display:block; font-size:30px; margin-bottom:10px; }
+.closed-profile-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:700; font-size:15px; color:var(--text); margin-bottom:6px; }
+.closed-profile-sub{ font-size:13px; line-height:1.5; max-width:340px; margin:0 auto; }
 
 .invite-banner{
   display:flex; align-items:center; justify-content:space-between; gap:16px;
@@ -574,6 +580,12 @@ h1.page-title{ font-family:var(--font-space-grotesk),sans-serif; font-weight:800
   background:var(--lime); color:var(--on-accent); display:flex; align-items:center; justify-content:center;
   box-shadow:0 5px 16px -4px rgba(0,0,0,.3);
 }
+
+.logo-mark.loading .logo-wave{
+  stroke-dasharray:40 24;
+  animation:logo-wave-flow 1.1s linear infinite;
+}
+@keyframes logo-wave-flow{ from{ stroke-dashoffset:0; } to{ stroke-dashoffset:-128; } }
 
 .logo-mark.playing .logo-pulse{
   transform-box:fill-box; transform-origin:center;

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId, IDENTITY_COOKIE } from '@/lib/identity';
-import { getUserProfile } from '@/lib/userProfile';
+import { getUserProfile, fetchIsOpenProfile } from '@/lib/userProfile';
 import { slugifyHandle } from '@/lib/slug';
 import type { ApiUser, Me } from '@/lib/types';
 import { isThemeId, isToxicity } from '@/lib/themes';
@@ -12,11 +12,12 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const admin = supabaseAdmin();
-  const [profile, { data: prefs }, { data: conns }, { data: friendRows }] = await Promise.all([
+  const [profile, { data: prefs }, { data: conns }, { data: friendRows }, isOpenProfile] = await Promise.all([
     getUserProfile(admin, userId, userId),
     admin.from('users').select('language, region, auth_user_id, is_premium, banner_url, accent_theme, accent_toxicity').eq('id', userId).maybeSingle(),
     admin.from('connections').select('provider').eq('user_id', userId),
     admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url, is_premium)').eq('user_id', userId),
+    fetchIsOpenProfile(admin, userId),
   ]);
 
   if (!profile) return NextResponse.json({ error: 'not_found' }, { status: 404 });
@@ -39,7 +40,7 @@ export async function GET() {
     ...profile,
     connections: { spotify: connSet.has('spotify'), appleMusic: connSet.has('apple_music') },
     friends,
-    language: (prefs?.language as Me['language']) || 'ru',
+    language: (prefs?.language as Me['language']) || 'en',
     region: prefs?.region ?? null,
     hasPassword: !!prefs?.auth_user_id,
     email,
@@ -47,6 +48,7 @@ export async function GET() {
     bannerUrl: (prefs?.banner_url as string | null) ?? null,
     accentTheme: (prefs?.accent_theme as string | null) ?? null,
     accentToxicity: (prefs?.accent_toxicity as string | null) ?? null,
+    isOpenProfile,
   };
   return NextResponse.json(me);
 }
@@ -57,7 +59,7 @@ export async function PATCH(request: NextRequest) {
 
   const admin = supabaseAdmin();
   const body = await request.json().catch(() => null);
-  const patch: Record<string, string | null> = {};
+  const patch: Record<string, string | boolean | null> = {};
   if (typeof body?.name === 'string' && body.name.trim()) patch.name = body.name.trim();
   if (typeof body?.handle === 'string' && body.handle.trim()) {
     patch.handle = `@${slugifyHandle(body.handle.replace(/^@/, ''))}`;
@@ -78,6 +80,7 @@ export async function PATCH(request: NextRequest) {
   }
   if (typeof body?.language === 'string' && ['ru', 'en', 'fr', 'es', 'de'].includes(body.language)) patch.language = body.language;
   if ('region' in (body ?? {})) patch.region = typeof body.region === 'string' && body.region ? body.region : null;
+  if (typeof body?.isOpenProfile === 'boolean') patch.is_open_profile = body.isOpenProfile;
   if (!Object.keys(patch).length) return NextResponse.json({ ok: true });
 
   const { error } = await admin.from('users').update(patch).eq('id', userId);

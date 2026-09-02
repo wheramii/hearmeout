@@ -6,15 +6,16 @@ import { accentMix } from '@/lib/accentGradient';
 
 // Plain server component, deliberately outside AppProvider/AppGate — this
 // is the one page in the app reachable without logging in, so a rating
-// profile can be shared as a link. getUserProfile is already viewer-null
-// safe (confirmed by reading it): friends-only fields just come back
-// undefined for an anonymous viewer instead of throwing.
+// profile can be shared as a link. What an anonymous visitor sees here
+// (open teaser vs. locked stub) is decided by the owner's own is_open_profile
+// setting in getUserProfile, same as in-app viewing — going private closes
+// this page too, not just search.
 async function loadProfile(handle: string) {
   const normalized = handle.startsWith('@') ? handle : `@${handle}`;
   const admin = supabaseAdmin();
   const { data: user } = await admin.from('users').select('id').eq('handle', normalized).maybeSingle();
   if (!user) return null;
-  return getUserProfile(admin, user.id, null, { publicTeaser: true });
+  return getUserProfile(admin, user.id, null);
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ handle: string }> }): Promise<Metadata> {
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ handle: s
   if (!profile) return { title: 'HearMeOut' };
   return {
     title: `${profile.name} — HearMeOut`,
-    description: `${profile.stats.ratings} оценок, средний балл ${profile.stats.avg || '—'} на HearMeOut`,
+    description: `${profile.stats.ratings} ratings, ${profile.stats.avg || '—'} average on HearMeOut`,
   };
 }
 
@@ -35,7 +36,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--text)' }}>
         <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: 15, color: 'var(--muted)' }}>Пользователь не найден</p>
+          <p style={{ fontSize: 15, color: 'var(--muted)' }}>User not found</p>
           <a href="/" style={{ color: 'var(--lime)' }}>HearMeOut →</a>
         </div>
       </div>
@@ -62,14 +63,14 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         </div>
 
         <div className="stat-grid" style={{ marginBottom: 26 }}>
-          <div className="box"><div className="v">{profile.stats.ratings}</div><div className="l">ОЦЕНОК</div></div>
-          <div className="box"><div className="v">{profile.stats.avg || '—'}</div><div className="l">СР. БАЛЛ</div></div>
-          <div className="box"><div className="v">{profile.stats.reviews}</div><div className="l">РЕЦЕНЗИЙ</div></div>
+          <div className="box"><div className="v">{profile.stats.ratings}</div><div className="l">RATINGS</div></div>
+          <div className="box"><div className="v">{profile.stats.avg || '—'}</div><div className="l">AVERAGE</div></div>
+          <div className="box"><div className="v">{profile.stats.reviews}</div><div className="l">REVIEWS</div></div>
         </div>
 
         {profile.genres.length > 0 && (
           <>
-            <div className="section-head"><h2>Любимые жанры</h2></div>
+            <div className="section-head"><h2>Favorite genres</h2></div>
             <div style={{ marginBottom: 26 }}>
               {(() => {
                 const maxPct = Math.max(1, ...profile.genres.map((g) => g.pct));
@@ -86,7 +87,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
         {top4.length > 0 && (
           <>
-            <div className="section-head"><h2>Топ альбомы</h2></div>
+            <div className="section-head"><h2>Top albums</h2></div>
             <div className="top4-grid" style={{ marginBottom: 26 }}>
               {top4.map((a, i) => (
                 <div key={a.id} className="art" style={{ backgroundImage: a.cover ? `url('${a.cover}')` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
@@ -98,7 +99,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         )}
 
         <div style={{ textAlign: 'center', marginTop: 30 }}>
-          <a href="/" style={{ color: 'var(--lime)', fontSize: 13, fontFamily: 'var(--font-ibm-plex-mono),monospace' }}>Оцени свою музыку на HearMeOut →</a>
+          <a href="/" style={{ color: 'var(--lime)', fontSize: 13, fontFamily: 'var(--font-ibm-plex-mono),monospace' }}>Rate your own music on HearMeOut →</a>
         </div>
       </div>
     </div>
