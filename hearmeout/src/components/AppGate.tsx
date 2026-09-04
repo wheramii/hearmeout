@@ -19,6 +19,12 @@ const LOADING_PHRASES = [
   'Finding the beat…',
   'Cueing the next track…',
   'Chasing the bassline…',
+  'Reading your reviews…',
+  'Digging through the crates…',
+  'Syncing the setlist…',
+  'Checking the volume…',
+  'Untangling the headphones…',
+  'Counting the beats per minute…',
 ];
 
 function useLoadingPhrase() {
